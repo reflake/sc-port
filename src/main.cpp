@@ -7,14 +7,16 @@
 #include <stdexcept>
 #include <winnt.h>
 
+#include "meta/Unit.h"
+
 using std::cout;
 using std::runtime_error;
 
 int main(int argc, char* argv[])
 {
-	if (argc < 3)
+	if (argc < 2)
 	{
-		cout << "Two arguments required: <storage path> <output file>" << std::endl;
+		cout << "An argument is required: <storage path>" << std::endl;
 		return -1;
 	}
 
@@ -33,40 +35,30 @@ int main(int argc, char* argv[])
 
 	HANDLE storageFile;
 
-	if (!CascOpenFile(storage, "sound/terran/marine/tmapss00.wav", 0, 0, &storageFile))
+	if (!CascOpenFile(storage, "arr/units.dat", 0, 0, &storageFile))
 	{
-		throw runtime_error("Couldn't read sound file");
+		throw runtime_error("Couldn't unit meta data file");
 	}
 
-	auto outputFile = CreateFile(outputPath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
+	const int MARINE_ID = 0x00;
 
-	if (outputFile == INVALID_HANDLE_VALUE)
-	{
-		throw runtime_error("Couldn't create output file");
-	}
-
-	char  buffer[1000];
+	meta::UnitTable unitTable;
 	DWORD bytesRead;
+	DWORD metaDataFileSize;
 
-	do {
+	metaDataFileSize = CascGetFileSize(storageFile, NULL);
 
-		CascReadFile(storageFile, buffer, sizeof(buffer), &bytesRead);
+	CascReadFile(storageFile, &unitTable, metaDataFileSize, &bytesRead);
 
-		DWORD bytesWritten;
-
-		if (bytesRead > 0)
-		{
-			WriteFile(outputFile, buffer, bytesRead, &bytesWritten, NULL);
-
-			if (bytesWritten != bytesRead)
-			{
-				throw runtime_error("Couldn't write to output file");
-			}
-		}
-
-	} while (bytesRead != 0);
+	if (bytesRead == metaDataFileSize)
+	{
+		cout << "Found marine data, he's HP equals " << unitTable.realHitPoints(MARINE_ID) << std::endl;
+	}
+	else 
+	{
+		throw runtime_error("Couldn't read marine data");
+	}
 
 	CascCloseFile(storageFile);
 	CascCloseStorage(storage);
-	CloseHandle(outputFile);
 }
