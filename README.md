@@ -4,4 +4,4 @@ The library [CascLib](https://github.com/ladislav-zezula/CascLib) (credits to [l
 
 # Installation
 
-Download the CascLib 2.1 source archive from [releases page](https://github.com/ladislav-zezula/CascLib/releases) and place its contents into CascLib folder of the project
+Download the CascLib source archive (version 2.1 or above) from [releases page](https://github.com/ladislav-zezula/CascLib/releases) and place its contents into CascLib folder of the project

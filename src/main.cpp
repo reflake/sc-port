@@ -7,6 +7,11 @@
 #include <stdexcept>
 #include <winnt.h>
 
+void constexpr CheckCascLibVersion()
+{
+	static_assert(CASCLIB_VERSION >= 0x210, "CascLib version should be 2.1 or above");
+}
+
 int main(int argc, char* argv[])
 {
 	if (argc < 3)
@@ -19,6 +24,8 @@ int main(int argc, char* argv[])
 	std::string outputPath = argv[2];
 
 	HANDLE storage;
+
+	CheckCascLibVersion();
 
 	if (!CascOpenStorage(storagePath.c_str(), 0, &storage))
 	{
