@@ -23,6 +23,7 @@
 #include <SDL2/SDL.h>
 
 #include "data/Palette.hpp"
+#include "data/Tile.hpp"
 #include "filesystem/storage.hpp"
 #include "filesystem/storage_file.hpp"
 
@@ -30,6 +31,8 @@ using boost::format;
 
 using std::cout;
 using std::runtime_error;
+using data::Tile;
+using data::MegaTile;
 
 void throwSdlError(const char* msg)
 {
@@ -109,28 +112,23 @@ void freeWindow(App& app)
 	}
 }
 
-struct Tile
-{
-	uint8_t palPixels[64];
-};
-
 struct Page
 {
 	SDL_Surface* surface;
 };
 
-template<int L = 8>
-void createTilePages(App& app, Tile* tiles, int tileCount, std::vector<Page>& pages, data::Palette paletteData)
+template<int L = 3>
+void createMegaTilePages(App& app, MegaTile* megaTiles, int megaTileCount, Tile* tiles, std::vector<Page>& pages, data::Palette paletteData)
 {
 	auto pal = SDL_AllocPalette(256);
 	auto colors = reinterpret_cast<const SDL_Color*>(paletteData.GetColors());
 
 	SDL_SetPaletteColors(pal, colors, 0, 256);
 
-	for(int i = 0; i < tileCount; i+=L*L)
+	for(int i = 0; i < megaTileCount; i+=L*L)
 	{
-		const int width = L * 8;
-		const int height = L * 8;
+		const int width = L * 32;
+		const int height = L * 32;
 		auto surface = SDL_CreateRGBSurface(0, width, height, 8, 0, 0, 0, 0);
 		SDL_SetSurfacePalette(surface, pal);
 
@@ -139,12 +137,16 @@ void createTilePages(App& app, Tile* tiles, int tileCount, std::vector<Page>& pa
 		for(int j = 0; j < width; j+=8)
 		for(int k = 0; k < height; k++)
 		{
-			int tileIndex = i + j / 8 + (k / 8) * 8;
+			int megaTileIndex = i + j / 32 + k / 32 * L;
 
-			if (tileIndex >= tileCount)
+			if (megaTileIndex >= megaTileCount)
 				continue;
 
-			auto& tile = tiles[tileIndex];
+			auto& megaTile = megaTiles[megaTileIndex];
+
+			int tileId = megaTile.GetTileId(k / 8 % 4, j / 8 % 4);
+
+			auto& tile = tiles[tileId];
 
 			auto pixel = reinterpret_cast<uint8_t*>(surface->pixels) + j + k * width;
 
@@ -179,17 +181,28 @@ int main(int argc, char* argv[])
 
 		data::Palette palette(wpeData);
 
-		filesystem::StorageFile tileSetFile;
-
 		// Read mini tile's data
+		filesystem::StorageFile tileSetFile;
 		storage.Open("TileSet/ashworld.vr4", tileSetFile);
 		
 		int tileDataSize = tileSetFile.GetFileSize();
 		int tileCount = tileDataSize / sizeof(Tile);
 		auto tiles = new Tile[tileCount];
+
 		tileSetFile.Read(tiles, tileDataSize);
 
-		createTilePages<13>(app, tiles, tileCount, pages, palette);
+		// Read mega tile's data
+		filesystem::StorageFile megaTileSetFile;
+		storage.Open("TileSet/ashworld.vx4ex", megaTileSetFile);
+
+		int megaTileDataSize = megaTileSetFile.GetFileSize();
+		int megaTileCount = megaTileDataSize / sizeof(MegaTile);
+		auto megaTiles = new MegaTile[megaTileCount];
+
+		megaTileSetFile.Read(megaTiles, megaTileDataSize);
+
+		// Prepare images to draw
+		createMegaTilePages<9>(app, megaTiles, megaTileCount, tiles, pages, palette);
 
 		delete[] tiles;
 	}

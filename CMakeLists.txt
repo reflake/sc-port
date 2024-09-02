@@ -10,9 +10,12 @@ find_package(SDL2 REQUIRED)
 add_executable(Engine src/main.cpp)
 
 target_sources(Engine 
-  PRIVATE src/data/Palette.cpp
-  PRIVATE src/filesystem/storage_file.cpp
-  PRIVATE src/filesystem/storage.cpp
+  PRIVATE 
+    src/data/Palette.cpp
+    src/data/Tile.cpp
+  PRIVATE 
+    src/filesystem/storage_file.cpp
+    src/filesystem/storage.cpp
   )
 
 # Find Winsock library
