@@ -14,6 +14,8 @@ target_sources(Engine
     src/data/Palette.cpp
     src/data/Tile.cpp
   PRIVATE 
+    src/filesystem/MpqArchive.cpp
+    src/filesystem/MpqFile.cpp
     src/filesystem/storage_file.cpp
     src/filesystem/storage.cpp
   )
@@ -54,9 +56,8 @@ set(CASC_BUILD_SHARED_LIB OFF)
 
 add_subdirectory(CascLib/)
 
-target_link_libraries(Engine 
-  PRIVATE casc_static
-  PRIVATE SDL2::SDL2-static)
+# StormLib
+add_subdirectory(StormLib/)
 
 # Boost
 find_package(Boost REQUIRED)
@@ -65,3 +66,8 @@ if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   target_link_libraries(Engine ${Boost_LIBRARIES})
 endif()
+
+target_link_libraries(Engine 
+  PRIVATE casc_static
+  PRIVATE storm
+  PRIVATE SDL2::SDL2-static)
