@@ -219,13 +219,13 @@ int main(int argc, char* argv[])
 
 		mapFile.Open("staredit\\scenario.chk", scenarioFile);
 
-		using data::map::ChunkEntry;
+		int bytesAmount = scenarioFile.GetFileSize();
+		auto scenarioBytes = std::make_shared<uint8_t[]>(bytesAmount);
 
-		ChunkEntry chunk;
-		scenarioFile.Read(chunk);
+		scenarioFile.Read(scenarioBytes.get(), bytesAmount);
 
-		auto chunkData = std::make_shared<uint8_t[]>(chunk.dataSize);
-		scenarioFile.Read(chunkData.get(), chunk.dataSize);
+		data::MapInfo mapInfo;
+		data::ReadMap(scenarioBytes, bytesAmount, mapInfo);
 	}
 
 	initSDL();

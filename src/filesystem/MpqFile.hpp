@@ -23,9 +23,12 @@ namespace filesystem
 
 		void Close();
 
+		const int GetFileSize();
+
 	private:
 
 		HANDLE _handle;
 		std::string _filePath;
+		int _fileSize = -1;
 	};
 }

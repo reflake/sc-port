@@ -73,4 +73,16 @@ namespace filesystem
 
 		_handle = nullptr;
 	}
+
+	const int MpqFile::GetFileSize()
+	{
+		if (_fileSize == -1)
+		{
+			return _fileSize = SFileGetFileSize(_handle, nullptr);
+		}
+		else 
+		{
+			return _fileSize;
+		}
+	}
 }

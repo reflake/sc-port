@@ -1,9 +1,14 @@
 #pragma once
 
 #include <cstdint>
+#include <unordered_map>
+
+#include "Common.hpp"
 
 namespace data
 {
+	extern std::unordered_map<Tileset, const char*> tileSetNameMap;
+
 	struct Tile
 	{
 		uint8_t palPixels[64];
