@@ -9,6 +9,11 @@ find_package(SDL2 REQUIRED)
 
 add_executable(Engine src/main.cpp)
 
+target_sources(Engine 
+  PRIVATE src/filesystem/storage_file.cpp
+  PRIVATE src/filesystem/storage.cpp
+  )
+
 # Find Winsock library
 find_path(WINSOCK_INCLUDE_DIR WinSock2.h)
 if(MSVC)

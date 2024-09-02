@@ -1,5 +1,9 @@
+#pragma once
+
 #include <cstdint>
 #include <glm/vec4.hpp>
+
+#include "../filesystem/storage.hpp"
 
 namespace meta
 {
@@ -100,4 +104,14 @@ namespace meta
 		uint16_t starEditAvailabilityFlags[MAX_AMOUNT];
 	};
 	#pragma pack (pop)
+
+	UnitTable ReadUnitTable(filesystem::Storage& storage)
+	{
+		filesystem::StorageFile file;
+		UnitTable unitTable;
+		
+		storage.Read("arr/units.dat", unitTable);
+
+		return unitTable;
+	}
 }

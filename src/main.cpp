@@ -1,4 +1,3 @@
-
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
@@ -16,9 +15,10 @@
 #include <iostream>
 #include <minwindef.h>
 #include <stdexcept>
-#include <winnt.h>
 
 #include "meta/Unit.h"
+#include "filesystem/storage.hpp"
+#include "filesystem/storage_file.hpp"
 
 using boost::format;
 
