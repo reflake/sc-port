@@ -11,6 +11,7 @@
 #include <iostream>
 #include <minwindef.h>
 #include <stdexcept>
+#include <memory>
 
 #include <SDL_events.h>
 #include <SDL_hints.h>
@@ -22,8 +23,11 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL.h>
 
+#include "data/Map.hpp"
 #include "data/Palette.hpp"
 #include "data/Tile.hpp"
+#include "filesystem/MpqArchive.hpp"
+#include "filesystem/MpqFile.hpp"
 #include "filesystem/storage.hpp"
 #include "filesystem/storage_file.hpp"
 
@@ -163,49 +167,70 @@ void createMegaTilePages(App& app, MegaTile* megaTiles, int megaTileCount, Tile*
 	}
 }
 
+void readTileSets(filesystem::Storage storage)
+{
+	// Read palette of tile set
+
+		// filesystem::Storage storage(storagePath.c_str());
+	/*data::WpeData wpeData;
+	storage.Read("TileSet/ashworld.wpe", wpeData);
+
+	data::Palette palette(wpeData);
+
+	// Read mini tile's data
+	filesystem::StorageFile tileSetFile;
+	storage.Open("TileSet/ashworld.vr4", tileSetFile);
+	
+	int tileDataSize = tileSetFile.GetFileSize();
+	int tileCount = tileDataSize / sizeof(Tile);
+	auto tiles = new Tile[tileCount];
+
+	tileSetFile.Read(tiles, tileDataSize);
+
+	// Read mega tile's data
+	filesystem::StorageFile megaTileSetFile;
+	storage.Open("TileSet/ashworld.vx4ex", megaTileSetFile);
+
+	int megaTileDataSize = megaTileSetFile.GetFileSize();
+	int megaTileCount = megaTileDataSize / sizeof(MegaTile);
+	auto megaTiles = new MegaTile[megaTileCount];
+
+	megaTileSetFile.Read(megaTiles, megaTileDataSize);
+
+	// Prepare images to draw
+	createMegaTilePages<12>(app, megaTiles, megaTileCount, tiles, pages, palette);
+	
+	delete[] tiles;
+	delete[] megaTiles;
+		*/
+}
+
 int main(int argc, char* argv[])
 {
 	std::vector<Page> pages;
 
 	App app;
+	{
+		auto storagePath = argv[1];
+		auto mapPath = argv[2];
+
+		filesystem::MpqArchive mapFile(mapPath);
+		filesystem::MpqFile scenarioFile;
+
+		mapFile.Open("staredit\\scenario.chk", scenarioFile);
+
+		using data::map::ChunkEntry;
+
+		ChunkEntry chunk;
+		scenarioFile.Read(chunk);
+
+		auto chunkData = std::make_shared<uint8_t[]>(chunk.dataSize);
+		scenarioFile.Read(chunkData.get(), chunk.dataSize);
+	}
 
 	initSDL();
 	createWindow(app);
 	
-	{
-		filesystem::Storage storage(argv[1]);
-
-		// Read palette of tile set
-		data::WpeData wpeData;
-		storage.Read("TileSet/ashworld.wpe", wpeData);
-
-		data::Palette palette(wpeData);
-
-		// Read mini tile's data
-		filesystem::StorageFile tileSetFile;
-		storage.Open("TileSet/ashworld.vr4", tileSetFile);
-		
-		int tileDataSize = tileSetFile.GetFileSize();
-		int tileCount = tileDataSize / sizeof(Tile);
-		auto tiles = new Tile[tileCount];
-
-		tileSetFile.Read(tiles, tileDataSize);
-
-		// Read mega tile's data
-		filesystem::StorageFile megaTileSetFile;
-		storage.Open("TileSet/ashworld.vx4ex", megaTileSetFile);
-
-		int megaTileDataSize = megaTileSetFile.GetFileSize();
-		int megaTileCount = megaTileDataSize / sizeof(MegaTile);
-		auto megaTiles = new MegaTile[megaTileCount];
-
-		megaTileSetFile.Read(megaTiles, megaTileDataSize);
-
-		// Prepare images to draw
-		createMegaTilePages<9>(app, megaTiles, megaTileCount, tiles, pages, palette);
-
-		delete[] tiles;
-	}
 
 	SDL_Event event;
 
@@ -213,7 +238,7 @@ int main(int argc, char* argv[])
 
 	int page = 0;
 				
-	SDL_Rect destRect { .x = 0, .y = 0, .w = 512, .h = 512 };
+	SDL_Rect destRect { .x = 0, .y = 0, .w = 720, .h = 720 };
 
 	while(running)
 	while(SDL_PollEvent(&event))
