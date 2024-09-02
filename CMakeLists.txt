@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 
 project(Game)
 
+set(CMAKE_CXX_STANDARD 23)
+
+# SDL2 Libraries
+find_package(SDL2 REQUIRED)
+
 add_executable(Engine src/main.cpp)
 
 # Find Winsock library
@@ -40,4 +45,14 @@ set(CASC_BUILD_SHARED_LIB OFF)
 
 add_subdirectory(CascLib/)
 
-target_link_libraries(Engine casc_static)
+target_link_libraries(Engine 
+  PRIVATE casc_static
+  PRIVATE SDL2::SDL2-static)
+
+# Boost
+find_package(Boost REQUIRED)
+
+if(Boost_FOUND)
+  include_directories(${Boost_INCLUDE_DIRS})
+  target_link_libraries(Engine ${Boost_LIBRARIES})
+endif()
