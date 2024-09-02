@@ -11,6 +11,8 @@ namespace filesystem
 
 		~StorageFile();
 
+		void Open(HANDLE storageHandle, const char* filePath);
+
 		void Read(void* data, int size);
 
 		template<typename T>
@@ -18,8 +20,6 @@ namespace filesystem
 		{
 			Read(&data, sizeof(T));
 		}
-
-		void Open(HANDLE storageHandle, const char* filePath);
 
 		void Close();
 

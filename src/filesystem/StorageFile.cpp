@@ -4,7 +4,7 @@
 #include <boost/format/format_fwd.hpp>
 #include <stdexcept>
 
-#include "storage_file.hpp"
+#include "StorageFile.hpp"
 
 using std::runtime_error;
 using std::string;

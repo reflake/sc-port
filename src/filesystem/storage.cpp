@@ -7,8 +7,8 @@
 #include <string>
 #include <winnt.h>
 
-#include "storage.hpp"
-#include "storage_file.hpp"
+#include "Storage.hpp"
+#include "StorageFile.hpp"
 
 using std::string;
 using std::runtime_error;

@@ -28,8 +28,8 @@
 #include "data/Tile.hpp"
 #include "filesystem/MpqArchive.hpp"
 #include "filesystem/MpqFile.hpp"
-#include "filesystem/storage.hpp"
-#include "filesystem/storage_file.hpp"
+#include "filesystem/Storage.hpp"
+#include "filesystem/StorageFile.hpp"
 
 using boost::format;
 

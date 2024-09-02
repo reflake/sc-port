@@ -16,8 +16,8 @@ target_sources(Engine
   PRIVATE 
     src/filesystem/MpqArchive.cpp
     src/filesystem/MpqFile.cpp
-    src/filesystem/storage_file.cpp
-    src/filesystem/storage.cpp
+    src/filesystem/StorageFile.cpp
+    src/filesystem/Storage.cpp
   )
 
 # Find Winsock library
