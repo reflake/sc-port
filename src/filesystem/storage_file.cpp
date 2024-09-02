@@ -1,4 +1,5 @@
 #include <CascLib.h>
+#include <algorithm>
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
 #include <stdexcept>
@@ -40,18 +41,31 @@ namespace filesystem
 
 	void StorageFile::Read(void* data, int size)
 	{
+		// TODO: need better implementation of the buffer
+		char buffer[1024];
+		char* dataPtr = reinterpret_cast<char*>(data);
 		DWORD bytesRead;
 
-		if (!CascReadFile(_handle, data, size, &bytesRead))
+		while(size > 0)
 		{
-			auto message = format("Couldn't read file %1%") % _filePath;
-			throwErrorMessage(message.str());
-		}
+			int count = std::min<int>(size, sizeof(buffer));
 
-		if (bytesRead != size)
-		{
-			auto message = format("Couldn't fully read all bytes of file %1%") % _filePath;
-			throwErrorMessage(message.str());
+			if (!CascReadFile(_handle, buffer, count, &bytesRead))
+			{
+				auto message = format("Couldn't read file %1%") % _filePath;
+				throwErrorMessage(message.str());
+			}
+
+			if (bytesRead != count)
+			{
+				auto message = format("Couldn't fully read all bytes of file %1%") % _filePath;
+				throwErrorMessage(message.str());
+			}
+
+			memcpy(dataPtr, buffer, count);
+
+			size -= sizeof(buffer);
+			dataPtr += sizeof(buffer);
 		}
 	}
 
@@ -73,7 +87,7 @@ namespace filesystem
 
 	const int StorageFile::GetFileSize()
 	{
-		if (_fileSize)
+		if (_fileSize != -1)
 		{
 			return _fileSize;
 		}
