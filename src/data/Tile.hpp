@@ -10,19 +10,17 @@ namespace data
 {
 	extern std::unordered_map<Tileset, const char*> tileSetNameMap;
 
-	// TODO: rename to chip
-	struct Tile
+	struct Chip
 	{
 		uint8_t palPixels[64];
 	};
 
 	// extended (sc:r) mega tile
-	// TODO: rename to just tile
-	struct MegaTile
+	struct Tile
 	{
-		uint32_t tiles[4][4];
+		uint32_t chips[4][4];
 
-		uint32_t GetTileId(int row, int column) const;
+		uint32_t GetChipId(int row, int column) const;
 		bool		 IsTileMirrored(int row, int column) const;
 	};
 
@@ -54,7 +52,7 @@ namespace data
 
 		Edges 		 edgeTypes;
 		Edges 		 terrainPieceType;
-		megaTileID variations[16];
+		tileID variations[16];
 	};
 
 	struct DoodadGroup
@@ -69,7 +67,7 @@ namespace data
 		uint16_t doodadID;
 		uint16_t width, height;
 		uint16_t unused2;
-		megaTileID tiles[16];
+		tileID tiles[16];
 	};
 
 	union TileGroup

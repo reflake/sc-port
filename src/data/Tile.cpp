@@ -16,14 +16,14 @@ namespace data
 		{ Tileset::Twilight, "twilight" },
 	};
 
-	uint32_t MegaTile::GetTileId(int row, int column) const
+	uint32_t Tile::GetChipId(int row, int column) const
 	{
-		return (tiles[row][column] & MEGA_TILE_ID_MASK) >> 1;
+		return (chips[row][column] & MEGA_TILE_ID_MASK) >> 1;
 	}
 
-	bool MegaTile::IsTileMirrored(int row, int column) const
+	bool Tile::IsTileMirrored(int row, int column) const
 	{
-		return tiles[row][column] & ~MEGA_TILE_ID_MASK;
+		return chips[row][column] & ~MEGA_TILE_ID_MASK;
 	}
 
 }

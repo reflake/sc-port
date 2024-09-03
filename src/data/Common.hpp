@@ -7,7 +7,7 @@ namespace data
 {
 	typedef uint16_t tileGroupID;
 	typedef uint8_t  tileVariation;
-	typedef uint16_t megaTileID;
+	typedef uint16_t tileID;
 
 	enum class Tileset: uint16_t { 
 		Badlands, SpacePlatform, Installation, 

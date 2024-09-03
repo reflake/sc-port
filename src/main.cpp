@@ -43,11 +43,15 @@ using std::make_shared;
 using std::shared_ptr;
 using std::pair;
 
+using data::tileID;
 using data::MEGA_TILE_SIZE;
-using data::Tile;
-using data::MegaTile;
 using data::tileGroupID;
 using data::tileVariation;
+using data::MapInfo;
+using data::Palette;
+using data::Chip;
+using data::Tile;
+using data::TileGroup;
 using data::GroupTypeFlags;
 
 void throwSdlError(const char* msg)
@@ -134,7 +138,7 @@ struct Atlas
 	SDL_Palette* palette;
 	std::vector<SDL_Surface*> pages;
 
-	pair<SDL_Surface*, SDL_Rect> GetMegaTile(uint16_t id)
+	pair<SDL_Surface*, SDL_Rect> GetTile(uint16_t id)
 	{
 		int pageIndex = id / dimension / dimension;
 
@@ -161,7 +165,7 @@ struct Atlas
 };
 
 template<int L>
-void createMegaTileAtlas(App& app, MegaTile* megaTiles, int megaTileCount, Tile* tiles, Atlas& atlas, data::Palette paletteData)
+void createTileAtlas(App& app, Tile* tiles, int tileCount, Chip* chips, Atlas& atlas, Palette paletteData)
 {
 	auto palette = SDL_AllocPalette(256);
 	auto colors = reinterpret_cast<const SDL_Color*>(paletteData.GetColors());
@@ -170,7 +174,7 @@ void createMegaTileAtlas(App& app, MegaTile* megaTiles, int megaTileCount, Tile*
 
 	atlas = Atlas(L, palette);
 
-	for(int i = 0; i < megaTileCount; i+=L*L)
+	for(int i = 0; i < tileCount; i+=L*L)
 	{
 		const int width = L * MEGA_TILE_SIZE;
 		const int height = L * MEGA_TILE_SIZE;
@@ -182,49 +186,47 @@ void createMegaTileAtlas(App& app, MegaTile* megaTiles, int megaTileCount, Tile*
 		for(int j = 0; j < width; j+=8)
 		for(int k = 0; k < height; k++)
 		{
-			int megaTileIndex = i + j / MEGA_TILE_SIZE + k / MEGA_TILE_SIZE * L;
+			tileID tileId = i + j / MEGA_TILE_SIZE + k / MEGA_TILE_SIZE * L;
 
-			if (megaTileIndex >= megaTileCount)
+			if (tileId >= tileCount)
 				continue;
-
-			auto& megaTile = megaTiles[megaTileIndex];
-
-			int tileId = megaTile.GetTileId(k / 8 % 4, j / 8 % 4);
 
 			auto& tile = tiles[tileId];
 
+			uint32_t chipId = tile.GetChipId(k / 8 % 4, j / 8 % 4);
+			auto&    chip = chips[chipId];
+
 			auto pixels = reinterpret_cast<uint8_t*>(surface->pixels) + j + k * width;
 
-			if (megaTile.IsTileMirrored(k / 8 % 4, j / 8 % 4))
+			if (tile.IsTileMirrored(k / 8 % 4, j / 8 % 4))
 			{
 				for(int n = 0; n < 8; n++)
 
-					pixels[7 - n] = tile.palPixels[(k % 8) * 8 + n];
+					pixels[7 - n] = chip.palPixels[(k % 8) * 8 + n];
 			}
 			else
 			{
-				memcpy(pixels, &tile.palPixels[(k % 8) * 8], 8);
+				memcpy(pixels, &chip.palPixels[(k % 8) * 8], 8);
 			}
 		}
 
 		SDL_UnlockSurface(surface);
 
-		//auto optimizedSurface = SDL_ConvertSurface(surface, app.screenSurface->format, 0);
-		//SDL_FreeSurface(surface);
+		auto optimizedSurface = SDL_ConvertSurface(surface, app.screenSurface->format, 0);
+		SDL_FreeSurface(surface);
 
-		atlas.pages.push_back(surface);
+		atlas.pages.push_back(optimizedSurface);
 	}
 }
 
 int main(int argc, char* argv[])
 {
-	data::MapInfo mapInfo;
-	data::Palette palette;
+	MapInfo mapInfo;
+	Palette palette;
+	shared_ptr<Chip[]> chips;
 	shared_ptr<Tile[]> tiles;
-	shared_ptr<MegaTile[]> megaTiles;
-	shared_ptr<data::TileGroup[]> tileGroups;
-	int megaTilesCount;
-	Atlas atlas;
+	shared_ptr<TileGroup[]> tileGroups;
+	int tilesCount;
 
 	{
 		auto storagePath = argv[1];
@@ -252,44 +254,45 @@ int main(int argc, char* argv[])
 		data::WpeData wpeData;
 		storage.Read(format("TileSet/%1%.wpe") % tileSetName, wpeData);
 
-		palette = data::Palette(wpeData);
+		palette = Palette(wpeData);
 
 		// Read mini tile's data
-		filesystem::StorageFile tileSetFile;
-		storage.Open(format("TileSet/%1%.vr4") % tileSetName, tileSetFile);
+		filesystem::StorageFile chipSetFile;
+		storage.Open(format("TileSet/%1%.vr4") % tileSetName, chipSetFile);
 		
-		int tileDataSize = tileSetFile.GetFileSize();
-		int tileCount = tileDataSize / sizeof(Tile);
+		int chipDataSize = chipSetFile.GetFileSize();
+		int chipCount = chipDataSize / sizeof(Tile);
 
-		tiles = make_shared<Tile[]>(tileCount);
-		tileSetFile.Read(tiles.get(), tileDataSize);
+		chips = make_shared<Chip[]>(chipCount);
+		chipSetFile.Read(chips.get(), chipDataSize);
 
 		// Read mega tile's data
-		filesystem::StorageFile megaTileSetFile;
-		storage.Open(format("TileSet/%1%.vx4ex") % tileSetName, megaTileSetFile);
+		filesystem::StorageFile tileSetFile;
+		storage.Open(format("TileSet/%1%.vx4ex") % tileSetName, tileSetFile);
 
-		int megaTileDataSize = megaTileSetFile.GetFileSize();
-		megaTilesCount = megaTileDataSize / sizeof(MegaTile);
+		int tileDataSize = tileSetFile.GetFileSize();
+		tilesCount = tileDataSize / sizeof(Tile);
 
-		megaTiles = make_shared<MegaTile[]>(megaTilesCount);
-		megaTileSetFile.Read(megaTiles.get(), megaTileDataSize);
+		tiles = make_shared<Tile[]>(tilesCount);
+		tileSetFile.Read(tiles.get(), tileDataSize);
 
 		// Read tile groups
 		filesystem::StorageFile tileGroupFile;
 		storage.Open(format("TileSet/%1%.cv5") % tileSetName, tileGroupFile);
 
 		int tileGroupDataSize = tileGroupFile.GetFileSize();
-		int tileGroupCount = tileGroupDataSize / sizeof(data::TileGroup);
+		int tileGroupCount = tileGroupDataSize / sizeof(TileGroup);
 
-		tileGroups = make_shared<data::TileGroup[]>(tileGroupCount);
+		tileGroups = make_shared<TileGroup[]>(tileGroupCount);
 		tileGroupFile.Read(tileGroups.get(), tileGroupDataSize);
 	}
 
 	App app;
+	Atlas atlas;
 
 	initSDL();
 	createWindow(app);
-	createMegaTileAtlas<10>(app, megaTiles.get(), megaTilesCount, tiles.get(), atlas, palette);
+	createTileAtlas<10>(app, tiles.get(), tilesCount, chips.get(), atlas, palette);
 	
 	SDL_Event event;
 
@@ -315,20 +318,20 @@ int main(int argc, char* argv[])
 		for(int y = 0; y < 40; y++)
 		{
 			auto mapTile = mapInfo.GetTile(x, y);
-			auto group = tileGroups[std::get<tileGroupID>(mapTile)];
+			auto tileGroup = tileGroups[std::get<tileGroupID>(mapTile)];
 
-			data::megaTileID tileId;
+			tileID tileId;
 
-			if ((group.type & data::Terrain) > 0)
+			if ((tileGroup.type & data::Terrain) > 0)
 			{
-				tileId = group.terrain.variations[std::get<tileVariation>(mapTile)];
+				tileId = tileGroup.terrain.variations[std::get<tileVariation>(mapTile)];
 			}
 			else
 			{
-				tileId = group.doodad.tiles[std::get<tileVariation>(mapTile)];
+				tileId = tileGroup.doodad.tiles[std::get<tileVariation>(mapTile)];
 			}
 
-			auto tile = atlas.GetMegaTile(tileId);
+			auto tile = atlas.GetTile(tileId);
 
 			SDL_Rect destRect { .x = x * MEGA_TILE_SIZE, .y = y * MEGA_TILE_SIZE, 
 													.w = MEGA_TILE_SIZE, .h = MEGA_TILE_SIZE };
