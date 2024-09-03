@@ -212,11 +212,20 @@ void createTileAtlas(App& app, Tile* tiles, int tileCount, Chip* chips, Atlas& a
 
 		SDL_UnlockSurface(surface);
 
-		auto optimizedSurface = SDL_ConvertSurface(surface, app.screenSurface->format, 0);
-		SDL_FreeSurface(surface);
-
-		atlas.pages.push_back(optimizedSurface);
+		atlas.pages.push_back(surface);
 	}
+}
+
+template<int S, int L>
+void cyclePaletteColor(Atlas& atlas)
+{
+	// animate water
+	SDL_Color newPaletteColor[L];
+	memcpy(newPaletteColor + 1, atlas.palette->colors + S, (L - 1) * sizeof(SDL_Color));
+
+	newPaletteColor[0] = atlas.palette->colors[S + L - 1];
+
+	SDL_SetPaletteColors(atlas.palette, newPaletteColor, S, L);
 }
 
 int main(int argc, char* argv[])
@@ -299,21 +308,24 @@ int main(int argc, char* argv[])
 	bool running = true;
 
 	while(running)
-	while(SDL_PollEvent(&event))
 	{
-		switch(event.type)
+		while(SDL_PollEvent(&event))
 		{
-			case SDL_KEYDOWN:
-				break;
-				
-			case SDL_QUIT:
-				running = false;
-				break;
+			switch(event.type)
+			{
+				case SDL_KEYDOWN:
+					break;
+					
+				case SDL_QUIT:
+					running = false;
+					break;
 
-			default:
-				break;
-		}
-				
+				default:
+					break;
+			}
+		};
+		
+					
 		for(int x = 0; x < 60; x++)
 		for(int y = 0; y < 40; y++)
 		{
@@ -341,8 +353,15 @@ int main(int argc, char* argv[])
 
 		SDL_UpdateWindowSurface(app.window);
 
-		usleep(10000);
+		if (data::HasTileSetWater(mapInfo.tileset))
+		{
+			cyclePaletteColor<1, 6>(atlas);
+			cyclePaletteColor<7, 7>(atlas);
+		}
+
+		usleep(160000);
 	};
+	
 
 	atlas.Free();
 

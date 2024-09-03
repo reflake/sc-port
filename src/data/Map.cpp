@@ -22,13 +22,15 @@ namespace data
 		int dataSize;
 	};
 
-	enum EntryName { Unknown = -1, TileSet, Dimensions, Terrain_Gameplay, Terrain_Editor };
+	enum EntryName { Unknown = -1, TileSet, Dimensions, Terrain_Gameplay, Terrain_Editor, MapType, Version };
 
 	std::unordered_map<string, EntryName> nameMap = {
 		{ "ERA ", TileSet },
 		{ "DIM ", Dimensions },
 		{ "MTXM", Terrain_Gameplay },
 		{ "TILE", Terrain_Editor },
+		{ "TYPE", MapType },
+		{ "VER ", Version },
 	};
 
 	void ReadMap(std::shared_ptr<uint8_t[]> data, int dataSize, MapInfo& mapInfo, bool isEditor)
@@ -53,10 +55,12 @@ namespace data
 
 			switch (nameValue) {
 				case TileSet:
+					assert(dataSize == sizeof(mapInfo.tileset));
 					reader.Read(mapInfo.tileset);
 					break;
 
 				case Dimensions:
+					assert(dataSize == sizeof(mapInfo.dimensions));
 					reader.Read(mapInfo.dimensions);
 					break;
 
@@ -76,6 +80,16 @@ namespace data
 					{
 						reader.Skip(dataSize);
 					}
+					break;
+
+				case MapType:
+					assert(dataSize == sizeof(mapInfo.mapType));
+					reader.Read(mapInfo.mapType);
+					break;
+
+				case Version:
+					assert(dataSize == sizeof(mapInfo.version));
+					reader.Read(mapInfo.version);
 					break;
 
 				default:

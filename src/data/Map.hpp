@@ -12,7 +12,10 @@ namespace data
 
 	struct MapInfo
 	{
-		Tileset tileset;
+		char 		 mapType[4]; // equals either RAWS or RAWB
+		uint16_t version;	
+		Tileset  tileset;
+		
 		dimensions dimensions;
 
 		std::shared_ptr<uint16_t[]> terrain;

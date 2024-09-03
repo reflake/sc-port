@@ -15,6 +15,8 @@ namespace data
 		Twilight
 	};
 
+	extern bool HasTileSetWater(Tileset tileset);
+
 	class StreamReader
 	{
 	public:

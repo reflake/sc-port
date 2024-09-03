@@ -11,6 +11,7 @@ add_executable(Engine src/main.cpp)
 
 target_sources(Engine 
   PRIVATE 
+    src/data/Common.cpp
     src/data/Map.cpp
     src/data/Palette.cpp
     src/data/Tile.cpp
