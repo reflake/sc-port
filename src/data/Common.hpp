@@ -5,12 +5,15 @@
 
 namespace data
 {
+	typedef uint16_t tileGroupID;
+	typedef uint8_t  tileVariation;
+	typedef uint16_t megaTileID;
+
 	enum class Tileset: uint16_t { 
 		Badlands, SpacePlatform, Installation, 
 		Ashworld, Jungle, Desert, Arctic,
 		Twilight
 	};
-	
 
 	class StreamReader
 	{

@@ -4,7 +4,7 @@
 
 #include <glm/vec2.hpp>
 #include <memory>
-
+#include <utility>
 
 namespace data
 {
@@ -16,9 +16,11 @@ namespace data
 		dimensions dimensions;
 
 		std::shared_ptr<uint16_t[]> terrain;
+
+		std::pair<tileGroupID, tileVariation> GetTile(int x, int y);
 	};
 
-	extern void ReadMap(std::shared_ptr<uint8_t[]> data, int dataSize, MapInfo& mapInfo);
+	extern void ReadMap(std::shared_ptr<uint8_t[]> data, int dataSize, MapInfo& mapInfo, bool isEditor);
 
 	extern const uint16_t MAX_MAP_SIZE;
 }

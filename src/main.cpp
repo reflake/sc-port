@@ -1,3 +1,6 @@
+#include "data/Common.hpp"
+#include <cassert>
+#include <unistd.h>
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
@@ -35,8 +38,17 @@ using boost::format;
 
 using std::cout;
 using std::runtime_error;
+using std::string;
+using std::make_shared;
+using std::shared_ptr;
+using std::pair;
+
+using data::MEGA_TILE_SIZE;
 using data::Tile;
 using data::MegaTile;
+using data::tileGroupID;
+using data::tileVariation;
+using data::GroupTypeFlags;
 
 void throwSdlError(const char* msg)
 {
@@ -116,32 +128,61 @@ void freeWindow(App& app)
 	}
 }
 
-struct Page
+struct Atlas
 {
-	SDL_Surface* surface;
+	int dimension;
+	SDL_Palette* palette;
+	std::vector<SDL_Surface*> pages;
+
+	pair<SDL_Surface*, SDL_Rect> GetMegaTile(uint16_t id)
+	{
+		int pageIndex = id / dimension / dimension;
+
+		id = id - pageIndex * dimension * dimension;
+
+		SDL_Rect rect = { 
+			.x = (id % dimension) * MEGA_TILE_SIZE, 
+			.y = id / dimension * MEGA_TILE_SIZE,
+			.w = MEGA_TILE_SIZE, 
+			.h = MEGA_TILE_SIZE };
+
+		return { pages[pageIndex], rect };
+	}
+
+	void Free()
+	{
+		for(auto page : pages)
+		{
+			SDL_FreeSurface(page);
+		}
+
+		SDL_FreePalette(palette);
+	}
 };
 
-template<int L = 3>
-void createMegaTilePages(App& app, MegaTile* megaTiles, int megaTileCount, Tile* tiles, std::vector<Page>& pages, data::Palette paletteData)
+template<int L>
+void createMegaTileAtlas(App& app, MegaTile* megaTiles, int megaTileCount, Tile* tiles, Atlas& atlas, data::Palette paletteData)
 {
-	auto pal = SDL_AllocPalette(256);
+	auto palette = SDL_AllocPalette(256);
 	auto colors = reinterpret_cast<const SDL_Color*>(paletteData.GetColors());
 
-	SDL_SetPaletteColors(pal, colors, 0, 256);
+	SDL_SetPaletteColors(palette, colors, 0, 256);
+
+	atlas = Atlas(L, palette);
 
 	for(int i = 0; i < megaTileCount; i+=L*L)
 	{
-		const int width = L * 32;
-		const int height = L * 32;
+		const int width = L * MEGA_TILE_SIZE;
+		const int height = L * MEGA_TILE_SIZE;
 		auto surface = SDL_CreateRGBSurface(0, width, height, 8, 0, 0, 0, 0);
-		SDL_SetSurfacePalette(surface, pal);
+		SDL_SetSurfacePalette(surface, palette);
 
 		SDL_LockSurface(surface);
 
 		for(int j = 0; j < width; j+=8)
 		for(int k = 0; k < height; k++)
 		{
-			int megaTileIndex = i + j / 32 + k / 32 * L;
+			int megaTileIndex = i + j / MEGA_TILE_SIZE + k / MEGA_TILE_SIZE * L;
 
 			if (megaTileIndex >= megaTileCount)
 				continue;
@@ -152,66 +193,45 @@ void createMegaTilePages(App& app, MegaTile* megaTiles, int megaTileCount, Tile*
 
 			auto& tile = tiles[tileId];
 
-			auto pixel = reinterpret_cast<uint8_t*>(surface->pixels) + j + k * width;
+			auto pixels = reinterpret_cast<uint8_t*>(surface->pixels) + j + k * width;
 
-			memcpy(pixel, &tile.palPixels[(k % 8) * 8], 8);
+			if (megaTile.IsTileMirrored(k / 8 % 4, j / 8 % 4))
+			{
+				for(int n = 0; n < 8; n++)
+
+					pixels[7 - n] = tile.palPixels[(k % 8) * 8 + n];
+			}
+			else
+			{
+				memcpy(pixels, &tile.palPixels[(k % 8) * 8], 8);
+			}
 		}
 
 		SDL_UnlockSurface(surface);
 
-		auto optimizedSurface = SDL_ConvertSurface(surface, app.screenSurface->format, 0);
+		//auto optimizedSurface = SDL_ConvertSurface(surface, app.screenSurface->format, 0);
+		//SDL_FreeSurface(surface);
 
-		SDL_FreeSurface(surface);
-
-		pages.push_back(Page(optimizedSurface));
+		atlas.pages.push_back(surface);
 	}
-}
-
-void readTileSets(filesystem::Storage storage)
-{
-	// Read palette of tile set
-
-		// filesystem::Storage storage(storagePath.c_str());
-	/*data::WpeData wpeData;
-	storage.Read("TileSet/ashworld.wpe", wpeData);
-
-	data::Palette palette(wpeData);
-
-	// Read mini tile's data
-	filesystem::StorageFile tileSetFile;
-	storage.Open("TileSet/ashworld.vr4", tileSetFile);
-	
-	int tileDataSize = tileSetFile.GetFileSize();
-	int tileCount = tileDataSize / sizeof(Tile);
-	auto tiles = new Tile[tileCount];
-
-	tileSetFile.Read(tiles, tileDataSize);
-
-	// Read mega tile's data
-	filesystem::StorageFile megaTileSetFile;
-	storage.Open("TileSet/ashworld.vx4ex", megaTileSetFile);
-
-	int megaTileDataSize = megaTileSetFile.GetFileSize();
-	int megaTileCount = megaTileDataSize / sizeof(MegaTile);
-	auto megaTiles = new MegaTile[megaTileCount];
-
-	megaTileSetFile.Read(megaTiles, megaTileDataSize);
-
-	// Prepare images to draw
-	createMegaTilePages<12>(app, megaTiles, megaTileCount, tiles, pages, palette);
-	
-	delete[] tiles;
-	delete[] megaTiles;
-		*/
 }
 
 int main(int argc, char* argv[])
 {
-	std::vector<Page> pages;
+	data::MapInfo mapInfo;
+	data::Palette palette;
+	shared_ptr<Tile[]> tiles;
+	shared_ptr<MegaTile[]> megaTiles;
+	shared_ptr<data::TileGroup[]> tileGroups;
+	int megaTilesCount;
+	Atlas atlas;
 
-	App app;
 	{
 		auto storagePath = argv[1];
+
+		filesystem::Storage storage(storagePath);
+
+		// Read map
 		auto mapPath = argv[2];
 
 		filesystem::MpqArchive mapFile(mapPath);
@@ -220,25 +240,60 @@ int main(int argc, char* argv[])
 		mapFile.Open("staredit\\scenario.chk", scenarioFile);
 
 		int bytesAmount = scenarioFile.GetFileSize();
-		auto scenarioBytes = std::make_shared<uint8_t[]>(bytesAmount);
+		auto scenarioBytes = make_shared<uint8_t[]>(bytesAmount);
 
 		scenarioFile.Read(scenarioBytes.get(), bytesAmount);
 
-		data::MapInfo mapInfo;
-		data::ReadMap(scenarioBytes, bytesAmount, mapInfo);
+		data::ReadMap(scenarioBytes, bytesAmount, mapInfo, false);
+
+		// Loading palette
+		string tileSetName = data::tileSetNameMap[mapInfo.tileset];
+
+		data::WpeData wpeData;
+		storage.Read(format("TileSet/%1%.wpe") % tileSetName, wpeData);
+
+		palette = data::Palette(wpeData);
+
+		// Read mini tile's data
+		filesystem::StorageFile tileSetFile;
+		storage.Open(format("TileSet/%1%.vr4") % tileSetName, tileSetFile);
+		
+		int tileDataSize = tileSetFile.GetFileSize();
+		int tileCount = tileDataSize / sizeof(Tile);
+
+		tiles = make_shared<Tile[]>(tileCount);
+		tileSetFile.Read(tiles.get(), tileDataSize);
+
+		// Read mega tile's data
+		filesystem::StorageFile megaTileSetFile;
+		storage.Open(format("TileSet/%1%.vx4ex") % tileSetName, megaTileSetFile);
+
+		int megaTileDataSize = megaTileSetFile.GetFileSize();
+		megaTilesCount = megaTileDataSize / sizeof(MegaTile);
+
+		megaTiles = make_shared<MegaTile[]>(megaTilesCount);
+		megaTileSetFile.Read(megaTiles.get(), megaTileDataSize);
+
+		// Read tile groups
+		filesystem::StorageFile tileGroupFile;
+		storage.Open(format("TileSet/%1%.cv5") % tileSetName, tileGroupFile);
+
+		int tileGroupDataSize = tileGroupFile.GetFileSize();
+		int tileGroupCount = tileGroupDataSize / sizeof(data::TileGroup);
+
+		tileGroups = make_shared<data::TileGroup[]>(tileGroupCount);
+		tileGroupFile.Read(tileGroups.get(), tileGroupDataSize);
 	}
+
+	App app;
 
 	initSDL();
 	createWindow(app);
+	createMegaTileAtlas<10>(app, megaTiles.get(), megaTilesCount, tiles.get(), atlas, palette);
 	
-
 	SDL_Event event;
 
 	bool running = true;
-
-	int page = 0;
-				
-	SDL_Rect destRect { .x = 0, .y = 0, .w = 720, .h = 720 };
 
 	while(running)
 	while(SDL_PollEvent(&event))
@@ -246,21 +301,8 @@ int main(int argc, char* argv[])
 		switch(event.type)
 		{
 			case SDL_KEYDOWN:
-				if (event.key.keysym.sym == SDLK_UP)
-				{
-					page++;
-				}
-				else if (event.key.keysym.sym == SDLK_DOWN)
-				{
-					page--;
-				}
-
-				page = (page + pages.size()) % pages.size();
-
-				SDL_BlitScaled(pages[page].surface, NULL, app.screenSurface, &destRect);
-				SDL_UpdateWindowSurface(app.window);
 				break;
-
+				
 			case SDL_QUIT:
 				running = false;
 				break;
@@ -268,7 +310,38 @@ int main(int argc, char* argv[])
 			default:
 				break;
 		}
+				
+		for(int x = 0; x < 60; x++)
+		for(int y = 0; y < 40; y++)
+		{
+			auto mapTile = mapInfo.GetTile(x, y);
+			auto group = tileGroups[std::get<tileGroupID>(mapTile)];
+
+			data::megaTileID tileId;
+
+			if ((group.type & data::Terrain) > 0)
+			{
+				tileId = group.terrain.variations[std::get<tileVariation>(mapTile)];
+			}
+			else
+			{
+				tileId = group.doodad.tiles[std::get<tileVariation>(mapTile)];
+			}
+
+			auto tile = atlas.GetMegaTile(tileId);
+
+			SDL_Rect destRect { .x = x * MEGA_TILE_SIZE, .y = y * MEGA_TILE_SIZE, 
+													.w = MEGA_TILE_SIZE, .h = MEGA_TILE_SIZE };
+
+			SDL_BlitSurface(tile.first, &tile.second, app.screenSurface, &destRect);
+		}
+
+		SDL_UpdateWindowSurface(app.window);
+
+		usleep(10000);
 	};
+
+	atlas.Free();
 
 	freeWindow(app);
 

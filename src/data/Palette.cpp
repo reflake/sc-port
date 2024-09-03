@@ -4,6 +4,10 @@
 
 namespace data {
 
+	Palette::Palette()
+	{
+	}
+
 	Palette::Palette(WpeData& data)
 	{
 		for(int i = 0; i < PALETTE_SIZE; i++)

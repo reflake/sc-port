@@ -53,6 +53,11 @@ namespace filesystem
 		file.Open(_storage, path);
 	}
 
+	void Storage::Open(const boost::format& path, StorageFile& file)
+	{
+		file.Open(_storage, path.str().c_str());
+	}
+
 	void Storage::Close()
 	{
 		if (_storage == nullptr)

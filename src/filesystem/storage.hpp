@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/format.hpp>
 #include <memory>
 #include <winnt.h>
 
@@ -14,6 +15,7 @@ namespace filesystem
 		Storage(const char* path);
 		~Storage();
 
+
 		void Read(const char* path, void* data, int size);
 		
 		template<typename T>
@@ -22,7 +24,15 @@ namespace filesystem
 			Read(path, &data, sizeof(T));
 		}
 
+		template<typename T>
+		void Read(const boost::format& path, T& data)
+		{
+			Read(path.str().c_str(), &data, sizeof(T));
+		}
+
 		void Open(const char* path, StorageFile& file);
+
+		void Open(const boost::format& path, StorageFile& file);
 
 		void Close();
 

@@ -15,6 +15,7 @@ namespace data
 	{
 	public:
 
+		Palette();
 		Palette(WpeData& data);
 
 		const Color* GetColors() const;
