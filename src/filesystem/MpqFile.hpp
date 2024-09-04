@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <winnt.h>
 
 namespace filesystem
 {
@@ -11,24 +10,29 @@ namespace filesystem
 
 		~MpqFile();
 
-		void Open(HANDLE archiveHandle, const char* path);
+		void Open(void* archiveHandle, const char* path);
 
-		void Read(void* data, int size);
+		void ReadBinary(void* data, int size);
 
 		template<typename T>
 		void Read(T& data)
 		{
-			Read(&data, sizeof(T));
+			ReadBinary(&data, sizeof(T));
 		}
 
 		void Close();
+
+		void Skip(int count);
+
+		bool IsEOF();
 
 		const int GetFileSize();
 
 	private:
 
-		HANDLE _handle;
+		void* _handle;
 		std::string _filePath;
 		int _fileSize = -1;
+		int _offset = 0;
 	};
 }

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <winnt.h>
 
 namespace filesystem
 {
@@ -11,14 +10,14 @@ namespace filesystem
 
 		~StorageFile();
 
-		void Open(HANDLE storageHandle, const char* filePath);
+		void Open(void* storageHandle, const char* filePath);
 
-		void Read(void* data, int size);
+		void ReadBinary(void* data, int size);
 
 		template<typename T>
 		void Read(T& data)
 		{
-			Read(&data, sizeof(T));
+			ReadBinary(&data, sizeof(T));
 		}
 
 		void Close();
@@ -27,7 +26,7 @@ namespace filesystem
 
 	private:
 
-		HANDLE      _handle = nullptr;
+		void*       _handle = nullptr;
 		std::string _filePath;
 		int				  _fileSize = -1;
 	};

@@ -45,7 +45,7 @@ namespace filesystem
 
 		Open(path, file);
 
-		file.Read(data, size);
+		file.ReadBinary(data, size);
 	}
 
 	void Storage::Open(const char* path, StorageFile& file)

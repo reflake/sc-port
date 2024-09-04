@@ -1,9 +1,9 @@
-
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
 #include <errhandlingapi.h>
-#include <string>
 #include <StormLib.h>
+#include <string>
+#include <winnt.h>
 
 #include "MpqArchive.hpp"
 
@@ -37,7 +37,7 @@ namespace filesystem
 
 		Open(path, file);
 
-		file.Read(data, size);
+		file.ReadBinary(data, size);
 	}
 
 	void MpqArchive::Open(const char* path, MpqFile& file)

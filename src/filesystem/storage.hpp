@@ -1,8 +1,6 @@
 #pragma once
 
 #include <boost/format.hpp>
-#include <memory>
-#include <winnt.h>
 
 #include "StorageFile.hpp"
 
@@ -38,6 +36,6 @@ namespace filesystem
 
 	private:
 
-		HANDLE _storage;
+		void* _storage;
 	};
 }

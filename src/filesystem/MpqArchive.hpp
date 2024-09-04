@@ -1,7 +1,5 @@
 #pragma once
 
-#include <winnt.h>
-
 #include "MpqFile.hpp"
 
 namespace filesystem
@@ -27,6 +25,6 @@ namespace filesystem
 
 	private:
 
-		HANDLE _archive;
+		void* _archive;
 	};
 }

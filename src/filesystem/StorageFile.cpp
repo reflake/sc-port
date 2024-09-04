@@ -1,8 +1,9 @@
-#include <CascLib.h>
 #include <algorithm>
+#include <CascLib.h>
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
 #include <stdexcept>
+#include <winnt.h>
 
 #include "StorageFile.hpp"
 
@@ -39,7 +40,7 @@ namespace filesystem
 		_handle = nullptr;
 	}
 
-	void StorageFile::Read(void* data, int size)
+	void StorageFile::ReadBinary(void* data, int size)
 	{
 		// TODO: need better implementation of the buffer
 		char buffer[1024];
@@ -69,7 +70,7 @@ namespace filesystem
 		}
 	}
 
-	void StorageFile::Open(HANDLE storageHandle, const char* filePath)
+	void StorageFile::Open(void* storageHandle, const char* filePath)
 	{
 		if (_handle == nullptr)
 		{

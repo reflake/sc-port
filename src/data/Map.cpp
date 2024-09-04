@@ -9,6 +9,8 @@
 
 #include "Map.hpp"
 
+#include "../filesystem/MpqFile.hpp"
+
 using std::string;
 using std::runtime_error;
 
@@ -33,76 +35,88 @@ namespace data
 		{ "VER ", Version },
 	};
 
-	void ReadMap(std::shared_ptr<uint8_t[]> data, int dataSize, MapInfo& mapInfo, bool isEditor)
+	bool ReadChunk(filesystem::MpqFile& file, ChunkEntry& chunk, MapInfo& mapInfo, bool isEditor)
 	{
-		StreamReader reader(data, dataSize);
+		int dataSize = chunk.dataSize;
 
-		int tileAmount = 0;
+		assert(dataSize >= 0);
 
-		std::vector<string> ignoredEntries;
+		string nameString = string(chunk.name, 4);
+		EntryName nameValue = nameMap.find(nameString) != nameMap.end() ? nameMap[nameString] : Unknown;	
 
-		while(!reader.IsEOF())
-		{
-			ChunkEntry nextEntry;
-			reader.Read(nextEntry);
+		switch (nameValue) {
+			case TileSet:
+				assert(dataSize == sizeof(mapInfo.tileset));
+				file.Read(mapInfo.tileset);
+				break;
 
-			int dataSize = nextEntry.dataSize;
+			case Dimensions:
+				assert(dataSize == sizeof(mapInfo.dimensions));
+				file.Read(mapInfo.dimensions);
+				break;
 
-			assert(dataSize >= 0);
+			case Terrain_Gameplay:
+			case Terrain_Editor:
 
-			string nameString = string(nextEntry.name, 4);
-			EntryName nameValue = nameMap.find(nameString) != nameMap.end() ? nameMap[nameString] : Unknown;	
+				if (isEditor && nameValue == Terrain_Editor || !isEditor && nameValue == Terrain_Gameplay)
+				{
+					assert(dataSize <= MAX_MAP_SIZE * MAX_MAP_SIZE * sizeof(uint16_t));
 
-			switch (nameValue) {
-				case TileSet:
-					assert(dataSize == sizeof(mapInfo.tileset));
-					reader.Read(mapInfo.tileset);
-					break;
+					mapInfo.tileCount = dataSize / sizeof(uint16_t);
+					mapInfo.terrain = std::make_shared<uint16_t[]>(mapInfo.tileCount);
 
-				case Dimensions:
-					assert(dataSize == sizeof(mapInfo.dimensions));
-					reader.Read(mapInfo.dimensions);
-					break;
+					file.ReadBinary(mapInfo.terrain.get(), dataSize);
+				}
+				else 
+				{
+					file.Skip(dataSize);
+				}
+				break;
 
-				case Terrain_Gameplay:
-				case Terrain_Editor:
+			case MapType:
+				assert(dataSize == sizeof(mapInfo.mapType));
+				file.Read(mapInfo.mapType);
+				break;
 
-					if (isEditor && nameValue == Terrain_Editor || !isEditor && nameValue == Terrain_Gameplay)
-					{
-						assert(dataSize <= MAX_MAP_SIZE * MAX_MAP_SIZE * sizeof(uint16_t));
+			case Version:
+				assert(dataSize == sizeof(mapInfo.version));
+				file.Read(mapInfo.version);
+				break;
 
-						tileAmount = dataSize / sizeof(uint16_t);
-						mapInfo.terrain = std::make_shared<uint16_t[]>(tileAmount);
-
-						reader.ReadBinary(mapInfo.terrain.get(), dataSize);
-					}
-					else 
-					{
-						reader.Skip(dataSize);
-					}
-					break;
-
-				case MapType:
-					assert(dataSize == sizeof(mapInfo.mapType));
-					reader.Read(mapInfo.mapType);
-					break;
-
-				case Version:
-					assert(dataSize == sizeof(mapInfo.version));
-					reader.Read(mapInfo.version);
-					break;
-
-				default:
-					ignoredEntries.push_back(nameString);
-
-					reader.Skip(dataSize);
-					break;
-			}		
+			default:
+				file.Skip(dataSize);
+				return false;
 		}
 
-		assert(tileAmount == mapInfo.dimensions.x * mapInfo.dimensions.y);
+		return true;
+	}
+
+	void ReadMap(filesystem::MpqArchive& mapArchive, MapInfo& mapInfo, bool isEditor)
+	{
+		filesystem::MpqFile scenarioFile;
+
+		mapArchive.Open("staredit\\scenario.chk", scenarioFile);
+
+		std::vector<string> ignoredEntries;
+		int bytesAmount = scenarioFile.GetFileSize();
+
+		while(!scenarioFile.IsEOF())
+		{
+			ChunkEntry nextEntry;
+			scenarioFile.Read(nextEntry);
+
+			if (!ReadChunk(scenarioFile, nextEntry, mapInfo, isEditor))
+			{
+				ignoredEntries.push_back(string(nextEntry.name, 4));
+			}
+		}
+
+		assert(mapInfo.tileCount == mapInfo.dimensions.x * mapInfo.dimensions.y);
 
 		// Remove when done with supporting of all possible entries
+		if (ignoredEntries.size() == 0)
+			return;
+
 		std::cout << "Map reading: ";
 
 		for(auto& name : ignoredEntries)

@@ -6,6 +6,8 @@
 #include <memory>
 #include <utility>
 
+#include "../filesystem/MpqArchive.hpp"
+
 namespace data
 {
 	typedef glm::vec<2, uint16_t> dimensions;
@@ -20,10 +22,12 @@ namespace data
 
 		std::shared_ptr<uint16_t[]> terrain;
 
+		int tileCount;
+
 		std::pair<tileGroupID, tileVariation> GetTile(int x, int y);
 	};
 
-	extern void ReadMap(std::shared_ptr<uint8_t[]> data, int dataSize, MapInfo& mapInfo, bool isEditor);
+	extern void ReadMap(filesystem::MpqArchive& mapArchive, MapInfo& mapInfo, bool isEditor);
 
 	extern const uint16_t MAX_MAP_SIZE;
 }

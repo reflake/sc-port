@@ -1,13 +1,12 @@
-#include "data/Common.hpp"
-#include <cassert>
-#include <unistd.h>
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
 
+#include <algorithm>
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
 #include <CascLib.h>
+#include <cassert>
 #include <cstring>
 #include <fileapi.h>
 #include <handleapi.h>
@@ -15,6 +14,7 @@
 #include <minwindef.h>
 #include <stdexcept>
 #include <memory>
+#include <unistd.h>
 
 #include <SDL_events.h>
 #include <SDL_hints.h>
@@ -26,6 +26,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL.h>
 
+#include "data/Common.hpp"
 #include "data/Map.hpp"
 #include "data/Palette.hpp"
 #include "data/Tile.hpp"
@@ -36,23 +37,17 @@
 
 using boost::format;
 
-using std::cout;
+using std::pair;
 using std::runtime_error;
 using std::string;
-using std::make_shared;
-using std::shared_ptr;
-using std::pair;
 
+using data::TILE_SIZE;
 using data::tileID;
-using data::MEGA_TILE_SIZE;
 using data::tileGroupID;
 using data::tileVariation;
+
 using data::MapInfo;
-using data::Palette;
-using data::Chip;
-using data::Tile;
-using data::TileGroup;
-using data::GroupTypeFlags;
+using data::TilesetData;
 
 void throwSdlError(const char* msg)
 {
@@ -78,11 +73,11 @@ struct App {
 
 void freeWindow(App&);
 
+const int SCREEN_WIDTH = 1280;
+const int SCREEN_HEIGHT = 960;
+
 void createWindow(App& app)
 {
-	const int SCREEN_WIDTH = 1280;
-	const int SCREEN_HEIGHT = 960;
-
 	const int rendererFlags = SDL_RENDERER_ACCELERATED;
 	const int windowFlags   = 0;
 
@@ -145,10 +140,10 @@ struct Atlas
 		id = id - pageIndex * dimension * dimension;
 
 		SDL_Rect rect = { 
-			.x = (id % dimension) * MEGA_TILE_SIZE, 
-			.y = id / dimension * MEGA_TILE_SIZE,
-			.w = MEGA_TILE_SIZE, 
-			.h = MEGA_TILE_SIZE };
+			.x = (id % dimension) * TILE_SIZE, 
+			.y = id / dimension * TILE_SIZE,
+			.w = TILE_SIZE, 
+			.h = TILE_SIZE };
 
 		return { pages[pageIndex], rect };
 	}
@@ -165,19 +160,19 @@ struct Atlas
 };
 
 template<int L>
-void createTileAtlas(App& app, Tile* tiles, int tileCount, Chip* chips, Atlas& atlas, Palette paletteData)
+void createTileAtlas(App& app, TilesetData& tilesetData, Atlas& atlas)
 {
 	auto palette = SDL_AllocPalette(256);
-	auto colors = reinterpret_cast<const SDL_Color*>(paletteData.GetColors());
+	auto colors = reinterpret_cast<const SDL_Color*>(tilesetData.paletteData.GetColors());
 
 	SDL_SetPaletteColors(palette, colors, 0, 256);
 
 	atlas = Atlas(L, palette);
 
-	for(int i = 0; i < tileCount; i+=L*L)
+	for(int i = 0; i < tilesetData.tilesCount; i+=L*L)
 	{
-		const int width = L * MEGA_TILE_SIZE;
-		const int height = L * MEGA_TILE_SIZE;
+		const int width = L * TILE_SIZE;
+		const int height = L * TILE_SIZE;
 		auto surface = SDL_CreateRGBSurface(0, width, height, 8, 0, 0, 0, 0);
 		SDL_SetSurfacePalette(surface, palette);
 
@@ -186,15 +181,15 @@ void createTileAtlas(App& app, Tile* tiles, int tileCount, Chip* chips, Atlas& a
 		for(int j = 0; j < width; j+=8)
 		for(int k = 0; k < height; k++)
 		{
-			tileID tileId = i + j / MEGA_TILE_SIZE + k / MEGA_TILE_SIZE * L;
+			tileID tileId = i + j / TILE_SIZE + k / TILE_SIZE * L;
 
-			if (tileId >= tileCount)
+			if (tileId >= tilesetData.tilesCount)
 				continue;
 
-			auto& tile = tiles[tileId];
+			auto& tile = tilesetData.tiles[tileId];
 
 			uint32_t chipId = tile.GetChipId(k / 8 % 4, j / 8 % 4);
-			auto&    chip = chips[chipId];
+			auto&    chip = tilesetData.chips[chipId];
 
 			auto pixels = reinterpret_cast<uint8_t*>(surface->pixels) + j + k * width;
 
@@ -231,11 +226,7 @@ void cyclePaletteColor(Atlas& atlas)
 int main(int argc, char* argv[])
 {
 	MapInfo mapInfo;
-	Palette palette;
-	shared_ptr<Chip[]> chips;
-	shared_ptr<Tile[]> tiles;
-	shared_ptr<TileGroup[]> tileGroups;
-	int tilesCount;
+	TilesetData tilesetData;
 
 	{
 		auto storagePath = argv[1];
@@ -246,54 +237,9 @@ int main(int argc, char* argv[])
 		auto mapPath = argv[2];
 
 		filesystem::MpqArchive mapFile(mapPath);
-		filesystem::MpqFile scenarioFile;
 
-		mapFile.Open("staredit\\scenario.chk", scenarioFile);
-
-		int bytesAmount = scenarioFile.GetFileSize();
-		auto scenarioBytes = make_shared<uint8_t[]>(bytesAmount);
-
-		scenarioFile.Read(scenarioBytes.get(), bytesAmount);
-
-		data::ReadMap(scenarioBytes, bytesAmount, mapInfo, false);
-
-		// Loading palette
-		string tileSetName = data::tileSetNameMap[mapInfo.tileset];
-
-		data::WpeData wpeData;
-		storage.Read(format("TileSet/%1%.wpe") % tileSetName, wpeData);
-
-		palette = Palette(wpeData);
-
-		// Read mini tile's data
-		filesystem::StorageFile chipSetFile;
-		storage.Open(format("TileSet/%1%.vr4") % tileSetName, chipSetFile);
-		
-		int chipDataSize = chipSetFile.GetFileSize();
-		int chipCount = chipDataSize / sizeof(Tile);
-
-		chips = make_shared<Chip[]>(chipCount);
-		chipSetFile.Read(chips.get(), chipDataSize);
-
-		// Read mega tile's data
-		filesystem::StorageFile tileSetFile;
-		storage.Open(format("TileSet/%1%.vx4ex") % tileSetName, tileSetFile);
-
-		int tileDataSize = tileSetFile.GetFileSize();
-		tilesCount = tileDataSize / sizeof(Tile);
-
-		tiles = make_shared<Tile[]>(tilesCount);
-		tileSetFile.Read(tiles.get(), tileDataSize);
-
-		// Read tile groups
-		filesystem::StorageFile tileGroupFile;
-		storage.Open(format("TileSet/%1%.cv5") % tileSetName, tileGroupFile);
-
-		int tileGroupDataSize = tileGroupFile.GetFileSize();
-		int tileGroupCount = tileGroupDataSize / sizeof(TileGroup);
-
-		tileGroups = make_shared<TileGroup[]>(tileGroupCount);
-		tileGroupFile.Read(tileGroups.get(), tileGroupDataSize);
+		data::ReadMap(mapFile, mapInfo, false);
+		data::loadTilesetData(storage, mapInfo.tileset, tilesetData);
 	}
 
 	App app;
@@ -301,11 +247,20 @@ int main(int argc, char* argv[])
 
 	initSDL();
 	createWindow(app);
-	createTileAtlas<10>(app, tiles.get(), tilesCount, chips.get(), atlas, palette);
+	createTileAtlas<10>(app, tilesetData, atlas);
 	
 	SDL_Event event;
 
 	bool running = true;
+
+	enum Move : int
+	{
+		Up = 0x01, Down = 0x02, Left = 0x04, Right = 0x08
+	};
+
+	int waterCycle = 0;
+	int move = 0;
+	float X, Y;
 
 	while(running)
 	{
@@ -314,6 +269,23 @@ int main(int argc, char* argv[])
 			switch(event.type)
 			{
 				case SDL_KEYDOWN:
+					switch(event.key.keysym.sym)
+					{
+						case SDLK_UP: move |= Up; break;
+						case SDLK_DOWN: move |= Down; break;
+						case SDLK_LEFT: move |= Left; break;
+						case SDLK_RIGHT: move |= Right; break;
+					}
+					break;
+
+				case SDL_KEYUP:
+					switch(event.key.keysym.sym)
+					{
+						case SDLK_UP: move &= ~Up; break;
+						case SDLK_DOWN: move &= ~Down; break;
+						case SDLK_LEFT: move &= ~Left; break;
+						case SDLK_RIGHT: move &= ~Right; break;
+					}
 					break;
 					
 				case SDL_QUIT:
@@ -324,13 +296,17 @@ int main(int argc, char* argv[])
 					break;
 			}
 		};
+
+		int leftBorderIndex = std::max<int>(0, X / TILE_SIZE);
+		int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (X + SCREEN_WIDTH) / TILE_SIZE + 1);
+		int upBorderIndex = std::max<int>(0, Y / TILE_SIZE);
+		int downBorderIndex = std::min<int>(mapInfo.dimensions.y, (Y + SCREEN_HEIGHT) / TILE_SIZE + 1);
 		
-					
-		for(int x = 0; x < 60; x++)
-		for(int y = 0; y < 40; y++)
+		for(int x = leftBorderIndex; x < rightBorderIndex; x++)
+		for(int y = upBorderIndex; y < downBorderIndex; y++)
 		{
 			auto mapTile = mapInfo.GetTile(x, y);
-			auto tileGroup = tileGroups[std::get<tileGroupID>(mapTile)];
+			auto tileGroup = tilesetData.tileGroups[std::get<tileGroupID>(mapTile)];
 
 			tileID tileId;
 
@@ -345,24 +321,38 @@ int main(int argc, char* argv[])
 
 			auto tile = atlas.GetTile(tileId);
 
-			SDL_Rect destRect { .x = x * MEGA_TILE_SIZE, .y = y * MEGA_TILE_SIZE, 
-													.w = MEGA_TILE_SIZE, .h = MEGA_TILE_SIZE };
+			SDL_Rect destRect { .x = x * TILE_SIZE - (int)X, .y = y * TILE_SIZE - (int)Y, 
+													.w = TILE_SIZE, .h = TILE_SIZE };
 
 			SDL_BlitSurface(tile.first, &tile.second, app.screenSurface, &destRect);
 		}
 
+		const float speed = 12.0f;
+		float x = 0, y = 0;
+
+		if ((move & Up) > 0)
+			y -= 1;
+		if ((move & Down) > 0)
+			y += 1;
+		if ((move & Left) > 0)
+			x -= 1;
+		if ((move & Right) > 0)
+			x += 1;
+
+		X += x * speed;
+		Y += y * speed;
+
 		SDL_UpdateWindowSurface(app.window);
 
-		if (data::HasTileSetWater(mapInfo.tileset))
+		if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0)
 		{
 			cyclePaletteColor<1, 6>(atlas);
 			cyclePaletteColor<7, 7>(atlas);
 		}
 
-		usleep(160000);
+		usleep(16000);
 	};
 	
-
 	atlas.Free();
 
 	freeWindow(app);

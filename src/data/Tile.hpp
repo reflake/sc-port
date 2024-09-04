@@ -5,24 +5,15 @@
 #include <unordered_map>
 
 #include "Common.hpp"
+#include "Palette.hpp"
+
+#include "../filesystem/Storage.hpp"
 
 namespace data
 {
 	extern std::unordered_map<Tileset, const char*> tileSetNameMap;
 
-	struct Chip
-	{
-		uint8_t palPixels[64];
-	};
-
-	// extended (sc:r) mega tile
-	struct Tile
-	{
-		uint32_t chips[4][4];
-
-		uint32_t GetChipId(int row, int column) const;
-		bool		 IsTileMirrored(int row, int column) const;
-	};
+	const int TILE_SIZE = 32;
 
 	enum class TerrainGroupFlags : uint16_t { 
 		None = 0, 
@@ -44,6 +35,20 @@ namespace data
 	};
 
 	typedef glm::vec<4, uint16_t> Edges;
+
+	struct Chip
+	{
+		uint8_t palPixels[64];
+	};
+
+	// extended (sc:r) mega tile
+	struct Tile
+	{
+		uint32_t chips[4][4];
+
+		uint32_t GetChipId(int row, int column) const;
+		bool		 IsTileMirrored(int row, int column) const;
+	};
 
 	struct TerrainGroup
 	{
@@ -77,5 +82,21 @@ namespace data
 		DoodadGroup    doodad;
 	};
 
-	const int MEGA_TILE_SIZE = 32;
+	struct TilesetData 
+	{
+		Palette paletteData;
+
+		data::Tileset tileset;
+
+		int chipCount;
+		std::shared_ptr<Chip[]> chips;
+
+		int tilesCount;
+		std::shared_ptr<Tile[]> tiles;
+
+		int tileGroupCount;
+		std::shared_ptr<TileGroup[]> tileGroups;
+	};
+
+	extern void loadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out);
 }

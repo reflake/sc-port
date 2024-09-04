@@ -1,10 +1,12 @@
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
 #include <errhandlingapi.h>
+#include <fileapi.h>
 #include <stdexcept>
+#include <StormLib.h>
+#include <winnt.h>
 
 #include "MpqFile.hpp"
-#include "StormLib.h"
 
 using boost::format;
 using std::string;
@@ -22,7 +24,7 @@ namespace filesystem
 		Close();
 	}
 
-	void MpqFile::Open(HANDLE archiveHandle, const char* path)
+	void MpqFile::Open(void* archiveHandle, const char* path)
 	{
 		if (!SFileOpenFileEx(archiveHandle, path, 0, &_handle))
 		{
@@ -31,10 +33,10 @@ namespace filesystem
 		}
 	}
 
-	void MpqFile::Read(void* data, int size)
+	void MpqFile::ReadBinary(void* data, int size)
 	{
 		// TODO: need better implementation of the buffer
-		char buffer[1024];
+		char buffer[4096];
 		char* dataPtr = reinterpret_cast<char*>(data);
 		DWORD bytesRead;
 
@@ -58,6 +60,7 @@ namespace filesystem
 
 			size -= sizeof(buffer);
 			dataPtr += sizeof(buffer);
+			_offset += bytesRead;
 		}
 	}
 
@@ -72,6 +75,18 @@ namespace filesystem
 		}
 
 		_handle = nullptr;
+	}
+
+	void MpqFile::Skip(int count)
+	{
+		_offset = SFileSetFilePointer(_handle, count, nullptr, FILE_CURRENT);
+
+		// TODO: handle when count exceeds bytes left in the file
+	}
+
+	bool MpqFile::IsEOF()
+	{
+		return _offset >= GetFileSize();
 	}
 
 	const int MpqFile::GetFileSize()
