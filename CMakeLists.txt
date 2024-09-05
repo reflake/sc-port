@@ -14,6 +14,7 @@ target_sources(Engine
     src/data/Common.cpp
     src/data/Map.cpp
     src/data/Palette.cpp
+    src/data/Sprite.cpp
     src/data/Tile.cpp
   PRIVATE 
     src/filesystem/MpqArchive.cpp
