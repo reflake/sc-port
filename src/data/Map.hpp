@@ -18,7 +18,7 @@ namespace data
 		uint16_t version;	
 		Tileset  tileset;
 		
-		dimensions dimensions;
+		dimensions dimensions = { 0, 0 };
 
 		std::shared_ptr<uint16_t[]> terrain;
 

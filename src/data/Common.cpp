@@ -6,12 +6,15 @@ namespace data
 	{
 		switch (tileset) {
 			case Tileset::Jungle:
+			case Tileset::Twilight:
+			case Tileset::Arctic:
+			case Tileset::Ashworld: // not water actually but magma
+			case Tileset::Badlands:
+			case Tileset::Desert:
 				return true;
 			case Tileset::SpacePlatform:
+			case Tileset::Installation:
 				return false;
-			default:
-				return false;
-				//throw std::runtime_error("Not implemented");
 		}
 	}
 }

@@ -1,3 +1,5 @@
+#include <windows.h>
+#include <winscard.h>
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
@@ -25,15 +27,14 @@
 #include <SDL_video.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL.h>
+#include <SDL_syswm.h>
 
 #include "data/Common.hpp"
 #include "data/Map.hpp"
 #include "data/Palette.hpp"
 #include "data/Tile.hpp"
 #include "filesystem/MpqArchive.hpp"
-#include "filesystem/MpqFile.hpp"
 #include "filesystem/Storage.hpp"
-#include "filesystem/StorageFile.hpp"
 
 using boost::format;
 
@@ -55,7 +56,6 @@ void throwSdlError(const char* msg)
 
 	throw runtime_error( err.str() );
 }
-
 
 void initSDL()
 {
@@ -223,139 +223,215 @@ void cyclePaletteColor(Atlas& atlas)
 	SDL_SetPaletteColors(atlas.palette, newPaletteColor, S, L);
 }
 
-int main(int argc, char* argv[])
+bool showOpenDialog(char* out, int size, HWND hwnd)
 {
-	MapInfo mapInfo;
-	TilesetData tilesetData;
+	OPENFILENAME ofn;
 
+	ZeroMemory(&ofn, sizeof(ofn));
+	ofn.lStructSize = sizeof(ofn);
+	ofn.hwndOwner = hwnd;
+	ofn.lpstrFile = out;
+	ofn.lpstrFile[0] = '\0';
+	ofn.nMaxFile = size;
+	ofn.lpstrFilter = "StarCraft maps (*.SCM; *.SCX)\0*.SCM;*.SCX\0All (*.*)\0*.*\0";
+	ofn.nFilterIndex = 1;
+	ofn.lpstrFileTitle = NULL;
+	ofn.nMaxFileTitle = 0;
+	ofn.lpstrInitialDir = NULL;
+	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
+
+	if (GetOpenFileName(&ofn))
 	{
-		auto storagePath = argv[1];
-
-		filesystem::Storage storage(storagePath);
-
-		// Read map
-		auto mapPath = argv[2];
-
-		filesystem::MpqArchive mapFile(mapPath);
-
-		data::ReadMap(mapFile, mapInfo, false);
-		data::loadTilesetData(storage, mapInfo.tileset, tilesetData);
+		return true;
 	}
-
-	App app;
-	Atlas atlas;
-
-	initSDL();
-	createWindow(app);
-	createTileAtlas<10>(app, tilesetData, atlas);
-	
-	SDL_Event event;
-
-	bool running = true;
-
-	enum Move : int
+	else
 	{
-		Up = 0x01, Down = 0x02, Left = 0x04, Right = 0x08
-	};
+		return false;
+	}
+}
 
-	int waterCycle = 0;
-	int move = 0;
-	float X, Y;
+void loadMap(const string& mapPath, filesystem::Storage& storage, MapInfo& mapInfo, TilesetData& tilesetData)
+{
+	filesystem::MpqArchive mapFile(mapPath.c_str());
 
-	while(running)
-	{
-		while(SDL_PollEvent(&event))
+	data::ReadMap(mapFile, mapInfo, false);
+	data::loadTilesetData(storage, mapInfo.tileset, tilesetData);
+}
+
+
+enum Move : int { Up = 0x01, Down = 0x02, Left = 0x04, Right = 0x08 };
+
+void drawMap(MapInfo &mapInfo, TilesetData &tilesetData, App &app,
+               Atlas &atlas, int &waterCycle, int &move, float &X, float &Y) {
+
+	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
+		return;
+
+  int leftBorderIndex = std::max<int>(0, X / TILE_SIZE);
+  int rightBorderIndex =
+      std::min<int>(mapInfo.dimensions.x, (X + SCREEN_WIDTH) / TILE_SIZE + 1);
+  int upBorderIndex = std::max<int>(0, Y / TILE_SIZE);
+  int downBorderIndex =
+      std::min<int>(mapInfo.dimensions.y, (Y + SCREEN_HEIGHT) / TILE_SIZE + 1);
+
+  for (int x = leftBorderIndex; x < rightBorderIndex; x++)
+    for (int y = upBorderIndex; y < downBorderIndex; y++) {
+      auto mapTile = mapInfo.GetTile(x, y);
+      auto tileGroup = tilesetData.tileGroups[std::get<tileGroupID>(mapTile)];
+
+      tileID tileId;
+
+      if ((tileGroup.type & data::Terrain) > 0) {
+        tileId = tileGroup.terrain.variations[std::get<tileVariation>(mapTile)];
+      } else {
+        tileId = tileGroup.doodad.tiles[std::get<tileVariation>(mapTile)];
+      }
+
+      auto tile = atlas.GetTile(tileId);
+
+      SDL_Rect destRect{.x = x * TILE_SIZE - (int)X,
+                        .y = y * TILE_SIZE - (int)Y,
+                        .w = TILE_SIZE,
+                        .h = TILE_SIZE};
+
+      SDL_BlitSurface(tile.first, &tile.second, app.screenSurface, &destRect);
+    }
+
+  const float speed = 12.0f;
+  float x = 0, y = 0;
+
+  if ((move & Up) > 0)
+    y -= 1;
+  if ((move & Down) > 0)
+    y += 1;
+  if ((move & Left) > 0)
+    x -= 1;
+  if ((move & Right) > 0)
+    x += 1;
+
+  X += x * speed;
+  Y += y * speed;
+
+  SDL_UpdateWindowSurface(app.window);
+
+  if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
+    cyclePaletteColor<1, 6>(atlas);
+    cyclePaletteColor<7, 7>(atlas);
+  }
+}
+
+int main(int argc, char *argv[]) {
+  MapInfo mapInfo;
+  TilesetData tilesetData;
+
+  auto storagePath = argv[1];
+
+  filesystem::Storage storage(storagePath);
+
+  App app;
+  Atlas atlas;
+
+  initSDL();
+  createWindow(app);
+
+  SDL_SysWMinfo wmInfo;
+  SDL_VERSION(&wmInfo.version);
+  SDL_GetWindowWMInfo(app.window, &wmInfo);
+  HWND hwnd = wmInfo.info.win.window;
+
+  if (argc > 2) {
+    // Read map
+    auto mapPath = argv[2];
+
+    loadMap(mapPath, storage, mapInfo, tilesetData);
+  	createTileAtlas<10>(app, tilesetData, atlas);
+  } else {
+    char mapPath[260];
+
+    if (showOpenDialog(mapPath, sizeof(mapPath), hwnd))
 		{
-			switch(event.type)
-			{
-				case SDL_KEYDOWN:
-					switch(event.key.keysym.sym)
-					{
-						case SDLK_UP: move |= Up; break;
-						case SDLK_DOWN: move |= Down; break;
-						case SDLK_LEFT: move |= Left; break;
-						case SDLK_RIGHT: move |= Right; break;
-					}
-					break;
-
-				case SDL_KEYUP:
-					switch(event.key.keysym.sym)
-					{
-						case SDLK_UP: move &= ~Up; break;
-						case SDLK_DOWN: move &= ~Down; break;
-						case SDLK_LEFT: move &= ~Left; break;
-						case SDLK_RIGHT: move &= ~Right; break;
-					}
-					break;
-					
-				case SDL_QUIT:
-					running = false;
-					break;
-
-				default:
-					break;
-			}
-		};
-
-		int leftBorderIndex = std::max<int>(0, X / TILE_SIZE);
-		int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (X + SCREEN_WIDTH) / TILE_SIZE + 1);
-		int upBorderIndex = std::max<int>(0, Y / TILE_SIZE);
-		int downBorderIndex = std::min<int>(mapInfo.dimensions.y, (Y + SCREEN_HEIGHT) / TILE_SIZE + 1);
-		
-		for(int x = leftBorderIndex; x < rightBorderIndex; x++)
-		for(int y = upBorderIndex; y < downBorderIndex; y++)
-		{
-			auto mapTile = mapInfo.GetTile(x, y);
-			auto tileGroup = tilesetData.tileGroups[std::get<tileGroupID>(mapTile)];
-
-			tileID tileId;
-
-			if ((tileGroup.type & data::Terrain) > 0)
-			{
-				tileId = tileGroup.terrain.variations[std::get<tileVariation>(mapTile)];
-			}
-			else
-			{
-				tileId = tileGroup.doodad.tiles[std::get<tileVariation>(mapTile)];
-			}
-
-			auto tile = atlas.GetTile(tileId);
-
-			SDL_Rect destRect { .x = x * TILE_SIZE - (int)X, .y = y * TILE_SIZE - (int)Y, 
-													.w = TILE_SIZE, .h = TILE_SIZE };
-
-			SDL_BlitSurface(tile.first, &tile.second, app.screenSurface, &destRect);
+      loadMap(mapPath, storage, mapInfo, tilesetData);
+  		createTileAtlas<10>(app, tilesetData, atlas);
 		}
+  }
 
-		const float speed = 12.0f;
-		float x = 0, y = 0;
+  SDL_Event event;
 
-		if ((move & Up) > 0)
-			y -= 1;
-		if ((move & Down) > 0)
-			y += 1;
-		if ((move & Left) > 0)
-			x -= 1;
-		if ((move & Right) > 0)
-			x += 1;
+  bool running = true;
 
-		X += x * speed;
-		Y += y * speed;
+  int waterCycle = 0;
+  int move = 0;
+  float X, Y;
 
-		SDL_UpdateWindowSurface(app.window);
+  while (running) {
+    while (SDL_PollEvent(&event)) {
+      switch (event.type) {
+      case SDL_KEYDOWN:
+        switch (event.key.keysym.sym) {
+        case SDLK_UP:
+          move |= Up;
+          break;
+        case SDLK_DOWN:
+          move |= Down;
+          break;
+        case SDLK_LEFT:
+          move |= Left;
+          break;
+        case SDLK_RIGHT:
+          move |= Right;
+          break;
+        case SDLK_o: {
+          char mapPath[260];
 
-		if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0)
-		{
-			cyclePaletteColor<1, 6>(atlas);
-			cyclePaletteColor<7, 7>(atlas);
-		}
+          if (showOpenDialog(mapPath, sizeof(mapPath), hwnd)) {
+            // Unlock previous map
+            atlas.Free();
 
-		usleep(16000);
-	};
-	
-	atlas.Free();
+            loadMap(mapPath, storage, mapInfo, tilesetData);
+            createTileAtlas<10>(app, tilesetData, atlas);
 
-	freeWindow(app);
+						X = 0;
+						Y = 0;
+          }
+        } break;
+        }
+        break;
 
-	return 0;
+      case SDL_KEYUP:
+        switch (event.key.keysym.sym) {
+        case SDLK_UP:
+          move &= ~Up;
+          break;
+        case SDLK_DOWN:
+          move &= ~Down;
+          break;
+        case SDLK_LEFT:
+          move &= ~Left;
+          break;
+        case SDLK_RIGHT:
+          move &= ~Right;
+          break;
+        }
+        break;
+
+      case SDL_QUIT:
+        running = false;
+        break;
+
+      default:
+        break;
+      }
+    };
+
+    drawMap(mapInfo, tilesetData, app, atlas,
+              waterCycle, move, X, Y);
+
+    usleep(16000);
+  };
+
+  atlas.Free();
+
+  freeWindow(app);
+
+  return 0;
 }
