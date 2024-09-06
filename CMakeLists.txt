@@ -16,13 +16,15 @@ target_sources(Engine
     src/data/Palette.cpp
     src/data/Sprite.cpp
     src/data/Tile.cpp
-  PRIVATE
+
     src/meta/Unit.cpp
-  PRIVATE 
+
     src/filesystem/MpqArchive.cpp
     src/filesystem/MpqFile.cpp
     src/filesystem/StorageFile.cpp
     src/filesystem/Storage.cpp
+
+    src/render/Atlas.cpp
   )
 
 # Find Winsock library

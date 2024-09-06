@@ -2,12 +2,14 @@
 
 #include <cassert>
 #include <memory>
+#include <glm/ext/vector_float2.hpp>
 
 namespace data
 {
-	typedef uint16_t tileGroupID;
-	typedef uint8_t  tileVariation;
-	typedef uint16_t tileID;
+	typedef uint16_t  tileGroupID;
+	typedef uint8_t   tileVariation;
+	typedef uint16_t  tileID;
+	typedef glm::vec2 position;
 
 	enum class Tileset: uint16_t { 
 		Badlands, SpacePlatform, Installation, 
