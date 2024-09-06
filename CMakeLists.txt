@@ -12,17 +12,18 @@ add_executable(Engine src/main.cpp)
 target_sources(Engine 
   PRIVATE 
     src/data/Common.cpp
+    src/data/Images.cpp
     src/data/Map.cpp
     src/data/Palette.cpp
     src/data/Sprite.cpp
     src/data/Tile.cpp
 
-    src/meta/Unit.cpp
-
     src/filesystem/MpqArchive.cpp
     src/filesystem/MpqFile.cpp
     src/filesystem/StorageFile.cpp
     src/filesystem/Storage.cpp
+
+    src/meta/Unit.cpp
 
     src/render/Atlas.cpp
   )
