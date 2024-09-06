@@ -88,6 +88,11 @@ namespace filesystem
 
 	const int StorageFile::GetFileSize()
 	{
+		if (_handle == nullptr)
+		{
+			throw runtime_error("File is not opened");
+		}
+
 		if (_fileSize != -1)
 		{
 			return _fileSize;
