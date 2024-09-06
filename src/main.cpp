@@ -1,5 +1,3 @@
-#include <windows.h>
-#include <winscard.h>
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
@@ -17,6 +15,8 @@
 #include <stdexcept>
 #include <memory>
 #include <unistd.h>
+#include <windows.h>
+#include <winscard.h>
 
 #include <SDL_events.h>
 #include <SDL_hints.h>
@@ -255,7 +255,7 @@ void loadMap(const string& mapPath, filesystem::Storage& storage, MapInfo& mapIn
 	filesystem::MpqArchive mapFile(mapPath.c_str());
 
 	data::ReadMap(mapFile, mapInfo, false);
-	data::loadTilesetData(storage, mapInfo.tileset, tilesetData);
+	data::LoadTilesetData(storage, mapInfo.tileset, tilesetData);
 }
 
 

@@ -54,4 +54,29 @@ namespace data
 		int _dataSize;
 		int _offset = 0;
 	};
+
+	template<typename T, int StartIndex, int EndIndex>
+	struct Array
+	{
+	public:
+
+		inline T& Get(int index) const
+		{
+			return elements[index - StartIndex];
+		}
+
+		inline bool HasElement(int index) const
+		{
+			return StartIndex <= index && index <= EndIndex;
+		}
+
+		inline T& operator[](int index) const 
+		{
+			return Get(index);
+		}
+
+	private:
+
+		T elements[EndIndex - StartIndex + 1];
+	};
 }

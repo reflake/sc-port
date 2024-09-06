@@ -31,7 +31,7 @@ namespace data
 		return chips[row][column] & ~MEGA_TILE_ID_MASK;
 	}
 
-	void loadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out)
+	void LoadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out)
 	{
 		out.tileset = tileset;
 

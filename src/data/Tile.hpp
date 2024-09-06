@@ -98,5 +98,5 @@ namespace data
 		std::shared_ptr<TileGroup[]> tileGroups;
 	};
 
-	extern void loadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out);
+	extern void LoadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out);
 }
