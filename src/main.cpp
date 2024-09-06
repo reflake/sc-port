@@ -1,3 +1,4 @@
+#include "data/TextStrings.hpp"
 #include "render/Palette.hpp"
 #include "render/Tileset.hpp"
 #define SDL_MAIN_HANDLED
@@ -53,6 +54,7 @@ using data::tileVariation;
 using data::MapInfo;
 using data::TilesetData;
 using data::position;
+using data::TextStringsTable;
 
 using render::GridAtlas;
 using render::cyclePaletteColor;
@@ -264,13 +266,16 @@ void showLoadErrorMessage(HWND hwnd, const char* mapName)
 }
 
 int main(int argc, char *argv[]) {
-	MapInfo mapInfo;
-	TilesetData tilesetData;
 
 	auto storagePath = argv[1];
 
 	filesystem::Storage storage(storagePath);
 
+	TextStringsTable imageStrings;
+	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
+
+	MapInfo mapInfo;
+	TilesetData tilesetData;
 	App app;
 	GridAtlas tilesetAtlas;
 	char mapPath[260];
