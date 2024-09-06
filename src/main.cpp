@@ -180,12 +180,10 @@ void drawMap(MapInfo &mapInfo, TilesetData &tilesetData, App &app,
 	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
 		return;
 
-	int leftBorderIndex = std::max<int>(0, pos.x / TILE_SIZE);
-	int rightBorderIndex =
-			std::min<int>(mapInfo.dimensions.x, (pos.x + SCREEN_WIDTH) / TILE_SIZE + 1);
-	int upBorderIndex = std::max<int>(0, pos.y / TILE_SIZE);
-	int downBorderIndex =
-			std::min<int>(mapInfo.dimensions.y, (pos.y + SCREEN_HEIGHT) / TILE_SIZE + 1);
+	int leftBorderIndex  = std::max<int>(0, pos.x / TILE_SIZE);
+	int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (pos.x + SCREEN_WIDTH) / TILE_SIZE + 1);
+	int upBorderIndex    = std::max<int>(0, pos.y / TILE_SIZE);
+	int downBorderIndex  = std::min<int>(mapInfo.dimensions.y, (pos.y + SCREEN_HEIGHT) / TILE_SIZE + 1);
 
 	for (int x = leftBorderIndex; x < rightBorderIndex; x++)
 	for (int y = upBorderIndex; y < downBorderIndex; y++) {
@@ -274,11 +272,11 @@ int main(int argc, char *argv[]) {
 	TextStringsTable imageStrings;
 	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
 
-	MapInfo mapInfo;
+	App         app;
+	MapInfo     mapInfo;
 	TilesetData tilesetData;
-	App app;
-	GridAtlas tilesetAtlas;
-	char mapPath[260];
+	GridAtlas   tilesetAtlas;
+	char        mapPath[260];
 
 	initSDL();
 	createWindow(app);
@@ -317,8 +315,8 @@ int main(int argc, char *argv[]) {
 
 	bool running = true;
 
-	int waterCycle = 0;
-	int moveInput = 0;
+	int      waterCycle = 0;
+	int      moveInput = 0;
 	position viewPos;
 
 	while (running) {
