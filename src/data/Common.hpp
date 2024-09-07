@@ -2,10 +2,14 @@
 
 #include <cassert>
 #include <memory>
+
 #include <glm/ext/vector_float2.hpp>
+#include <glm/vec4.hpp>
 
 namespace data
 {
+	typedef glm::vec<4, uint8_t> Color;
+
 	typedef uint16_t  tileGroupID;
 	typedef uint8_t   tileVariation;
 	typedef uint16_t  tileID;

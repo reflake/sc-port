@@ -9,6 +9,7 @@
 
 #include "Storage.hpp"
 #include "StorageFile.hpp"
+#include "StormLib.h"
 
 using std::string;
 using std::runtime_error;

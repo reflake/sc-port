@@ -41,6 +41,8 @@ namespace script
 		void SetState(state state);
 		void Run(ticks currentTick, data::StreamReader codeReader);
 
+		const int GetFrameIndex() const;
+
 	private:
 
 		uint32_t _type;

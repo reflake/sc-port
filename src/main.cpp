@@ -1,9 +1,12 @@
+#include "data/Grp.hpp"
 #include "data/Images.hpp"
 #include "data/Sprite.hpp"
 #include "data/TextStrings.hpp"
 #include "render/Palette.hpp"
 #include "render/Tileset.hpp"
 #include "script/IScriptEngine.hpp"
+#include <SDL_stdinc.h>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #define SDL_MAIN_HANDLED
@@ -13,6 +16,7 @@
 #include <algorithm>
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
+#include <boost/algorithm/string.hpp>
 #include <CascLib.h>
 #include <cassert>
 #include <cstring>
@@ -52,6 +56,7 @@ using std::runtime_error;
 using std::string;
 using std::vector;
 using std::shared_ptr;
+using std::unordered_map;
 
 using data::TILE_SIZE;
 using data::tileID;
@@ -64,6 +69,9 @@ using data::position;
 using data::TextStringsTable;
 using data::DoodadGroupFlags;
 using	data::SpriteTable;
+using data::Grp;
+
+using filesystem::Storage;
 
 using render::GridAtlas;
 using render::cyclePaletteColor;
@@ -175,7 +183,7 @@ bool showOpenDialog(char* out, int size, HWND hwnd)
 	}
 }
 
-void loadMap(const string& mapPath, filesystem::Storage& storage, MapInfo& mapInfo, TilesetData& tilesetData)
+void loadMap(const string& mapPath, Storage& storage, MapInfo& mapInfo, TilesetData& tilesetData)
 {
 	filesystem::MpqArchive mapFile(mapPath.c_str());
 
@@ -185,8 +193,40 @@ void loadMap(const string& mapPath, filesystem::Storage& storage, MapInfo& mapIn
 
 enum Move : int { Up = 0x01, Down = 0x02, Left = 0x04, Right = 0x08 };
 
+struct ScriptedDoodad
+{
+	shared_ptr<script::IScript> scriptInstance;
+	uint32_t grpID;
+	position pos;
+};
+
+struct SpriteAtlas
+{
+	SDL_Surface**    surfaces;
+	vector<SDL_Rect> rects;
+	int frames = 0;
+
+	void Free()
+	{
+		rects.clear();
+
+		if (surfaces == nullptr)
+			return;
+
+		for(int i = 0; i < frames; i++)
+		{
+			SDL_FreeSurface(surfaces[i]);
+		}
+
+		delete[] surfaces;
+		surfaces = nullptr;
+	}
+};
+
 void drawMap(MapInfo &mapInfo, TilesetData &tilesetData, App &app,
-							 GridAtlas &atlas, int &waterCycle, position& pos) {
+							 GridAtlas &atlas, int &waterCycle, position& pos,
+							 unordered_map<uint32_t, SpriteAtlas> spriteAtlases, 
+							 vector<ScriptedDoodad>& scriptedDoodads) {
 
 	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
 		return;
@@ -222,9 +262,23 @@ void drawMap(MapInfo &mapInfo, TilesetData &tilesetData, App &app,
 		SDL_BlitSurface(tile.first, &tile.second, app.screenSurface, &destRect);
 	}
 
+	for(auto& doodad : scriptedDoodads)
+	{
+		auto spriteAtlas = spriteAtlases[doodad.grpID];
+		auto frameIndex  = doodad.scriptInstance->GetFrameIndex();
+		auto surface     = spriteAtlas.surfaces[frameIndex];
+		auto destRect    = spriteAtlas.rects[frameIndex];
+
+		destRect.x += doodad.pos.x - static_cast<int>(pos.x);
+		destRect.y += doodad.pos.y - static_cast<int>(pos.y);
+
+		SDL_BlitSurface(surface, nullptr, app.screenSurface, &destRect);
+	}
+
 	SDL_UpdateWindowSurface(app.window);
 
 	if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
+
 		cyclePaletteColor<1, 6>(atlas);
 		cyclePaletteColor<7, 7>(atlas);
 	}
@@ -248,14 +302,8 @@ void processInput(position& pos, int &move)
 	pos.y += y * speed;
 }
 
-struct ScriptedDoodad
-{
-	shared_ptr<script::IScript> scriptInstance;
-	uint32_t grpID;
-};
-
 void placeScriptedDoodads(
-	filesystem::Storage& storage, MapInfo& mapInfo, TilesetData& tilesetData, 
+	Storage& storage, MapInfo& mapInfo, TilesetData& tilesetData, 
 	IScriptEngine& scriptEngine, vector<ScriptedDoodad>& doodads)
 {
 	data::SpriteTable spriteTable;
@@ -264,59 +312,105 @@ void placeScriptedDoodads(
 	data::ImagesTable imagesTable;
 	data::ReadImagesTable(storage, imagesTable);
 
-	TextStringsTable imageStrings;
-	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
-
 	script::ReadIScriptFile(storage, "scripts/iscript.bin", scriptEngine);
 
 	scriptEngine.Init();
 
 	doodads.clear();
 
-	for(int x = 0; x < mapInfo.dimensions.x; x++)
-	for(int y = 0; y < mapInfo.dimensions.y; y++)
+	for(auto& doodad : mapInfo.sprites)
 	{
-		auto tile = mapInfo.GetTile(x, y);
-
-		if (std::get<tileVariation>(tile) != 0)
-			continue;
-
-		auto& tileID = std::get<tileGroupID>(tile);
-		auto& tileGroup = tilesetData.tileGroups[tileID];
-
-		if ((tileGroup.type & data::Doodad) == 0)
-			continue;
-
-		auto& doodad = tileGroup.doodad;
-
-		if (!doodad.HasFlag(DoodadGroupFlags::SpriteOverlay))
-			continue;
-
-		auto& imageID = spriteTable.imageID[doodad.overlayID];
-		auto  grpID   = imagesTable.grpID[imageID] - 1;
-		auto  grpPath = imageStrings.entries[grpID];
+		auto& imageID  = spriteTable.imageID[doodad.spriteID];
+		auto  grpID    = imagesTable.grpID[imageID] - 1;
 		auto  scriptID = imagesTable.iScriptID[imageID];
 
 		auto scriptInstance = scriptEngine.InstantiateScript(scriptID);
 
-		doodads.push_back(ScriptedDoodad { scriptInstance, grpID });
-	}
+		auto pos = doodad.position;//position(x, y) * static_cast<float>(TILE_SIZE);
 
-	scriptEngine.PlayNextFrame();
-	scriptEngine.PlayNextFrame();
+		//pos += position(tileGroup.doodad.width, tileGroup.doodad.height) * static_cast<float>(TILE_SIZE);
+
+		doodads.push_back(ScriptedDoodad { scriptInstance, grpID, pos });
+	}
 }
 
-bool tryOpenMap(const char* mapPath, filesystem::Storage& storage, 
-								MapInfo& mapInfo, TilesetData& tilesetData, GridAtlas& tilesetAtlas,
-								IScriptEngine& scriptEngine, vector<ScriptedDoodad> scriptedDoodads)
+void createDoodadAtlas(Storage& storage, vector<ScriptedDoodad>& scriptedDoodads, 
+											unordered_map<uint32_t, SpriteAtlas>& spriteAtlases, SDL_Palette* palette)
+{
+	TextStringsTable imageStrings;
+	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
+	uint8_t pixels[256 * 256];
+
+	for(auto& doodad : scriptedDoodads)
+	{
+		if (spriteAtlases.contains(doodad.grpID))
+			continue;
+
+		auto grpPath = imageStrings.entries[doodad.grpID];
+
+		Grp grp;
+		Grp::ReadGrpFile(storage, grpPath, grp);
+
+		SpriteAtlas atlas;
+
+		atlas.frames = grp.GetHeader().frameAmount;
+		atlas.surfaces = new SDL_Surface*[atlas.frames];
+
+		int frameIndex = 0;
+
+		for(auto& frame : grp.GetFrames())
+		{
+			SDL_Surface* surface = SDL_CreateRGBSurface(0, frame.dimensions.x, frame.dimensions.y, 8, 0, 0, 0, 0);
+			SDL_SetSurfacePalette(surface, palette);
+
+			SDL_LockSurface(surface);
+
+			grp.GetFramePixels(frameIndex, pixels);
+
+			int width = frame.dimensions.x;
+			auto surfacePixels = reinterpret_cast<uint8_t*>(surface->pixels);
+
+			for(int i = 0; i < surface->h; i++)
+			{
+				memcpy(surfacePixels + i * surface->pitch, pixels + i * width, width);
+			}
+
+			SDL_UnlockSurface(surface);
+			SDL_SetColorKey(surface, SDL_TRUE, 0x00000000);
+
+			atlas.rects.push_back(SDL_Rect { 
+				.x = frame.posOffset.x - grp.GetHeader().dimensions.x / 2, .y = frame.posOffset.y - grp.GetHeader().dimensions.y / 2,
+				.w = frame.dimensions.x, .h = frame.dimensions.y });
+			atlas.surfaces[frameIndex++] = surface;
+		}
+
+		spriteAtlases[doodad.grpID] = atlas;
+	}
+}
+
+bool tryOpenMap(const char* mapPath, Storage& storage, MapInfo& mapInfo, 
+								TilesetData& tilesetData, GridAtlas& tilesetAtlas, 
+								IScriptEngine& scriptEngine, 
+								vector<ScriptedDoodad>& scriptedDoodads,
+								unordered_map<uint32_t, SpriteAtlas>& spriteAtlases)
 {
 	try
 	{
 		loadMap(mapPath, storage, mapInfo, tilesetData);
 
 		tilesetAtlas.Free();
+
+		for(auto& pair : spriteAtlases)
+		{
+			auto& spriteAtlas = std::get<SpriteAtlas>(pair);
+			spriteAtlas.Free();
+		}
+
+		spriteAtlases.clear();
+
 		createTilesetAtlas<10>(tilesetData, tilesetAtlas);
 		placeScriptedDoodads(storage, mapInfo, tilesetData, scriptEngine, scriptedDoodads);
+		createDoodadAtlas(storage, scriptedDoodads, spriteAtlases, tilesetAtlas.palette);
 
 		return true;
 	}
@@ -338,7 +432,7 @@ int main(int argc, char *argv[]) {
 
 	auto storagePath = argv[1];
 
-	filesystem::Storage storage(storagePath);
+	Storage storage(storagePath);
 
 	App app;
 	
@@ -352,21 +446,22 @@ int main(int argc, char *argv[]) {
 	HWND hwnd = wmInfo.info.win.window;
 
 
-	bool        openedMapSuccessfully = false;
-	MapInfo     mapInfo(false);
-	TilesetData tilesetData;
-	GridAtlas   tilesetAtlas;
-	char        mapPath[260];
-	IScriptEngine          scriptEngine;
-	vector<ScriptedDoodad> scriptedDoodads;
+	IScriptEngine scriptEngine;
+	auto          scriptedDoodads = vector<ScriptedDoodad>();
+	auto          spriteAtlases = unordered_map<uint32_t, SpriteAtlas>();
+	bool          openedMapSuccessfully = false;
+	MapInfo       mapInfo(false);
+	TilesetData   tilesetData;
+	GridAtlas     tilesetAtlas;
+	char          mapPath[260];
 
 	if (argc > 2) {
 		// Read map
 		auto mapPath = argv[2];
 
-		openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData, 
-																			tilesetAtlas, scriptEngine, scriptedDoodads);
-
+		openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData,
+																				tilesetAtlas, scriptEngine, scriptedDoodads,
+																				spriteAtlases);
 		if (!openedMapSuccessfully)
 
 			showLoadErrorMessage(hwnd, mapPath);
@@ -377,7 +472,8 @@ int main(int argc, char *argv[]) {
 		if (showOpenDialog(mapPath, sizeof(mapPath), hwnd))
 		{
 			openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData,
-																				tilesetAtlas, scriptEngine, scriptedDoodads);
+																				tilesetAtlas, scriptEngine, scriptedDoodads,
+																				spriteAtlases);
 
 			if (!openedMapSuccessfully)
 			
@@ -414,9 +510,9 @@ int main(int argc, char *argv[]) {
 
 					if (showOpenDialog(mapPath, sizeof(mapPath), hwnd)) {
 
-						openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, 
-																							tilesetData, tilesetAtlas, scriptEngine,
-																							scriptedDoodads);
+						openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData,
+																							tilesetAtlas, scriptEngine, scriptedDoodads,
+																							spriteAtlases);;
 
 						if (!openedMapSuccessfully)
 
@@ -455,8 +551,10 @@ int main(int argc, char *argv[]) {
 		};
 
 		drawMap(mapInfo, tilesetData, app, tilesetAtlas,
-							waterCycle, viewPos);
+							waterCycle, viewPos, spriteAtlases, scriptedDoodads);
 		processInput(viewPos, moveInput);
+
+		scriptEngine.PlayNextFrame();
 
 		usleep(16000);
 	};

@@ -198,6 +198,11 @@ namespace script
 		}
 	}
 
+	const int IScript::GetFrameIndex() const 
+	{
+		return _currentSpriteFrame;
+	}
+
 	void IScriptEngine::PlayNextFrame()
 	{
 		data::StreamReader codeReader(_scriptData, _scriptDataSize);

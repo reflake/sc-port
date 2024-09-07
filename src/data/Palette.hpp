@@ -1,11 +1,9 @@
 #pragma once
 
-#include <glm/vec4.hpp>
+#include "Common.hpp"
 
 namespace data
 {
-	typedef glm::vec<4, uint8_t> Color;
-
 	const int PALETTE_SIZE = 256;
 
 	struct WpeData

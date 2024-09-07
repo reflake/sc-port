@@ -20,6 +20,12 @@ namespace filesystem
 			ReadBinary(&data, sizeof(T));
 		}
 
+		template<typename T>
+		void Read(T* data, int count)
+		{
+			ReadBinary(data, sizeof(T) * count);
+		}
+
 		void Close();
 
 		const int GetFileSize();

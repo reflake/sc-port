@@ -28,14 +28,21 @@ namespace data
 		return { val >> 4, val & 0xF };
 	}
 
-
 	struct ChunkEntry
 	{
 		char name[4];
 		int dataSize;
 	};
 
-	enum EntryName { Unknown = -1, TileSet, Dimensions, Terrain_Gameplay, Terrain_Editor, MapType, Version };
+	enum EntryName { 
+		Unknown = -1,
+		TileSet, 
+		Dimensions, 
+		Terrain_Gameplay, 
+		Terrain_Editor,
+		MapType, Version,
+		Sprites_Gameplay 
+	};
 
 	std::unordered_map<string, EntryName> nameMap = {
 		{ "ERA ", TileSet },
@@ -44,6 +51,7 @@ namespace data
 		{ "TILE", Terrain_Editor },
 		{ "TYPE", MapType },
 		{ "VER ", Version },
+		{ "THG2", Sprites_Gameplay}
 	};
 
 	bool ReadChunk(filesystem::MpqFile& file, ChunkEntry& chunk, MapInfo& mapInfo)
@@ -53,7 +61,8 @@ namespace data
 		assert(dataSize >= 0);
 
 		string nameString = string(chunk.name, 4);
-		EntryName nameValue = nameMap.find(nameString) != nameMap.end() ? nameMap[nameString] : Unknown;	
+		EntryName nameValue = nameMap.find(nameString) != nameMap.end() ? nameMap[nameString] : Unknown;
+		int count;
 
 		switch (nameValue) {
 			case TileSet:
@@ -95,6 +104,14 @@ namespace data
 				file.Read(mapInfo.version);
 				break;
 
+			case Sprites_Gameplay:
+				count = dataSize / sizeof(MapSprite);
+
+				mapInfo.sprites.resize(mapInfo.sprites.size() + count);
+
+				file.Read(mapInfo.sprites.data() + mapInfo.sprites.size() - count, count);
+				break;
+
 			default:
 				file.Skip(dataSize);
 				return false;
@@ -103,8 +120,15 @@ namespace data
 		return true;
 	}
 
+	void Clear(MapInfo& mapInfo)
+	{
+		mapInfo.sprites.clear();
+	}
+
 	void ReadMap(filesystem::MpqArchive& mapArchive, MapInfo& mapInfo)
 	{
+		Clear(mapInfo);
+
 		filesystem::MpqFile scenarioFile;
 
 		mapArchive.Open("staredit\\scenario.chk", scenarioFile);

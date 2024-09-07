@@ -1,0 +1,89 @@
+#include "Grp.hpp"
+#include <cstring>
+#include <string>
+
+namespace data
+{
+	void Grp::ReadGrpFile(filesystem::Storage& storage, const char* path, Grp& grp)
+	{
+		std::string fullpath = "unit\\" + std::string(path);
+
+		filesystem::StorageFile file;
+		storage.Open(fullpath.c_str(), file);
+
+		auto data = std::make_shared<uint8_t[]>(file.GetFileSize());
+		file.ReadBinary(data.get(), file.GetFileSize());
+
+		ReadGrp(data, file.GetFileSize(), grp);
+	}
+
+	void Grp::ReadGrp(std::shared_ptr<uint8_t[]> data, int size, Grp& grp)
+	{
+		auto reader = StreamReader(data, size);
+
+		reader.Read(grp._header);
+
+		grp._frames.resize(grp._header.frameAmount);
+
+		reader.Read(grp._frames.data(), grp._header.frameAmount);
+
+		grp._data = data;
+	}
+
+	const int TRANSPARENT_FLAG = 0x80;
+	const int REPEAT_FLAG = 0x40;
+
+	void Grp::GetFramePixels(int frameIndex, uint8_t* outPixels)
+	{
+		GrpFrame& frame = _frames[frameIndex];
+		uint16_t* rleLinesOffsets = reinterpret_cast<uint16_t*>(_data.get() + frame.linesOffset);
+
+		memset(outPixels, 0, frame.dimensions.x * frame.dimensions.y);
+
+		for(int y = 0; y < frame.dimensions.y; y++)
+		{
+			auto rleLines = reinterpret_cast<uint8_t*>(rleLinesOffsets) + rleLinesOffsets[y];
+			auto pixelsRow = &outPixels[y * frame.dimensions.x];
+
+			for(int x = 0; x < frame.dimensions.x; )
+			{
+				auto flag = *rleLines++;
+
+				if (flag & TRANSPARENT_FLAG)
+				{
+					x += flag & ~TRANSPARENT_FLAG;
+				}
+				else if (flag & REPEAT_FLAG)
+				{
+					auto length     = flag & ~REPEAT_FLAG;
+					auto colorIndex = *rleLines++;
+
+					memset(pixelsRow + x, colorIndex, length);
+
+					x += length;
+				}
+				else
+				{
+					for(int l = 0; l < flag; l++)
+
+						pixelsRow[x++] = *rleLines++;
+				}
+			}
+		}
+	}
+
+	const GrpHeader& Grp::GetHeader() const
+	{
+		return _header;
+	}
+	
+	const GrpFrame& Grp::GetFrame(int frame) const
+	{
+		return _frames[frame];
+	}
+	
+	const std::vector<GrpFrame>& Grp::GetFrames() const
+	{
+		return _frames;
+	}
+}

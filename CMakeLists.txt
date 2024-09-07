@@ -12,6 +12,7 @@ add_executable(Engine src/main.cpp)
 target_sources(Engine 
   PRIVATE 
     src/data/Common.cpp
+    src/data/Grp.cpp
     src/data/Images.cpp
     src/data/Map.cpp
     src/data/Palette.cpp
