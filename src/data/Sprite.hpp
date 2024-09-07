@@ -15,12 +15,12 @@ namespace data
 		uint8_t  unknown[MAX_SPRITE_AMOUNT];
 		uint8_t  visible[MAX_SPRITE_AMOUNT];
 		
-		Array<uint8_t, 130, 517> healthBarLength;
-		Array<uint8_t, 130, 517> selectionCircleImage;
-		Array<uint8_t, 130, 517> selectionCircleVerticalOffset;
+		Array<uint8_t, 130, 516> healthBarLength;
+		Array<uint8_t, 130, 516> selectionCircleImage;
+		Array<uint8_t, 130, 516> selectionCircleVerticalOffset;
 	};
 
-	static_assert(sizeof(SpriteTable) == 3232, "SpriteTable size should be equal to 3232");
+	static_assert(sizeof(SpriteTable) == 3230, "SpriteTable size should be equal to 3232");
 
 	extern void ReadSpriteTable(filesystem::Storage& storage, SpriteTable& spriteTable);
 }

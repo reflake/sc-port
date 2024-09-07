@@ -11,12 +11,12 @@ namespace data
 
 		storage.Open("arr/images.dat", file);
 
-		assert(file.GetFileSize() == MAX_SPRITE_AMOUNT * 38);
+		assert(file.GetFileSize() == MAX_IMAGES_AMOUNT * 38);
 
 		file.Read(table.grpID);
 		file.Read(table.turns);
 		file.Read(table.selectable);
-		file.Read(table.useIScript);
+		file.Read(table.useFullIScript);
 		file.Read(table.drawIfCloaked);
 		file.Read(table.drawFunction);
 		file.Read(table.remapping);

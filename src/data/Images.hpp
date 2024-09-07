@@ -22,7 +22,7 @@ namespace data
 		uint32_t grpID[MAX_IMAGES_AMOUNT];
 		uint8_t  turns[MAX_IMAGES_AMOUNT];
 		bool     selectable[MAX_IMAGES_AMOUNT];
-		bool     useIScript[MAX_IMAGES_AMOUNT];
+		bool     useFullIScript[MAX_IMAGES_AMOUNT];
 		bool     drawIfCloaked[MAX_IMAGES_AMOUNT];
 		uint8_t  drawFunction[MAX_IMAGES_AMOUNT];
 		uint32_t iScriptID[MAX_IMAGES_AMOUNT];

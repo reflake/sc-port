@@ -14,6 +14,7 @@ namespace data
 
 	struct MapInfo
 	{
+		bool     onlyEditorInfo;
 		char 		 mapType[4]; // equals either RAWS or RAWB
 		uint16_t version;	
 		Tileset  tileset;
@@ -24,10 +25,12 @@ namespace data
 
 		int tileCount;
 
+		MapInfo(bool onlyEditorInfo);
+
 		std::pair<tileGroupID, tileVariation> GetTile(int x, int y);
 	};
 
-	extern void ReadMap(filesystem::MpqArchive& mapArchive, MapInfo& mapInfo, bool isEditor);
+	extern void ReadMap(filesystem::MpqArchive& mapArchive, MapInfo& mapInfo);
 
 	extern const uint16_t MAX_MAP_SIZE;
 }

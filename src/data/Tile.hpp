@@ -73,6 +73,8 @@ namespace data
 		uint16_t width, height;
 		uint16_t unused2;
 		tileID tiles[16];
+
+		bool HasFlag(DoodadGroupFlags flag);
 	};
 
 	union TileGroup

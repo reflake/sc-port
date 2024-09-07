@@ -1,6 +1,11 @@
+#include "data/Images.hpp"
+#include "data/Sprite.hpp"
 #include "data/TextStrings.hpp"
 #include "render/Palette.hpp"
 #include "render/Tileset.hpp"
+#include "script/IScriptEngine.hpp"
+#include <unordered_set>
+#include <vector>
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
@@ -45,6 +50,8 @@ using boost::format;
 using std::pair;
 using std::runtime_error;
 using std::string;
+using std::vector;
+using std::shared_ptr;
 
 using data::TILE_SIZE;
 using data::tileID;
@@ -55,10 +62,14 @@ using data::MapInfo;
 using data::TilesetData;
 using data::position;
 using data::TextStringsTable;
+using data::DoodadGroupFlags;
+using	data::SpriteTable;
 
 using render::GridAtlas;
 using render::cyclePaletteColor;
 using render::createTilesetAtlas;
+
+using script::IScriptEngine;
 
 void throwSdlError(const char* msg)
 {
@@ -168,7 +179,7 @@ void loadMap(const string& mapPath, filesystem::Storage& storage, MapInfo& mapIn
 {
 	filesystem::MpqArchive mapFile(mapPath.c_str());
 
-	data::ReadMap(mapFile, mapInfo, false);
+	data::ReadMap(mapFile, mapInfo);
 	data::LoadTilesetData(storage, mapInfo.tileset, tilesetData);
 }
 
@@ -237,8 +248,67 @@ void processInput(position& pos, int &move)
 	pos.y += y * speed;
 }
 
+struct ScriptedDoodad
+{
+	shared_ptr<script::IScript> scriptInstance;
+	uint32_t grpID;
+};
+
+void placeScriptedDoodads(
+	filesystem::Storage& storage, MapInfo& mapInfo, TilesetData& tilesetData, 
+	IScriptEngine& scriptEngine, vector<ScriptedDoodad>& doodads)
+{
+	data::SpriteTable spriteTable;
+	data::ReadSpriteTable(storage, spriteTable);
+
+	data::ImagesTable imagesTable;
+	data::ReadImagesTable(storage, imagesTable);
+
+	TextStringsTable imageStrings;
+	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
+
+	script::ReadIScriptFile(storage, "scripts/iscript.bin", scriptEngine);
+
+	scriptEngine.Init();
+
+	doodads.clear();
+
+	for(int x = 0; x < mapInfo.dimensions.x; x++)
+	for(int y = 0; y < mapInfo.dimensions.y; y++)
+	{
+		auto tile = mapInfo.GetTile(x, y);
+
+		if (std::get<tileVariation>(tile) != 0)
+			continue;
+
+		auto& tileID = std::get<tileGroupID>(tile);
+		auto& tileGroup = tilesetData.tileGroups[tileID];
+
+		if ((tileGroup.type & data::Doodad) == 0)
+			continue;
+
+		auto& doodad = tileGroup.doodad;
+
+		if (!doodad.HasFlag(DoodadGroupFlags::SpriteOverlay))
+			continue;
+
+		auto& imageID = spriteTable.imageID[doodad.overlayID];
+		auto  grpID   = imagesTable.grpID[imageID] - 1;
+		auto  grpPath = imageStrings.entries[grpID];
+		auto  scriptID = imagesTable.iScriptID[imageID];
+
+		auto scriptInstance = scriptEngine.InstantiateScript(scriptID);
+
+		doodads.push_back(ScriptedDoodad { scriptInstance, grpID });
+	}
+
+	scriptEngine.PlayNextFrame();
+	scriptEngine.PlayNextFrame();
+}
+
 bool tryOpenMap(const char* mapPath, filesystem::Storage& storage, 
-								MapInfo& mapInfo, TilesetData& tilesetData, GridAtlas& tilesetAtlas)
+								MapInfo& mapInfo, TilesetData& tilesetData, GridAtlas& tilesetAtlas,
+								IScriptEngine& scriptEngine, vector<ScriptedDoodad> scriptedDoodads)
 {
 	try
 	{
@@ -246,6 +316,7 @@ bool tryOpenMap(const char* mapPath, filesystem::Storage& storage,
 
 		tilesetAtlas.Free();
 		createTilesetAtlas<10>(tilesetData, tilesetAtlas);
+		placeScriptedDoodads(storage, mapInfo, tilesetData, scriptEngine, scriptedDoodads);
 
 		return true;
 	}
@@ -269,30 +340,32 @@ int main(int argc, char *argv[]) {
 
 	filesystem::Storage storage(storagePath);
 
-	TextStringsTable imageStrings;
-	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
-
-	App         app;
-	MapInfo     mapInfo;
-	TilesetData tilesetData;
-	GridAtlas   tilesetAtlas;
-	char        mapPath[260];
-
+	App app;
+	
 	initSDL();
 	createWindow(app);
+
 
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(app.window, &wmInfo);
 	HWND hwnd = wmInfo.info.win.window;
 
-	bool openedMapSuccessfully = false;
+
+	bool        openedMapSuccessfully = false;
+	MapInfo     mapInfo(false);
+	TilesetData tilesetData;
+	GridAtlas   tilesetAtlas;
+	char        mapPath[260];
+	IScriptEngine          scriptEngine;
+	vector<ScriptedDoodad> scriptedDoodads;
 
 	if (argc > 2) {
 		// Read map
 		auto mapPath = argv[2];
 
-		openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData, tilesetAtlas);
+		openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData, 
+																			tilesetAtlas, scriptEngine, scriptedDoodads);
 
 		if (!openedMapSuccessfully)
 
@@ -303,7 +376,8 @@ int main(int argc, char *argv[]) {
 	{
 		if (showOpenDialog(mapPath, sizeof(mapPath), hwnd))
 		{
-			openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData, tilesetAtlas);
+			openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData,
+																				tilesetAtlas, scriptEngine, scriptedDoodads);
 
 			if (!openedMapSuccessfully)
 			
@@ -340,7 +414,9 @@ int main(int argc, char *argv[]) {
 
 					if (showOpenDialog(mapPath, sizeof(mapPath), hwnd)) {
 
-						openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, tilesetData, tilesetAtlas);
+						openedMapSuccessfully = tryOpenMap(mapPath, storage, mapInfo, 
+																							tilesetData, tilesetAtlas, scriptEngine,
+																							scriptedDoodads);
 
 						if (!openedMapSuccessfully)
 

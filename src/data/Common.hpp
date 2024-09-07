@@ -23,36 +23,51 @@ namespace data
 	{
 	public:
 
-		StreamReader(std::shared_ptr<uint8_t[]> data, int dataSize) : _data(data), _dataSize(dataSize) {}
+		StreamReader(const std::shared_ptr<uint8_t[]> data, int dataSize) : _data(data), _dataSize(dataSize) {}
 
-		void ReadBinary(void* out, int size)
+		inline void ReadBinary(void* out, int size)
 		{
 			assert(size + _offset <= _dataSize);
 
 			memcpy(out, _data.get() + _offset, size);
 
 			_offset += size;
-
 		}
 
 		template<typename T>
-		void Read(T& data)
+		inline void Read(T& data)
 		{
 			ReadBinary(&data, sizeof(T));
 		}
 
-		void Skip(int amount)
+		template<typename T>
+		inline void Read(T* data, int count)
+		{
+			ReadBinary(data, sizeof(T) * count);
+		}
+
+		inline void Skip(int amount)
 		{
 			_offset += amount;
 
 			assert(_offset <= _dataSize);
 		}
 
+		inline void SetPointer(int index)
+		{
+			_offset = index;
+		}
+
+		inline const int GetPointer() const
+		{
+			return _offset;
+		}
+
 		bool IsEOF() { return _offset == _dataSize; }
 
 	private:
 
-		std::shared_ptr<uint8_t[]> _data;
+		const std::shared_ptr<uint8_t[]> _data;
 		int _dataSize;
 		int _offset = 0;
 	};
@@ -75,6 +90,11 @@ namespace data
 		inline T& operator[](int index) const 
 		{
 			return Get(index);
+		}
+
+		constexpr int Length() const
+		{
+			return EndIndex - StartIndex + 1;
 		}
 
 	private:

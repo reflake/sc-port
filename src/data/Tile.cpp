@@ -31,6 +31,11 @@ namespace data
 		return chips[row][column] & ~MEGA_TILE_ID_MASK;
 	}
 
+	bool DoodadGroup::HasFlag(DoodadGroupFlags requiredFlag)
+	{
+		return (static_cast<uint16_t>(flags) & static_cast<uint16_t>(requiredFlag)) > 0;
+	}
+
 	void LoadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out)
 	{
 		out.tileset = tileset;

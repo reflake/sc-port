@@ -1,4 +1,5 @@
 #include "Common.hpp"
+#include <stdexcept>
 
 namespace data
 {
@@ -16,5 +17,7 @@ namespace data
 			case Tileset::Installation:
 				return false;
 		}
+
+		throw new std::runtime_error("Not implemented");
 	}
 }

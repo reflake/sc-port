@@ -27,6 +27,8 @@ target_sources(Engine
     src/meta/Unit.cpp
 
     src/render/Atlas.cpp
+
+    src/script/IScriptEngine.cpp
   )
 
 # Find Winsock library

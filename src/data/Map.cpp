@@ -18,6 +18,17 @@ namespace data
 {
 	const uint16_t MAX_MAP_SIZE = 256;
 
+
+	MapInfo::MapInfo(bool onlyEditorInfo) : onlyEditorInfo(onlyEditorInfo) {}
+
+	std::pair<tileGroupID, tileVariation> MapInfo::GetTile(int x, int y)
+	{
+		auto val = terrain[x + y * dimensions.x];
+
+		return { val >> 4, val & 0xF };
+	}
+
+
 	struct ChunkEntry
 	{
 		char name[4];
@@ -35,7 +46,7 @@ namespace data
 		{ "VER ", Version },
 	};
 
-	bool ReadChunk(filesystem::MpqFile& file, ChunkEntry& chunk, MapInfo& mapInfo, bool isEditor)
+	bool ReadChunk(filesystem::MpqFile& file, ChunkEntry& chunk, MapInfo& mapInfo)
 	{
 		int dataSize = chunk.dataSize;
 
@@ -58,7 +69,8 @@ namespace data
 			case Terrain_Gameplay:
 			case Terrain_Editor:
 
-				if (isEditor && nameValue == Terrain_Editor || !isEditor && nameValue == Terrain_Gameplay)
+				if (mapInfo.onlyEditorInfo && nameValue == Terrain_Editor || 
+				   !mapInfo.onlyEditorInfo && nameValue == Terrain_Gameplay)
 				{
 					assert(dataSize <= MAX_MAP_SIZE * MAX_MAP_SIZE * sizeof(uint16_t));
 
@@ -91,7 +103,7 @@ namespace data
 		return true;
 	}
 
-	void ReadMap(filesystem::MpqArchive& mapArchive, MapInfo& mapInfo, bool isEditor)
+	void ReadMap(filesystem::MpqArchive& mapArchive, MapInfo& mapInfo)
 	{
 		filesystem::MpqFile scenarioFile;
 
@@ -105,7 +117,7 @@ namespace data
 			ChunkEntry nextEntry;
 			scenarioFile.Read(nextEntry);
 
-			if (!ReadChunk(scenarioFile, nextEntry, mapInfo, isEditor))
+			if (!ReadChunk(scenarioFile, nextEntry, mapInfo))
 			{
 				ignoredEntries.push_back(string(nextEntry.name, 4));
 			}
@@ -125,12 +137,5 @@ namespace data
 		}
 
 		std::cout << " entries are ignored" << std::endl;
-	}
-
-	std::pair<tileGroupID, tileVariation> MapInfo::GetTile(int x, int y)
-	{
-		auto val = terrain[x + y * dimensions.x];
-
-		return { val >> 4, val & 0xF };
 	}
 }
