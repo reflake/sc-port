@@ -6,6 +6,7 @@
 #include "render/Tileset.hpp"
 #include "script/IScriptEngine.hpp"
 #include <SDL_stdinc.h>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -48,6 +49,7 @@
 #include "filesystem/MpqArchive.hpp"
 #include "filesystem/Storage.hpp"
 #include "render/Atlas.hpp"
+#include "entity/ScriptedDoodad.hpp"
 
 using boost::format;
 
@@ -67,11 +69,13 @@ using data::MapInfo;
 using data::TilesetData;
 using data::position;
 using data::TextStringsTable;
-using data::DoodadGroupFlags;
 using	data::SpriteTable;
+using	data::ImagesTable;
 using data::Grp;
 
 using data::EntryName;
+
+using entity::ScriptedDoodad;
 
 using filesystem::Storage;
 
@@ -80,8 +84,7 @@ using render::cyclePaletteColor;
 using render::createTilesetAtlas;
 
 using script::IScriptEngine;
-
-struct ScriptedDoodad; 
+ 
 struct SpriteAtlas;
 
 void throwSdlError(const char* msg)
@@ -107,8 +110,8 @@ struct App {
 	TilesetData    tilesetData;
 	GridAtlas      tilesetAtlas;
 
-	IScriptEngine          scriptEngine;
-	vector<ScriptedDoodad> scriptedDoodads;
+	IScriptEngine                        scriptEngine;
+	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
 	unordered_map<uint32_t, SpriteAtlas> spriteAtlases;
 };
 
@@ -205,13 +208,6 @@ void loadMap(App& app, const string& mapPath, Storage& storage, MapInfo& mapInfo
 
 enum Move : int { Up = 0x01, Down = 0x02, Left = 0x04, Right = 0x08 };
 
-struct ScriptedDoodad
-{
-	shared_ptr<script::IScript> scriptInstance;
-	uint32_t grpID;
-	position pos;
-};
-
 struct SpriteAtlas
 {
 	SDL_Surface**    surfaces;
@@ -274,13 +270,13 @@ void drawMap(MapInfo &mapInfo, App &app,
 
 	for(auto& doodad : app.scriptedDoodads)
 	{
-		auto spriteAtlas = app.spriteAtlases[doodad.grpID];
-		auto frameIndex  = doodad.scriptInstance->GetFrameIndex();
+		auto spriteAtlas = app.spriteAtlases[doodad->grpID];
+		auto frameIndex  = doodad->GetCurrentFrame();
 		auto surface     = spriteAtlas.surfaces[frameIndex];
 		auto destRect    = spriteAtlas.rects[frameIndex];
 
-		destRect.x += doodad.pos.x - static_cast<int>(pos.x);
-		destRect.y += doodad.pos.y - static_cast<int>(pos.y);
+		destRect.x += doodad->pos.x - static_cast<int>(pos.x);
+		destRect.y += doodad->pos.y - static_cast<int>(pos.y);
 
 		SDL_BlitSurface(surface, nullptr, app.screenSurface, &destRect);
 	}
@@ -315,10 +311,10 @@ void processInput(position& pos, int &move)
 void placeScriptedDoodads(
 	App& app, Storage& storage, MapInfo& mapInfo, TilesetData& tilesetData)
 {
-	data::SpriteTable spriteTable;
+	SpriteTable spriteTable;
 	data::ReadSpriteTable(storage, spriteTable);
 
-	data::ImagesTable imagesTable;
+	ImagesTable imagesTable;
 	data::ReadImagesTable(storage, imagesTable);
 
 	script::ReadIScriptFile(storage, "scripts/iscript.bin", app.scriptEngine);
@@ -331,11 +327,12 @@ void placeScriptedDoodads(
 		auto& imageID  = spriteTable.imageID[doodad.spriteID];
 		auto  grpID    = imagesTable.grpID[imageID] - 1;
 		auto  scriptID = imagesTable.iScriptID[imageID];
+		auto  pos = doodad.position;
 
-		auto scriptInstance = app.scriptEngine.InstantiateScript(scriptID);
-		auto pos = doodad.position;
+		auto instance = std::make_shared<ScriptedDoodad>(scriptID, grpID, pos);
 
-		app.scriptedDoodads.push_back(ScriptedDoodad { scriptInstance, grpID, pos });
+		app.scriptEngine.RunScriptableObject(instance);
+		app.scriptedDoodads.push_back(instance);
 	}
 }
 
@@ -347,10 +344,10 @@ void createDoodadAtlas(App& app, Storage& storage)
 
 	for(auto& doodad : app.scriptedDoodads)
 	{
-		if (app.spriteAtlases.contains(doodad.grpID))
+		if (app.spriteAtlases.contains(doodad->grpID))
 			continue;
 
-		auto grpPath = imageStrings.entries[doodad.grpID];
+		auto grpPath = imageStrings.entries[doodad->grpID];
 
 		Grp grp;
 		Grp::ReadGrpFile(storage, grpPath, grp);
@@ -388,7 +385,7 @@ void createDoodadAtlas(App& app, Storage& storage)
 			atlas.surfaces[frameIndex++] = surface;
 		}
 
-		app.spriteAtlases[doodad.grpID] = atlas;
+		app.spriteAtlases[doodad->grpID] = atlas;
 	}
 }
 

@@ -20,6 +20,8 @@ target_sources(Engine
     src/data/TextStrings.cpp
     src/data/Tile.cpp
 
+    src/entity/ScriptedDoodad.cpp
+
     src/filesystem/MpqArchive.cpp
     src/filesystem/MpqFile.cpp
     src/filesystem/StorageFile.cpp
