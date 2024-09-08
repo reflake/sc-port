@@ -12,10 +12,7 @@
 using filesystem::Storage;
 using filesystem::StorageFile;
 
-using std::vector;
-
 using std::shared_ptr;
-using std::make_shared;
 
 namespace script
 {
@@ -99,8 +96,10 @@ namespace script
 		_scriptDataSize = dataSize;
 	}
 
-	shared_ptr<IScript> IScriptEngine::InstantiateScript(uint32_t scriptID)
+	void IScriptEngine::RunScriptableObject(std::shared_ptr<A_IScriptable> object)
 	{
+		auto scriptID = object->GetScriptID();
+
 		auto it = std::find_if(_entries.begin(), _entries.end(), [scriptID] (auto& entry) {
 
 			return entry.iscriptID == scriptID;
@@ -123,21 +122,23 @@ namespace script
 		auto states = std::make_shared<uint16_t[]>(scope.GetStateCount());
 		reader.Read(states.get(), scope.GetStateCount());
 
-		auto instance = make_shared<IScript>(scope.type, states, scope.GetStateCount());
+		object->Setup(scope.type, states, scope.GetStateCount());
+		object->SetState(A_IScriptable::state::Init);
 
-		instance->SetState(IScript::state::Init);
-
-		_scriptInstances.push_back(instance);
-
-		return instance;
+		_scriptInstances.push_back(object);
 	}
+
+	A_IScriptable::A_IScriptable(uint32_t scriptID) : _scriptID(scriptID) 
+		{};
 	
-	IScript::IScript(uint32_t type, shared_ptr<uint16_t[]> states, int stateCount) : 
-		_type(type), _stateOffsets(states), _stateCount(stateCount)
+	void A_IScriptable::Setup(uint32_t type, shared_ptr<uint16_t[]> states, int stateCount)
 	{	
+		_type         = type;
+		_stateOffsets = states;
+		_stateCount   = stateCount;
 	}
 
-	void IScript::SetState(state state)
+	void A_IScriptable::SetState(state state)
 	{
 		int iState = static_cast<int>(state);
 
@@ -146,7 +147,7 @@ namespace script
 		_pointer = _stateOffsets[iState];
 	}
 
-	void IScript::Run(ticks currentTick, data::StreamReader reader)
+	void A_IScriptable::Run(ticks currentTick, data::StreamReader reader)
 	{
 		if (currentTick < _waitTimer)
 			return;
@@ -158,6 +159,8 @@ namespace script
 		opcode   opcode;
 
 		bool yield = false;
+
+		uint16_t frame;
 
 		while(!yield)
 		{
@@ -173,7 +176,10 @@ namespace script
 					break;
 
 				case opcode::PlayFrame:
-					reader.Read(_currentSpriteFrame);
+					reader.Read(frame);
+
+					PlayFrame(frame);
+
 					break;
 
 				case opcode::Goto:
@@ -197,10 +203,10 @@ namespace script
 			_pointer = reader.GetPointer();
 		}
 	}
-
-	const int IScript::GetFrameIndex() const 
+	
+	const uint32_t A_IScriptable::GetScriptID() const
 	{
-		return _currentSpriteFrame;
+		return _scriptID;
 	}
 
 	void IScriptEngine::PlayNextFrame()

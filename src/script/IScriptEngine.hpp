@@ -29,26 +29,33 @@ namespace script
 		int GetStateCount();
 	};
 
-	class IScript
+	class A_IScriptable
 	{
 	public:
 
 		enum class opcode : uint8_t;
 		enum class state : uint16_t;
 
-		IScript(uint32_t type, std::shared_ptr<uint16_t[]> stateOffsets, int stateCount);
+	public:
 
+		A_IScriptable(uint32_t scriptID);
+
+		virtual void PlayFrame(int frame) = 0;
+
+
+		const uint32_t GetScriptID() const;
+
+		void Setup(uint32_t type, std::shared_ptr<uint16_t[]> stateOffsets, int stateCount);
 		void SetState(state state);
 		void Run(ticks currentTick, data::StreamReader codeReader);
 
-		const int GetFrameIndex() const;
-
 	private:
 
+		const uint32_t _scriptID;
+		
 		uint32_t _type;
 		uint16_t _pointer = 0;
 		ticks    _waitTimer = 0;
-		uint16_t _currentSpriteFrame = 0;
 		int      _stateCount;
 
 		std::shared_ptr<uint16_t[]> _stateOffsets;
@@ -61,21 +68,20 @@ namespace script
 		void Init();
 		void SetScriptData(std::shared_ptr<uint8_t[]> data, int dataSize);
 		void PlayNextFrame();
-
-		std::shared_ptr<IScript> InstantiateScript(uint32_t scriptEntryID);
+		void RunScriptableObject(std::shared_ptr<A_IScriptable> object);
 
 	private:
 
 		ticks _elaspedTicks;
 
-		std::vector<IScriptEntry>        _entries;
-		std::shared_ptr<uint8_t[]>       _scriptData;
-		int                              _scriptDataSize;
+		std::vector<IScriptEntry>  _entries;
+		std::shared_ptr<uint8_t[]> _scriptData;
+		int                        _scriptDataSize;
 
-		std::vector<std::shared_ptr<IScript>> _scriptInstances;
+		std::vector<std::shared_ptr<A_IScriptable>> _scriptInstances;
 	};
 
-	enum class IScript::opcode : uint8_t
+	enum class A_IScriptable::opcode : uint8_t
 	{
 		PlayFrame = 0x00,
 
@@ -88,7 +94,7 @@ namespace script
 		Imgulnextid = 0x3D,
 	};
 
-	enum class IScript::state : uint16_t
+	enum class A_IScriptable::state : uint16_t
 	{
 		Init = 0,
 		Death,
