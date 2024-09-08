@@ -13,11 +13,24 @@ namespace data
 {
 	typedef glm::vec<2, uint16_t> dimensions;
 
+	enum class EntryName : int { 
+		Unknown = -1,
+		TileSet, 
+		Dimensions, 
+		Terrain_Gameplay, 
+		Terrain_Editor,
+		MapType, Version,
+		Sprites_Gameplay 
+	};
+
 	struct MapSprite;
 
 	struct MapInfo
 	{
-		bool     onlyEditorInfo;
+		MapInfo(const std::vector<EntryName>& ignoredEntries);
+
+		std::pair<tileGroupID, tileVariation> GetTile(int x, int y);
+
 		char 		 mapType[4]; // equals either RAWS or RAWB
 		uint16_t version;	
 		Tileset  tileset;
@@ -30,9 +43,7 @@ namespace data
 
 		std::vector<MapSprite> sprites;
 
-		MapInfo(bool onlyEditorInfo);
-
-		std::pair<tileGroupID, tileVariation> GetTile(int x, int y);
+		const std::vector<EntryName>& ignoredEntries;
 	};
 
 	struct MapSprite

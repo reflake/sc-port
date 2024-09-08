@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
 #include <cassert>
@@ -18,8 +19,9 @@ namespace data
 {
 	const uint16_t MAX_MAP_SIZE = 256;
 
+	using enum EntryName;
 
-	MapInfo::MapInfo(bool onlyEditorInfo) : onlyEditorInfo(onlyEditorInfo) {}
+	MapInfo::MapInfo(const std::vector<EntryName>& ignoredEntries) : ignoredEntries(ignoredEntries) {}
 
 	std::pair<tileGroupID, tileVariation> MapInfo::GetTile(int x, int y)
 	{
@@ -34,17 +36,7 @@ namespace data
 		int dataSize;
 	};
 
-	enum EntryName { 
-		Unknown = -1,
-		TileSet, 
-		Dimensions, 
-		Terrain_Gameplay, 
-		Terrain_Editor,
-		MapType, Version,
-		Sprites_Gameplay 
-	};
-
-	std::unordered_map<string, EntryName> nameMap = {
+	std::unordered_map<string, EntryName> entrySignatureMap = {
 		{ "ERA ", TileSet },
 		{ "DIM ", Dimensions },
 		{ "MTXM", Terrain_Gameplay },
@@ -60,11 +52,21 @@ namespace data
 
 		assert(dataSize >= 0);
 
-		string nameString = string(chunk.name, 4);
-		EntryName nameValue = nameMap.find(nameString) != nameMap.end() ? nameMap[nameString] : Unknown;
+		string signature = string(chunk.name, 4);
+		EntryName entryName = entrySignatureMap.find(signature) != entrySignatureMap.end() ? entrySignatureMap[signature] : Unknown;
 		int count;
 
-		switch (nameValue) {
+		if (std::any_of(mapInfo.ignoredEntries.begin(), 
+										mapInfo.ignoredEntries.end(), 
+										[entryName](auto& ignoredEntry) {
+			return ignoredEntry == entryName;
+		}))
+		{
+			file.Skip(dataSize);
+			return true;
+		}
+
+		switch (entryName) {
 			case TileSet:
 				assert(dataSize == sizeof(mapInfo.tileset));
 				file.Read(mapInfo.tileset);
@@ -78,20 +80,12 @@ namespace data
 			case Terrain_Gameplay:
 			case Terrain_Editor:
 
-				if (mapInfo.onlyEditorInfo && nameValue == Terrain_Editor || 
-				   !mapInfo.onlyEditorInfo && nameValue == Terrain_Gameplay)
-				{
-					assert(dataSize <= MAX_MAP_SIZE * MAX_MAP_SIZE * sizeof(uint16_t));
+				assert(dataSize <= MAX_MAP_SIZE * MAX_MAP_SIZE * sizeof(uint16_t));
 
-					mapInfo.tileCount = dataSize / sizeof(uint16_t);
-					mapInfo.terrain = std::make_shared<uint16_t[]>(mapInfo.tileCount);
+				mapInfo.tileCount = dataSize / sizeof(uint16_t);
+				mapInfo.terrain = std::make_shared<uint16_t[]>(mapInfo.tileCount);
 
-					file.ReadBinary(mapInfo.terrain.get(), dataSize);
-				}
-				else 
-				{
-					file.Skip(dataSize);
-				}
+				file.ReadBinary(mapInfo.terrain.get(), dataSize);
 				break;
 
 			case MapType:
