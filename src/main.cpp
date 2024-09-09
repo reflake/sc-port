@@ -318,6 +318,7 @@ void placeScriptedDoodads(
 
 	script::ReadIScriptFile(storage, "scripts/iscript.bin", app.scriptEngine);
 
+	app.scriptEngine.Clear();
 	app.scriptEngine.Init();
 	app.scriptedDoodads.clear();
 

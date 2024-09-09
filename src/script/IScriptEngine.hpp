@@ -65,6 +65,7 @@ namespace script
 	{
 	public:
 
+		void Clear();
 		void Init();
 		void SetScriptData(std::shared_ptr<uint8_t[]> data, int dataSize);
 		void Process();

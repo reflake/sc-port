@@ -53,6 +53,11 @@ namespace script
 		}
 	}
 
+	void IScriptEngine::Clear()
+	{
+		_scriptInstances.clear();
+	}
+
 	void IScriptEngine::Init()
 	{
 		data::StreamReader reader(_scriptData, _scriptDataSize);
