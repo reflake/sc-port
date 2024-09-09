@@ -209,7 +209,7 @@ namespace script
 		return _scriptID;
 	}
 
-	void IScriptEngine::PlayNextFrame()
+	void IScriptEngine::Process()
 	{
 		data::StreamReader codeReader(_scriptData, _scriptDataSize);
 
@@ -217,7 +217,12 @@ namespace script
 		{
 			script->Run(_elaspedTicks, codeReader);
 		}
+	}
 
+	void IScriptEngine::PlayNextFrame()
+	{
+		Process();
+		
 		_elaspedTicks++;
 	}
 

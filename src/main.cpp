@@ -53,7 +53,6 @@
 
 using boost::format;
 
-using std::pair;
 using std::runtime_error;
 using std::string;
 using std::vector;
@@ -245,27 +244,27 @@ void drawMap(MapInfo &mapInfo, App &app,
 	for (int x = leftBorderIndex; x < rightBorderIndex; x++)
 	for (int y = upBorderIndex; y < downBorderIndex; y++) {
 
-		auto mapTile = mapInfo.GetTile(x, y);
-		auto tileGroup = app.tilesetData.tileGroups[std::get<tileGroupID>(mapTile)];
+		auto [tileGroupID, variation] = mapInfo.GetTile(x, y);
+		auto tileGroup = app.tilesetData.tileGroups[tileGroupID];
 
 		tileID tileId;
 
 		if ((tileGroup.type & data::Terrain) > 0) {
 
-			tileId = tileGroup.terrain.variations[std::get<tileVariation>(mapTile)];
+			tileId = tileGroup.terrain.variations[variation];
 		} else {
 
-			tileId = tileGroup.doodad.tiles[std::get<tileVariation>(mapTile)];
+			tileId = tileGroup.doodad.tiles[variation];
 		}
 
-		auto tile = app.tilesetAtlas.GetTile(tileId);
+		auto [tileSurface, tileRect] = app.tilesetAtlas.GetTile(tileId);
 
 		SDL_Rect destRect{.x = x * TILE_SIZE - static_cast<int>(pos.x),
 											.y = y * TILE_SIZE - static_cast<int>(pos.y),
 											.w = TILE_SIZE,
 											.h = TILE_SIZE};
 
-		SDL_BlitSurface(tile.first, &tile.second, app.screenSurface, &destRect);
+		SDL_BlitSurface(tileSurface, &tileRect, app.screenSurface, &destRect);
 	}
 
 	for(auto& doodad : app.scriptedDoodads)
@@ -397,9 +396,8 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 
 		app.tilesetAtlas.Free();
 
-		for(auto& pair : app.spriteAtlases)
+		for(auto& [_, spriteAtlas] : app.spriteAtlases)
 		{
-			auto& spriteAtlas = std::get<SpriteAtlas>(pair);
 			spriteAtlas.Free();
 		}
 
@@ -408,6 +406,8 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 		createTilesetAtlas<10>(app.tilesetData, app.tilesetAtlas);
 		placeScriptedDoodads(app, storage, mapInfo, app.tilesetData);
 		createDoodadAtlas(app, storage);
+
+		app.scriptEngine.Process();
 
 		return true;
 	}

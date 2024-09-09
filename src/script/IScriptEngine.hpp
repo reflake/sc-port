@@ -67,6 +67,7 @@ namespace script
 
 		void Init();
 		void SetScriptData(std::shared_ptr<uint8_t[]> data, int dataSize);
+		void Process();
 		void PlayNextFrame();
 		void RunScriptableObject(std::shared_ptr<A_IScriptable> object);
 
