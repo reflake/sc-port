@@ -1,34 +1,26 @@
-#include "data/Grp.hpp"
-#include "data/Images.hpp"
-#include "data/Sprite.hpp"
-#include "data/TextStrings.hpp"
-#include "render/Palette.hpp"
-#include "render/Tileset.hpp"
-#include "script/IScriptEngine.hpp"
-#include <SDL_stdinc.h>
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
 
 #include <algorithm>
+#include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
-#include <boost/algorithm/string.hpp>
 #include <CascLib.h>
 #include <cassert>
-#include <cstring>
 #include <commdlg.h> // windows only
+#include <cstring>
 #include <fileapi.h>
 #include <handleapi.h>
 #include <iostream>
+#include <memory>
 #include <minwindef.h>
 #include <stdexcept>
-#include <memory>
+#include <type_traits>
 #include <unistd.h>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 #include <windows.h>
 
 #include <SDL_events.h>
@@ -36,20 +28,28 @@
 #include <SDL_keycode.h>
 #include <SDL_pixels.h>
 #include <SDL_rect.h>
+#include <SDL_stdinc.h>
 #include <SDL_surface.h>
+#include <SDL_syswm.h>
 #include <SDL_video.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL.h>
-#include <SDL_syswm.h>
 
 #include "data/Common.hpp"
+#include "data/Grp.hpp"
+#include "data/Images.hpp"
 #include "data/Map.hpp"
 #include "data/Palette.hpp"
+#include "data/Sprite.hpp"
+#include "data/TextStrings.hpp"
 #include "data/Tile.hpp"
+#include "entity/ScriptedDoodad.hpp"
 #include "filesystem/MpqArchive.hpp"
 #include "filesystem/Storage.hpp"
 #include "render/Atlas.hpp"
-#include "entity/ScriptedDoodad.hpp"
+#include "render/Palette.hpp"
+#include "render/Tileset.hpp"
+#include "script/IScriptEngine.hpp"
 
 using boost::format;
 
