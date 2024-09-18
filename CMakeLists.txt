@@ -7,31 +7,39 @@ set(CMAKE_CXX_STANDARD 23)
 # SDL2 Libraries
 find_package(SDL2 REQUIRED)
 
-add_executable(Engine src/main.cpp)
+add_executable(Engine src/engine/main.cpp)
 
 target_sources(Engine 
   PRIVATE 
-    src/data/Common.cpp
-    src/data/Grp.cpp
-    src/data/Images.cpp
-    src/data/Map.cpp
-    src/data/Palette.cpp
-    src/data/Sprite.cpp
-    src/data/TextStrings.cpp
-    src/data/Tile.cpp
+    src/engine/data/Common.cpp
+    src/engine/data/Grp.cpp
+    src/engine/data/Images.cpp
+    src/engine/data/Map.cpp
+    src/engine/data/Palette.cpp
+    src/engine/data/Sprite.cpp
+    src/engine/data/TextStrings.cpp
+    src/engine/data/Tile.cpp
 
-    src/entity/ScriptedDoodad.cpp
+    src/engine/entity/ScriptedDoodad.cpp
 
-    src/filesystem/MpqArchive.cpp
-    src/filesystem/MpqFile.cpp
-    src/filesystem/StorageFile.cpp
-    src/filesystem/Storage.cpp
+    src/engine/filesystem/MpqArchive.cpp
+    src/engine/filesystem/MpqFile.cpp
+    src/engine/filesystem/StorageFile.cpp
+    src/engine/filesystem/Storage.cpp
 
-    src/meta/Unit.cpp
+    src/engine/meta/Unit.cpp
 
-    src/render/Atlas.cpp
+    src/engine/script/IScriptEngine.cpp
+  )
 
-    src/script/IScriptEngine.cpp
+add_library(Render 
+  PRIVATE
+    src/renderer/render/Atlas.cpp
+    
+  SHARED
+    src/renderer/render/Atlas.hpp
+    src/renderer/render/Palette.hpp
+    src/renderer/render/Tileset.hpp
   )
 
 # Find Winsock library
