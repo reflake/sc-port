@@ -50,7 +50,7 @@
 #include "render/Palette.hpp"
 #include "render/Tileset.hpp"
 #include "script/IScriptEngine.hpp"
-#include "../renderer/GraphicAPI.hpp"
+#include "../renderer/Graphics.hpp"
 
 using boost::format;
 
@@ -115,7 +115,7 @@ struct App {
 	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
 	unordered_map<uint32_t, SpriteAtlas> spriteAtlases;
 
-	shared_ptr<renderer::GraphicAPI> graphicApi;
+	shared_ptr<renderer::A_Graphics> graphics;
 	unordered_set<renderer::grpID>   loadedSprites;
 };
 
@@ -277,14 +277,14 @@ void drawMap(MapInfo &mapInfo, App &app,
 		auto grpID = doodad->grpID;
 		auto frame = doodad->GetCurrentFrame();
 
-		app.graphicApi->DrawGrpFrame(grpID, frame, doodad->pos);
+		app.graphics->DrawGrpFrame(grpID, frame, doodad->pos);
 	}
 
 	SDL_UpdateWindowSurface(app.window);
 
 	if (renderer::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
 
-		app.graphicApi->CycleWaterPalette();
+		app.graphics->CycleWaterPalette();
 	}
 }
 
@@ -339,7 +339,7 @@ void loadDoodadGrps(App& app, Storage& storage)
 {
 	for(auto& doodad : app.scriptedDoodads)
 	{
-		app.graphicApi->LoadGrp(doodad->grpID);
+		app.graphics->LoadGrp(doodad->grpID);
 		app.loadedSprites.insert(doodad->grpID);
 	}
 }
@@ -354,7 +354,7 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 
 		for(auto& grpID : app.loadedSprites)
 		{
-			app.graphicApi->FreeGrp(grpID);
+			app.graphics->FreeGrp(grpID);
 		}
 
 		app.loadedSprites.clear();

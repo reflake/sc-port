@@ -1,4 +1,4 @@
-#include "Api.hpp"
+#include "Graphics.hpp"
 
 #include <glm/vec2.hpp>
 
@@ -7,7 +7,7 @@ using glm::vec2;
 namespace renderer::vulkan
 {
 	
-	void Api::LoadGrp(grpID grpID)
+	void Graphics::LoadGrp(grpID grpID)
 	{
 	/* Примерный алгоритм действий для чтения Grp спрайтов
 
@@ -60,7 +60,7 @@ namespace renderer::vulkan
 		app.spriteAtlases[doodad->grpID] = atlas;*/
 	}
 
-	void Api::DrawGrpFrame(grpID grpID, uint32_t frame, vec2 position)
+	void Graphics::DrawGrpFrame(grpID grpID, uint32_t frame, vec2 position)
 	{
 		/* Примерный алгоритм отрисовки спрайта на экран
 		
@@ -74,7 +74,7 @@ namespace renderer::vulkan
 		SDL_BlitSurface(surface, nullptr, app.screenSurface, &destRect);*/
 	}
 
-	void Api::CycleWaterPalette()
+	void Graphics::CycleWaterPalette()
 	{
 		/* примерный алгоритм действий
 		

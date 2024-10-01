@@ -8,7 +8,7 @@ namespace renderer
 	typedef uint32_t grpID;
 	typedef uint16_t tileID;
 
-	class GraphicAPI
+	class A_Graphics
 	{
 	public:
 

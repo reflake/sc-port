@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../GraphicAPI.hpp"
+#include "../Graphics.hpp"
 
 namespace renderer::vulkan
 {
-	class Api : public GraphicAPI
+	class Graphics : public A_Graphics
 	{
 	public:
 
