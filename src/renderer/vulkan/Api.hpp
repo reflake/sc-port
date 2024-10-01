@@ -2,7 +2,7 @@
 
 #include "../GraphicAPI.hpp"
 
-namespace renderer
+namespace renderer::vulkan
 {
 	class Api : public GraphicAPI
 	{
@@ -12,5 +12,7 @@ namespace renderer
 		void DrawGrpFrame(grpID grpID, uint32_t frame, glm::vec2 position) override;
 
 		void CycleWaterPalette() override;
+
+		const char* GetName() const override { return "Vulkan"; }
 	};
 }

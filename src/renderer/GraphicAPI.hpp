@@ -21,5 +21,7 @@ namespace renderer
 		virtual void FreeTileset(Tileset) = 0;
 
 		virtual void CycleWaterPalette();
+
+		virtual const char* GetName() const;
 	};
 }

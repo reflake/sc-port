@@ -4,7 +4,7 @@
 
 using glm::vec2;
 
-namespace renderer
+namespace renderer::vulkan
 {
 	
 	void Api::LoadGrp(grpID grpID)
