@@ -29,7 +29,7 @@ namespace data
 	{
 		MapInfo(const std::vector<EntryName>& ignoredEntries);
 
-		std::pair<tileGroupID, tileVariation> GetTile(int x, int y);
+		std::pair<tileGroupID, tileVariation> GetTile(int x, int y) const;
 
 		char 		 mapType[4]; // equals either RAWS or RAWB
 		uint16_t version;	

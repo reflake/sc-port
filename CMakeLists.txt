@@ -9,6 +9,10 @@ find_package(SDL2 REQUIRED)
 
 add_executable(Engine src/engine/main.cpp)
 
+target_include_directories(Engine PUBLIC
+    src/shared/
+  )
+
 target_sources(Engine 
   PRIVATE 
     src/engine/data/Common.cpp
@@ -27,19 +31,15 @@ target_sources(Engine
     src/engine/filesystem/StorageFile.cpp
     src/engine/filesystem/Storage.cpp
 
-    src/engine/meta/Unit.cpp
+    src/engine/meta/UnitTable.cpp
 
     src/engine/script/IScriptEngine.cpp
   )
 
-add_library(Render 
-  PRIVATE
-    src/renderer/render/Atlas.cpp
-    
-  SHARED
-    src/renderer/render/Atlas.hpp
-    src/renderer/render/Palette.hpp
-    src/renderer/render/Tileset.hpp
+add_library(Renderer STATIC src/renderer/render/Atlas.cpp)
+
+target_include_directories(Renderer PUBLIC
+    src/shared/
   )
 
 # Find Winsock library

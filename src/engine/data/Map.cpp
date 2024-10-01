@@ -23,7 +23,7 @@ namespace data
 
 	MapInfo::MapInfo(const std::vector<EntryName>& ignoredEntries) : ignoredEntries(ignoredEntries) {}
 
-	std::pair<tileGroupID, tileVariation> MapInfo::GetTile(int x, int y)
+	std::pair<tileGroupID, tileVariation> MapInfo::GetTile(int x, int y) const
 	{
 		auto val = terrain[x + y * dimensions.x];
 

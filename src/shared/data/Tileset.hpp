@@ -1,6 +1,6 @@
 #include <cstdint>
 
-namespace renderer
+namespace data
 {
 	enum class Tileset: uint16_t { 
 		Badlands, SpacePlatform, Installation, 

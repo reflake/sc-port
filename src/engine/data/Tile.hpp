@@ -4,6 +4,8 @@
 #include <glm/vec4.hpp>
 #include <unordered_map>
 
+#include <data/Tileset.hpp>
+
 #include "Common.hpp"
 #include "Palette.hpp"
 

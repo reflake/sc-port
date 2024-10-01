@@ -1,8 +1,8 @@
-#include "Common.hpp"
+#include "Tileset.hpp"
 
 #include <stdexcept>
 
-namespace renderer
+namespace data
 {
 	bool HasTileSetWater(Tileset tileset)
 	{

@@ -1,7 +1,7 @@
 #include <cstdint>
 #include <glm/vec2.hpp>
 
-#include "Common.hpp"
+#include <data/Tileset.hpp>
 
 namespace renderer
 {
@@ -16,9 +16,9 @@ namespace renderer
 		virtual void DrawGrpFrame(grpID, uint32_t frame, glm::vec2 position) = 0;
 		virtual void FreeGrp(grpID) = 0;
 
-		virtual void LoadTileset(Tileset) = 0;
-		virtual void DrawTile(Tileset, tileID, glm::vec2 position) = 0;
-		virtual void FreeTileset(Tileset) = 0;
+		virtual void LoadTileset(data::Tileset) = 0;
+		virtual void DrawTile(data::Tileset, tileID, glm::vec2 position) = 0;
+		virtual void FreeTileset(data::Tileset) = 0;
 
 		virtual void CycleWaterPalette();
 
