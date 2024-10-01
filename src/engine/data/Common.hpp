@@ -15,14 +15,6 @@ namespace data
 	typedef uint16_t  tileID;
 	typedef glm::vec2 position;
 
-	enum class Tileset: uint16_t { 
-		Badlands, SpacePlatform, Installation, 
-		Ashworld, Jungle, Desert, Arctic,
-		Twilight
-	};
-
-	extern bool HasTileSetWater(Tileset tileset);
-
 	class StreamReader
 	{
 	public:

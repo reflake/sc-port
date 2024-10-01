@@ -50,6 +50,7 @@
 #include "render/Palette.hpp"
 #include "render/Tileset.hpp"
 #include "script/IScriptEngine.hpp"
+#include "../renderer/GraphicAPI.hpp"
 
 using boost::format;
 
@@ -58,6 +59,7 @@ using std::string;
 using std::vector;
 using std::shared_ptr;
 using std::unordered_map;
+using std::unordered_set;
 
 using data::TILE_SIZE;
 using data::tileID;
@@ -112,6 +114,9 @@ struct App {
 	IScriptEngine                        scriptEngine;
 	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
 	unordered_map<uint32_t, SpriteAtlas> spriteAtlases;
+
+	shared_ptr<renderer::GraphicAPI> graphicApi;
+	unordered_set<renderer::grpID>   loadedSprites;
 };
 
 void freeWindow(App&);
@@ -269,23 +274,17 @@ void drawMap(MapInfo &mapInfo, App &app,
 
 	for(auto& doodad : app.scriptedDoodads)
 	{
-		auto spriteAtlas = app.spriteAtlases[doodad->grpID];
-		auto frameIndex  = doodad->GetCurrentFrame();
-		auto surface     = spriteAtlas.surfaces[frameIndex];
-		auto destRect    = spriteAtlas.rects[frameIndex];
+		auto grpID = doodad->grpID;
+		auto frame = doodad->GetCurrentFrame();
 
-		destRect.x += doodad->pos.x - static_cast<int>(pos.x);
-		destRect.y += doodad->pos.y - static_cast<int>(pos.y);
-
-		SDL_BlitSurface(surface, nullptr, app.screenSurface, &destRect);
+		app.graphicApi->DrawGrpFrame(grpID, frame, doodad->pos);
 	}
 
 	SDL_UpdateWindowSurface(app.window);
 
-	if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
+	if (renderer::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
 
-		cyclePaletteColor<1, 6>(app.tilesetAtlas);
-		cyclePaletteColor<7, 7>(app.tilesetAtlas);
+		app.graphicApi->CycleWaterPalette();
 	}
 }
 
@@ -336,56 +335,12 @@ void placeScriptedDoodads(
 	}
 }
 
-void createDoodadAtlas(App& app, Storage& storage)
+void loadDoodadGrps(App& app, Storage& storage)
 {
-	TextStringsTable imageStrings;
-	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
-	uint8_t pixels[256 * 256];
-
 	for(auto& doodad : app.scriptedDoodads)
 	{
-		if (app.spriteAtlases.contains(doodad->grpID))
-			continue;
-
-		auto grpPath = imageStrings.entries[doodad->grpID];
-
-		Grp grp;
-		Grp::ReadGrpFile(storage, grpPath, grp);
-
-		SpriteAtlas atlas;
-
-		atlas.frames = grp.GetHeader().frameAmount;
-		atlas.surfaces = new SDL_Surface*[atlas.frames];
-
-		int frameIndex = 0;
-
-		for(auto& frame : grp.GetFrames())
-		{
-			SDL_Surface* surface = SDL_CreateRGBSurface(0, frame.dimensions.x, frame.dimensions.y, 8, 0, 0, 0, 0);
-			SDL_SetSurfacePalette(surface, app.tilesetAtlas.palette);
-
-			SDL_LockSurface(surface);
-
-			grp.GetFramePixels(frameIndex, pixels);
-
-			int width = frame.dimensions.x;
-			auto surfacePixels = reinterpret_cast<uint8_t*>(surface->pixels);
-
-			for(int i = 0; i < surface->h; i++)
-			{
-				memcpy(surfacePixels + i * surface->pitch, pixels + i * width, width);
-			}
-
-			SDL_UnlockSurface(surface);
-			SDL_SetColorKey(surface, SDL_TRUE, 0x00000000);
-
-			atlas.rects.push_back(SDL_Rect { 
-				.x = frame.posOffset.x - grp.GetHeader().dimensions.x / 2, .y = frame.posOffset.y - grp.GetHeader().dimensions.y / 2,
-				.w = frame.dimensions.x, .h = frame.dimensions.y });
-			atlas.surfaces[frameIndex++] = surface;
-		}
-
-		app.spriteAtlases[doodad->grpID] = atlas;
+		app.graphicApi->LoadGrp(doodad->grpID);
+		app.loadedSprites.insert(doodad->grpID);
 	}
 }
 
@@ -397,16 +352,16 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 
 		app.tilesetAtlas.Free();
 
-		for(auto& [_, spriteAtlas] : app.spriteAtlases)
+		for(auto& grpID : app.loadedSprites)
 		{
-			spriteAtlas.Free();
+			app.graphicApi->FreeGrp(grpID);
 		}
 
-		app.spriteAtlases.clear();
+		app.loadedSprites.clear();
 
 		createTilesetAtlas<10>(app.tilesetData, app.tilesetAtlas);
 		placeScriptedDoodads(app, storage, mapInfo, app.tilesetData);
-		createDoodadAtlas(app, storage);
+		loadDoodadGrps(app, storage);
 
 		app.scriptEngine.Process();
 
