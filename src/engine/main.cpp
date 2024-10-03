@@ -1,3 +1,4 @@
+#include "data/Tileset.hpp"
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
@@ -80,10 +81,6 @@ using entity::ScriptedDoodad;
 
 using filesystem::Storage;
 
-using render::GridAtlas;
-using render::cyclePaletteColor;
-using render::createTilesetAtlas;
-
 using script::IScriptEngine;
  
 struct SpriteAtlas;
@@ -109,7 +106,6 @@ struct App {
 	SDL_Surface*  screenSurface = nullptr;
 
 	TilesetData    tilesetData;
-	GridAtlas      tilesetAtlas;
 
 	IScriptEngine                        scriptEngine;
 	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
@@ -242,6 +238,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 		return;
 
 	app.graphics->ClearDepth();
+	app.graphics->SetTilesetPalette(mapInfo.tileset);
 
 	int leftBorderIndex  = std::max<int>(0, pos.x / TILE_SIZE);
 	int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (pos.x + SCREEN_WIDTH) / TILE_SIZE + 1);
@@ -264,14 +261,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 			tileId = tileGroup.doodad.tiles[variation];
 		}
 
-		auto [tileSurface, tileRect] = app.tilesetAtlas.GetTile(tileId);
-
-		SDL_Rect destRect{.x = x * TILE_SIZE - static_cast<int>(pos.x),
-											.y = y * TILE_SIZE - static_cast<int>(pos.y),
-											.w = TILE_SIZE,
-											.h = TILE_SIZE};
-
-		SDL_BlitSurface(tileSurface, &tileRect, app.screenSurface, &destRect);
+		app.graphics->DrawTile(mapInfo.tileset, tileId, { x * TILE_SIZE, y * TILE_SIZE });
 	}
 
 	for(auto& doodad : app.scriptedDoodads)
@@ -282,7 +272,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 		app.graphics->DrawGrpFrame(grpID, frame, doodad->pos);
 	}
 
-	app.graphics->Present();
+	app.graphics->PresentToScreen();
 
 	if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
 
@@ -337,6 +327,11 @@ void placeScriptedDoodads(
 	}
 }
 
+void loadTileset(App& app, data::Tileset tileset)
+{
+	app.graphics->LoadTileset(tileset);
+}
+
 void loadDoodadGrps(App& app, Storage& storage)
 {
 	for(auto& doodad : app.scriptedDoodads)
@@ -350,9 +345,11 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 {
 	try
 	{
+		auto loadedTileset = mapInfo.tileset;
+
 		loadMap(app, mapPath, storage, mapInfo);
 
-		app.tilesetAtlas.Free();
+		app.graphics->FreeTileset(loadedTileset);
 
 		for(auto& grpID : app.loadedSprites)
 		{
@@ -361,7 +358,7 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 
 		app.loadedSprites.clear();
 
-		createTilesetAtlas<10>(app.tilesetData, app.tilesetAtlas);
+		loadTileset(app, mapInfo.tileset);
 		placeScriptedDoodads(app, storage, mapInfo, app.tilesetData);
 		loadDoodadGrps(app, storage);
 

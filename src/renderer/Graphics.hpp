@@ -27,7 +27,7 @@ namespace renderer
 		virtual void CycleWaterPalette();
 
 		virtual void ClearDepth();
-		virtual void Present();
+		virtual void PresentToScreen();
 
 		virtual const char* GetName() const;
 	};
