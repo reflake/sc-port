@@ -241,6 +241,8 @@ void drawMap(MapInfo &mapInfo, App &app,
 	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
 		return;
 
+	app.graphics->ClearDepth();
+
 	int leftBorderIndex  = std::max<int>(0, pos.x / TILE_SIZE);
 	int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (pos.x + SCREEN_WIDTH) / TILE_SIZE + 1);
 	int upBorderIndex    = std::max<int>(0, pos.y / TILE_SIZE);
@@ -280,9 +282,9 @@ void drawMap(MapInfo &mapInfo, App &app,
 		app.graphics->DrawGrpFrame(grpID, frame, doodad->pos);
 	}
 
-	SDL_UpdateWindowSurface(app.window);
+	app.graphics->Present();
 
-	if (renderer::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
+	if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
 
 		app.graphics->CycleWaterPalette();
 	}

@@ -26,20 +26,26 @@ target_sources(Engine
 
     src/engine/entity/ScriptedDoodad.cpp
 
-    src/engine/filesystem/MpqArchive.cpp
-    src/engine/filesystem/MpqFile.cpp
-    src/engine/filesystem/StorageFile.cpp
-    src/engine/filesystem/Storage.cpp
-
     src/engine/meta/UnitTable.cpp
 
     src/engine/script/IScriptEngine.cpp
+
+    src/shared/filesystem/MpqArchive.cpp
+    src/shared/filesystem/MpqFile.cpp
+    src/shared/filesystem/StorageFile.cpp
+    src/shared/filesystem/Storage.cpp
   )
 
 add_library(Renderer STATIC src/renderer/render/Atlas.cpp)
 
-target_include_directories(Renderer PUBLIC
+target_include_directories(Renderer 
+  PUBLIC
     src/shared/
+  )
+
+target_sources(Renderer
+  PRIVATE
+    src/shared/data/Tileset.cpp
   )
 
 # Find Winsock library

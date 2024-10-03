@@ -1,3 +1,5 @@
+#pragma once
+
 #include <cstdint>
 #include <glm/vec2.hpp>
 
@@ -20,7 +22,12 @@ namespace renderer
 		virtual void DrawTile(data::Tileset, tileID, glm::vec2 position) = 0;
 		virtual void FreeTileset(data::Tileset) = 0;
 
+		virtual void SetTilesetPalette(data::Tileset) = 0;
+
 		virtual void CycleWaterPalette();
+
+		virtual void ClearDepth();
+		virtual void Present();
 
 		virtual const char* GetName() const;
 	};
