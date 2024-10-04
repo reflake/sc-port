@@ -27,9 +27,6 @@ target_sources(Engine
 
     src/engine/script/IScriptEngine.cpp
 
-    src/renderer/vulkan/VulkanGraphics.cpp
-    src/renderer/vulkan/Window.cpp
-
     src/shared/data/Common.cpp
     src/shared/data/Grp.cpp
     src/shared/data/Images.cpp
@@ -52,6 +49,23 @@ target_include_directories(Renderer
 target_sources(Renderer
   PRIVATE
     src/shared/data/Tileset.cpp
+
+    src/renderer/vulkan/Device.cpp
+    src/renderer/vulkan/Queue.cpp
+    src/renderer/vulkan/SwapChain.cpp
+    src/renderer/vulkan/VulkanGraphics.cpp
+    src/renderer/vulkan/Window.cpp
+
+    src/shared/data/Common.cpp
+    src/shared/data/Grp.cpp
+    src/shared/data/Images.cpp
+    src/shared/data/TextStrings.cpp
+    src/shared/data/Tileset.cpp
+
+    src/shared/filesystem/MpqArchive.cpp
+    src/shared/filesystem/MpqFile.cpp
+    src/shared/filesystem/StorageFile.cpp
+    src/shared/filesystem/Storage.cpp
   )
 
 # Find Winsock library
@@ -102,6 +116,12 @@ if(Boost_FOUND)
 endif()
 
 target_link_libraries(Engine 
+  PRIVATE casc_static
+  PRIVATE storm
+  PRIVATE SDL2::SDL2-static)
+
+
+target_link_libraries(Renderer 
   PRIVATE casc_static
   PRIVATE storm
   PRIVATE SDL2::SDL2-static)

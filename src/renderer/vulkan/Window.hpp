@@ -2,7 +2,6 @@
 
 #include <vulkan/vulkan.h>
 #include <SDL_video.h>
-#include <string>
 #include <vector>
 
 namespace renderer::vulkan {

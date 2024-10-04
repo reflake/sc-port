@@ -1,17 +1,17 @@
 #pragma once
 
 #include <SDL2/SDL_video.h>
-
 #include <SDL_surface.h>
+
 #include <filesystem/Storage.hpp>
-#include <string>
-#include <vector>
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
 
 namespace renderer::vulkan
 {
+	extern int DeviceEvaluation(VkPhysicalDevice&);
+
 	class Graphics : public A_Graphics
 	{
 	public:

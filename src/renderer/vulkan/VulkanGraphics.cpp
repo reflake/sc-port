@@ -1,4 +1,6 @@
 #include "VulkanGraphics.hpp"
+
+#include "Device.hpp"
 #include "Window.hpp"
 
 #include <glm/vec2.hpp>
@@ -15,6 +17,8 @@ namespace renderer::vulkan
 	{
 		CreateInstance();
 		CreateWindowSurface(window, _instance, _surface);
+
+		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
 	}
 
 	void Graphics::CreateInstance()
@@ -48,7 +52,23 @@ namespace renderer::vulkan
 		}
 	}
 
+	int DeviceEvaluation(VkPhysicalDevice& device)
+	{
+		int score = 0;
 
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(device, &props);
+
+		if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+		{
+			score += 2000;
+		}
+
+		score += props.limits.maxImageDimension2D;
+		score += props.limits.maxMemoryAllocationCount;
+
+		return score;
+	}
 	
 	void Graphics::LoadGrp(grpID grpID)
 	{
