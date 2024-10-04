@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../data/Common.hpp"
+#include <data/Common.hpp>
 
 #include "../script/IScriptEngine.hpp"
 

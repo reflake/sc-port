@@ -4,12 +4,11 @@
 #include <glm/vec4.hpp>
 #include <unordered_map>
 
+#include <data/Common.hpp>
 #include <data/Tileset.hpp>
+#include <filesystem/Storage.hpp>
 
-#include "Common.hpp"
 #include "Palette.hpp"
-
-#include "../filesystem/Storage.hpp"
 
 namespace data
 {

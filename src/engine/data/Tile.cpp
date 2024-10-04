@@ -1,4 +1,5 @@
-#include "Common.hpp"
+#include <data/Common.hpp>
+
 #include "Tile.hpp"
 
 using boost::format;

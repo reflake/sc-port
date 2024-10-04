@@ -1,7 +1,6 @@
 #include <cassert>
 
 #include "Images.hpp"
-#include "Sprite.hpp"
 
 namespace data
 {

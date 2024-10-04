@@ -7,13 +7,11 @@
 #include <ostream>
 #include <stdexcept>
 #include <unordered_map>
+#include <filesystem/MpqFile.hpp>
 
 #include "Map.hpp"
 
-#include "../filesystem/MpqFile.hpp"
-
 using std::string;
-using std::runtime_error;
 
 namespace data
 {

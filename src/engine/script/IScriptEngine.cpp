@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
-#include "../filesystem/Storage.hpp"
+#include <filesystem/Storage.hpp>
 
 using filesystem::Storage;
 using filesystem::StorageFile;

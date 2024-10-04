@@ -2,8 +2,8 @@
 
 #include <cstdint>
 
-#include "Common.hpp"
-#include "../filesystem/Storage.hpp"
+#include <data/Common.hpp>
+#include <filesystem/Storage.hpp>
 
 namespace data
 {

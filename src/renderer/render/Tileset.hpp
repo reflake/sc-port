@@ -1,8 +1,6 @@
 
 #pragma once
 
-#include "Atlas.hpp"
-
 #include "../data/Tile.hpp"
 
 namespace render

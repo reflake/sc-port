@@ -11,17 +11,14 @@ add_executable(Engine src/engine/main.cpp)
 
 target_include_directories(Engine PUBLIC
     src/shared/
+    src/renderer/
   )
 
 target_sources(Engine 
   PRIVATE 
-    src/engine/data/Common.cpp
-    src/engine/data/Grp.cpp
-    src/engine/data/Images.cpp
     src/engine/data/Map.cpp
     src/engine/data/Palette.cpp
     src/engine/data/Sprite.cpp
-    src/engine/data/TextStrings.cpp
     src/engine/data/Tile.cpp
 
     src/engine/entity/ScriptedDoodad.cpp
@@ -29,6 +26,12 @@ target_sources(Engine
     src/engine/meta/UnitTable.cpp
 
     src/engine/script/IScriptEngine.cpp
+
+    src/shared/data/Common.cpp
+    src/shared/data/Grp.cpp
+    src/shared/data/Images.cpp
+    src/shared/data/TextStrings.cpp
+    src/shared/data/Tileset.cpp
 
     src/shared/filesystem/MpqArchive.cpp
     src/shared/filesystem/MpqFile.cpp

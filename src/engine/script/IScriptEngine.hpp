@@ -4,8 +4,8 @@
 #include <memory>
 #include <vector>
 
-#include "../data/Common.hpp"
-#include "../filesystem/Storage.hpp"
+#include <data/Common.hpp>
+#include <filesystem/Storage.hpp>
 
 namespace script
 {

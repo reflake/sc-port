@@ -36,22 +36,19 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL.h>
 
-#include "data/Common.hpp"
-#include "data/Grp.hpp"
-#include "data/Images.hpp"
+#include <data/Common.hpp>
+#include <data/Grp.hpp>
+#include <data/Images.hpp>
+#include <filesystem/MpqArchive.hpp>
+#include <filesystem/Storage.hpp>
+#include <Graphics.hpp>
+
 #include "data/Map.hpp"
-#include "data/Palette.hpp"
-#include "data/Sprite.hpp"
 #include "data/TextStrings.hpp"
+#include "data/Sprite.hpp"
 #include "data/Tile.hpp"
-#include "entity/ScriptedDoodad.hpp"
-#include "filesystem/MpqArchive.hpp"
-#include "filesystem/Storage.hpp"
-#include "render/Atlas.hpp"
-#include "render/Palette.hpp"
-#include "render/Tileset.hpp"
 #include "script/IScriptEngine.hpp"
-#include "../renderer/Graphics.hpp"
+#include "entity/ScriptedDoodad.hpp"
 
 using boost::format;
 
@@ -70,9 +67,9 @@ using data::tileVariation;
 using data::MapInfo;
 using data::TilesetData;
 using data::position;
+using data::ImagesTable;
 using data::TextStringsTable;
 using	data::SpriteTable;
-using	data::ImagesTable;
 using data::Grp;
 
 using data::EntryName;
@@ -499,8 +496,6 @@ int main(int argc, char *argv[]) {
 
 		usleep(16000);
 	};
-
-	app.tilesetAtlas.Free();
 
 	freeWindow(app);
 

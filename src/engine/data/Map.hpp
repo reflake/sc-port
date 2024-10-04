@@ -1,13 +1,14 @@
 #pragma once
 
-#include "Common.hpp"
 
 #include <glm/vec2.hpp>
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "../filesystem/MpqArchive.hpp"
+#include <data/Common.hpp>
+#include <data/Tileset.hpp>
+#include <filesystem/MpqArchive.hpp>
 
 namespace data
 {

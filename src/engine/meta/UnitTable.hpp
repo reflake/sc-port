@@ -3,8 +3,8 @@
 #include <cstdint>
 #include <glm/vec4.hpp>
 
-#include "../data/Common.hpp"
-#include "../filesystem/Storage.hpp"
+#include <data/Common.hpp>
+#include <filesystem/Storage.hpp>
 
 namespace meta
 {
