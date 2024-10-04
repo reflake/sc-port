@@ -41,7 +41,7 @@
 #include <filesystem/MpqArchive.hpp>
 #include <filesystem/Storage.hpp>
 
-#include <vulkan/Graphics.hpp>
+#include <vulkan/VulkanGraphics.hpp>
 
 #include "data/Map.hpp"
 #include "data/Sprite.hpp"
