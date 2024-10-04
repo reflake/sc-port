@@ -118,7 +118,7 @@ const int SCREEN_HEIGHT = 960;
 
 void createWindow(App& app)
 {
-	const int rendererFlags = SDL_RENDERER_ACCELERATED;
+	const int rendererFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
 	const int windowFlags   = 0;
 
 	freeWindow(app);

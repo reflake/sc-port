@@ -2,7 +2,11 @@
 
 #include <SDL2/SDL_video.h>
 
+#include <SDL_surface.h>
 #include <filesystem/Storage.hpp>
+#include <string>
+#include <vector>
+#include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
 
@@ -33,7 +37,16 @@ namespace renderer::vulkan
 
 	private:
 
+		void CreateInstance();
+		void EnableValidationLayers(VkInstanceCreateInfo&);
+
+	private:
+
+		VkInstance    _instance;
+		VkSurfaceKHR  _surface;
+
+		SDL_Window* const _window;
+
 		const filesystem::Storage& _storage;
-		const SDL_Window* _window;
 	};
 }

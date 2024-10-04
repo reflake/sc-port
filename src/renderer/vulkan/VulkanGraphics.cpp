@@ -1,15 +1,54 @@
 #include "VulkanGraphics.hpp"
+#include "Window.hpp"
 
 #include <glm/vec2.hpp>
+#include <stdexcept>
+#include <vulkan/vulkan_core.h>
 
 using glm::vec2;
+using std::runtime_error;
 
 namespace renderer::vulkan
 {
 	Graphics::Graphics(SDL_Window* window, filesystem::Storage& storage) : 
 		_window(window), _storage(storage)
 	{
+		CreateInstance();
+		CreateWindowSurface(window, _instance, _surface);
 	}
+
+	void Graphics::CreateInstance()
+	{
+		std::vector<const char*> extensions;
+
+		GetSdlRequiredExtensions(_window, extensions);
+
+		const char* appName = "gauss-app";
+		const char* engineName = "gauss-engine";
+		const int appVersion = 0;
+		const int engineVersion = 0;
+
+		VkApplicationInfo appInfo(
+			VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, 
+			appName, appVersion, engineName, engineVersion, VK_API_VERSION_1_0);
+
+		const int enabledLayerCount = 0;
+
+		VkInstanceCreateInfo instanceCreateInfo(
+			VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, &appInfo, 
+			enabledLayerCount, nullptr,
+			extensions.size(), extensions.data());
+
+		// TODO: implementation
+		EnableValidationLayers(instanceCreateInfo);
+
+		if (vkCreateInstance(&instanceCreateInfo, nullptr, &_instance) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to create Vulkan API instance");
+		}
+	}
+
+
 	
 	void Graphics::LoadGrp(grpID grpID)
 	{

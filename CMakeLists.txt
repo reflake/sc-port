@@ -28,6 +28,7 @@ target_sources(Engine
     src/engine/script/IScriptEngine.cpp
 
     src/renderer/vulkan/VulkanGraphics.cpp
+    src/renderer/vulkan/Window.cpp
 
     src/shared/data/Common.cpp
     src/shared/data/Grp.cpp
