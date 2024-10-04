@@ -1,14 +1,14 @@
 
 #pragma once
 
-#include "../data/Tile.hpp"
+#include "../engine/data/Tile.hpp"
 
 namespace render
 {
 	template<int L>
 	void createTilesetAtlas(data::TilesetData& tilesetData, GridAtlas& atlas)
 	{
-		auto palette = SDL_AllocPalette(256);
+		/*auto palette = SDL_AllocPalette(256);
 		auto colors = reinterpret_cast<const SDL_Color*>(tilesetData.paletteData.GetColors());
 
 		SDL_SetPaletteColors(palette, colors, 0, 256);
@@ -54,6 +54,6 @@ namespace render
 			SDL_UnlockSurface(surface);
 
 			atlas.pages.push_back(surface);
-		}
+		}*/
 	}
 }

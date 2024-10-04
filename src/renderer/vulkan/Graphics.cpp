@@ -6,6 +6,10 @@ using glm::vec2;
 
 namespace renderer::vulkan
 {
+	Graphics::Graphics(SDL_Window* window, filesystem::Storage& storage) : 
+		_window(window), _storage(storage)
+	{
+	}
 	
 	void Graphics::LoadGrp(grpID grpID)
 	{

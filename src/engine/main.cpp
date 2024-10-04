@@ -17,7 +17,6 @@
 #include <memory>
 #include <minwindef.h>
 #include <stdexcept>
-#include <type_traits>
 #include <unistd.h>
 #include <unordered_map>
 #include <unordered_set>
@@ -41,10 +40,10 @@
 #include <data/Images.hpp>
 #include <filesystem/MpqArchive.hpp>
 #include <filesystem/Storage.hpp>
-#include <Graphics.hpp>
+
+#include <vulkan/Graphics.hpp>
 
 #include "data/Map.hpp"
-#include "data/TextStrings.hpp"
 #include "data/Sprite.hpp"
 #include "data/Tile.hpp"
 #include "script/IScriptEngine.hpp"
@@ -68,9 +67,7 @@ using data::MapInfo;
 using data::TilesetData;
 using data::position;
 using data::ImagesTable;
-using data::TextStringsTable;
 using	data::SpriteTable;
-using data::Grp;
 
 using data::EntryName;
 
@@ -79,6 +76,8 @@ using entity::ScriptedDoodad;
 using filesystem::Storage;
 
 using script::IScriptEngine;
+
+using VulkanGraphics = renderer::vulkan::Graphics;
  
 struct SpriteAtlas;
 
@@ -166,6 +165,11 @@ void freeWindow(App& app)
 	{
 		SDL_DestroyWindow(app.window);
 	}
+}
+
+void initializeGraphicsAPI(App& app, Storage& storage)
+{
+	app.graphics = std::make_shared<VulkanGraphics>(app.window, storage);
 }
 
 bool showOpenDialog(char* out, int size, HWND hwnd)
@@ -259,7 +263,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 		}
 
 		app.graphics->DrawTile(mapInfo.tileset, tileId, { x * TILE_SIZE, y * TILE_SIZE });
-	}
+	};
 
 	for(auto& doodad : app.scriptedDoodads)
 	{
@@ -387,7 +391,7 @@ int main(int argc, char *argv[]) {
 	
 	initSDL();
 	createWindow(app);
-
+	initializeGraphicsAPI(app, storage);
 
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
