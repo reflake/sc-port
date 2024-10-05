@@ -20,7 +20,8 @@ namespace renderer::vulkan
 
 		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
 
-		// Create logical device and queues
+		// Only one main device is being used
+		_device = CreateLogicalDevice(physicalDevice, _surface);
 	}
 
 	void Graphics::CreateInstance()

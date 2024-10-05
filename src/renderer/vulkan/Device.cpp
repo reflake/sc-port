@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iterator>
+#include <set>
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -16,6 +17,7 @@ using std::vector;
 using std::runtime_error;
 using std::back_inserter;
 using std::max_element;
+using std::set;
 
 namespace renderer::vulkan
 {
@@ -112,5 +114,53 @@ namespace renderer::vulkan
 		}
 
 		return true;
+	}
+
+	VkDevice CreateLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkAllocationCallbacks* allocator = nullptr)
+	{
+		QueueFamilyIndices familyIndices = FindQueueFamilies(physicalDevice, surface);
+
+		set<uint32_t> uniqueQueueFamilies = { familyIndices.graphicsFamily.value(), familyIndices.presentFamily.value() };
+
+		float queuePriorities[] = { 1.0f };
+
+		vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
+		queueCreateInfoList.reserve(uniqueQueueFamilies.size());
+
+		for(uint32_t familyIndex : uniqueQueueFamilies)
+		{
+			const VkDeviceQueueCreateFlags queueFlags = 0;
+
+			VkDeviceQueueCreateInfo queueCreateInfo(
+				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
+			  queueFlags, familyIndex, 1, queuePriorities);
+
+				queueCreateInfoList.push_back(queueCreateInfo);
+		}
+
+		VkPhysicalDeviceFeatures deviceFeatures {
+			.samplerAnisotropy = VK_TRUE,
+		};
+
+		const VkDeviceCreateFlags deviceFlags = 0;
+		const uint32_t enabledLayersCount = 0;
+
+		VkDeviceCreateInfo deviceCreateInfo(
+			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, nullptr,
+			deviceFlags,
+			queueCreateInfoList.size(), queueCreateInfoList.data(),
+			enabledLayersCount, nullptr,
+			deviceExtensions.size(), deviceExtensions.data(), &deviceFeatures);
+
+		// TODO: enable validation layers
+
+		VkDevice result;
+
+		if (vkCreateDevice(physicalDevice, &deviceCreateInfo, allocator, &result) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to create logical device");
+		}
+
+		return result;
 	}
 }

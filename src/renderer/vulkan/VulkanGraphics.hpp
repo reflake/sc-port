@@ -45,6 +45,7 @@ namespace renderer::vulkan
 
 		VkInstance    _instance;
 		VkSurfaceKHR  _surface;
+		VkDevice      _device;
 
 		SDL_Window* const _window;
 
