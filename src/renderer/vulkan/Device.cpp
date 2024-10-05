@@ -31,7 +31,10 @@ namespace renderer::vulkan
 	{
 		uint32_t count;
 
-		vkEnumeratePhysicalDevices(instance, &count, nullptr);
+		if (vkEnumeratePhysicalDevices(instance, &count, nullptr) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to enumerate devices");
+		}
 
 		vector<VkPhysicalDevice> devices(count);
 
@@ -88,7 +91,10 @@ namespace renderer::vulkan
 	bool CheckDeviceExtensionsSupported(VkPhysicalDevice device)
 	{
 		uint32_t extensionsCount;
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, nullptr);
+		if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, nullptr) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to enumerate device extension properties");
+		}
 
 		vector<VkExtensionProperties> availableExtensions(extensionsCount);
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, availableExtensions.data());
