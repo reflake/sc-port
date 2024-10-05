@@ -17,6 +17,7 @@ namespace renderer::vulkan
 	public:
 
 		Graphics(SDL_Window* window, filesystem::Storage& storage);
+		~Graphics();
 
 		void LoadGrp(grpID) override;
 		void FreeGrp(grpID) override;

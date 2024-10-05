@@ -19,6 +19,8 @@ namespace renderer::vulkan
 		CreateWindowSurface(window, _instance, _surface);
 
 		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
+
+		// Create logical device and queues
 	}
 
 	void Graphics::CreateInstance()
@@ -144,5 +146,20 @@ namespace renderer::vulkan
 		cyclePaletteColor<1, 6>(app.tilesetAtlas);
 		cyclePaletteColor<7, 7>(app.tilesetAtlas);
 		*/
+	}
+
+	Graphics::~Graphics()
+	{
+		const VkAllocationCallbacks* const allocator = nullptr;
+
+		if (_surface)
+			vkDestroySurfaceKHR(_instance, _surface, allocator);
+
+		_surface = nullptr;
+
+		if (_instance)
+			vkDestroyInstance(_instance, allocator);
+
+		_instance = nullptr;
 	}
 }

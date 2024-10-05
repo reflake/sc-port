@@ -85,8 +85,8 @@ namespace renderer::vulkan
 				queueFamilyIndices.IsComplete();
 	}
 
-	bool CheckDeviceExtensionsSupported(VkPhysicalDevice device) {
-
+	bool CheckDeviceExtensionsSupported(VkPhysicalDevice device)
+	{
 		uint32_t extensionsCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionsCount, nullptr);
 
@@ -101,7 +101,7 @@ namespace renderer::vulkan
 			);
 
 			if (!extensionFound)
-			
+
 				return false;
 		}
 

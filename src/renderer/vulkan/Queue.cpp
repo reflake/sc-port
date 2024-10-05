@@ -7,12 +7,13 @@ namespace renderer::vulkan
 {
 	using std::vector;
 
-	bool QueueFamilyIndices::IsComplete() {
+	bool QueueFamilyIndices::IsComplete()
+	{
 		return graphicsFamily.has_value() && presentFamily.has_value();
 	}
 
-	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface) {
-
+	QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device, VkSurfaceKHR surface)
+	{
 		uint32_t queueFamilyCount = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
@@ -22,8 +23,8 @@ namespace renderer::vulkan
 		QueueFamilyIndices indices;
 		int index = 0;
 
-		for(const auto& queueFamily : queueFamilies) {
-
+		for(const auto& queueFamily : queueFamilies)
+		{
 			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
 
 				indices.graphicsFamily = index;
