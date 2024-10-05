@@ -153,6 +153,11 @@ namespace renderer::vulkan
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
 
+		if (_device)
+			vkDestroyDevice(_device, allocator);
+
+		_device = nullptr;
+
 		if (_surface)
 			vkDestroySurfaceKHR(_instance, _surface, allocator);
 
