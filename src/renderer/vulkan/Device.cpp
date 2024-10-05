@@ -46,7 +46,7 @@ namespace renderer::vulkan
 
 		if (suitableDevices.empty())
 		{
-			throw runtime_error("Failed to finy any suitable GPU");
+			throw runtime_error("Failed to find any suitable GPU");
 		}
 
 		auto bestSuitableDevice = *max_element(
