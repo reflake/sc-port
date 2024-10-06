@@ -21,7 +21,7 @@ namespace renderer::vulkan
 		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
 
 		// Only one main device is being used
-		_device = CreateLogicalDevice(physicalDevice, _surface);
+		_device = CreateDevice(physicalDevice, _surface);
 	}
 
 	void Graphics::CreateInstance()
@@ -153,10 +153,7 @@ namespace renderer::vulkan
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
 
-		if (_device)
-			vkDestroyDevice(_device, allocator);
-
-		_device = nullptr;
+		_device.Destroy(allocator);
 
 		if (_surface)
 			vkDestroySurfaceKHR(_instance, _surface, allocator);

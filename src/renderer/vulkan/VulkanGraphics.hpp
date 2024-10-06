@@ -7,6 +7,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
+#include "Device.hpp"
 
 namespace renderer::vulkan
 {
@@ -45,7 +46,7 @@ namespace renderer::vulkan
 
 		VkInstance    _instance;
 		VkSurfaceKHR  _surface;
-		VkDevice      _device;
+		Device        _device;
 
 		SDL_Window* const _window;
 

@@ -5,6 +5,8 @@
 #include <vector>
 #include <sys/types.h>
 
+#include "Device.hpp"
+
 namespace renderer::vulkan
 {
 	struct SwapChainSupportDetails
@@ -17,4 +19,6 @@ namespace renderer::vulkan
 	};
 
 	extern SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
+
+	extern VkSwapchainKHR CreateSwapchain(Device& device);
 }

@@ -26,6 +26,25 @@ namespace renderer::vulkan
 		VK_KHR_MAINTENANCE1_EXTENSION_NAME
 	};
 
+	Device::Device() : _logical(nullptr), _physical(nullptr)
+	{
+	}
+
+	Device::Device(VkDevice logical, VkPhysicalDevice physical) : _logical(logical), _physical(physical) 
+	{
+	}
+
+	void Device::Destroy(const VkAllocationCallbacks* allocator)
+	{
+		if (_logical)
+			vkDestroyDevice(_logical, allocator);
+
+		_logical = nullptr;
+	}
+
+	Device::operator VkDevice&() { return _logical; }
+	Device::operator VkPhysicalDevice&() { return _physical; }
+
 	bool IsSuitableDevice(VkPhysicalDevice& device, VkSurfaceKHR surface);
 	bool CheckDeviceExtensionsSupported(VkPhysicalDevice device);
 
@@ -116,7 +135,7 @@ namespace renderer::vulkan
 		return true;
 	}
 
-	VkDevice CreateLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkAllocationCallbacks* allocator = nullptr)
+	Device CreateLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkAllocationCallbacks* allocator = nullptr)
 	{
 		QueueFamilyIndices familyIndices = FindQueueFamilies(physicalDevice, surface);
 
@@ -154,13 +173,13 @@ namespace renderer::vulkan
 
 		// TODO: enable validation layers
 
-		VkDevice result;
+		VkDevice logicalDevice;
 
-		if (vkCreateDevice(physicalDevice, &deviceCreateInfo, allocator, &result) != VK_SUCCESS)
+		if (vkCreateDevice(physicalDevice, &deviceCreateInfo, allocator, &logicalDevice) != VK_SUCCESS)
 		{
 			throw runtime_error("Failed to create logical device");
 		}
 
-		return result;
+		return Device(logicalDevice, physicalDevice);
 	}
 }
