@@ -12,10 +12,8 @@ namespace renderer::vulkan
 
 		SpritePacker spritePacker(frameDatas);
 
-		auto atlas = spritePacker.CreateAtlas();
-
-		_atlas   = atlas;
-		_texture = bufferAllocator.CreateTexture(atlas);
+		_atlas   = spritePacker.CreateAtlas();
+		_texture = bufferAllocator.CreateTexture(_atlas);
 	}
 
 	const Frame SpriteSheet::GetFrame(int frameIndex) const

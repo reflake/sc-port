@@ -4,6 +4,7 @@
 #include "../SpriteFrameData.hpp"
 
 #include "Atlas.hpp"
+#include "BufferAllocator.hpp"
 #include "Texture.hpp"
 
 #include <glm/vec2.hpp>
