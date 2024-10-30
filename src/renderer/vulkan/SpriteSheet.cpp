@@ -1,3 +1,4 @@
+#include "SpritePacker.hpp"
 #include "SpriteSheet.hpp"
 
 namespace renderer::vulkan
@@ -9,15 +10,19 @@ namespace renderer::vulkan
 			_offsets.push_back(frame.GetOffset());
 		}
 
-		SpritePacker spritePacker;
-
-		for(auto& frame : frameDatas)
-		{
-			spritePacker.Pack(frame.GetDimensions(), frame.GetPixelData());
-		}
+		SpritePacker spritePacker(frameDatas);
 
 		auto atlas = spritePacker.CreateAtlas();
 
-		_texture = bufferAllocator.CreateTexture(atlas.GetWidth(), atlas.GetHeight(), atlas.GetPixelData());
+		_atlas   = atlas;
+		_texture = bufferAllocator.CreateTexture(atlas);
+	}
+
+	const Frame SpriteSheet::GetFrame(int frameIndex) const
+	{
+		return Frame { 
+			_atlas.GetMinXY(frameIndex), _atlas.GetMaxXY(frameIndex),
+			_offsets[frameIndex], _texture
+		};
 	}
 }
