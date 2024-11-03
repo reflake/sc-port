@@ -7,7 +7,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
-#include "Device.hpp"
+#include "device/Device.hpp"
 
 namespace renderer::vulkan
 {

@@ -1,6 +1,6 @@
 #include "VulkanGraphics.hpp"
 
-#include "Device.hpp"
+#include "device/Device.hpp"
 #include "Window.hpp"
 
 #include <glm/vec2.hpp>
