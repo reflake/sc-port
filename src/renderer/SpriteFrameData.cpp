@@ -3,7 +3,7 @@
 namespace renderer
 {
 	SpriteFrameData::SpriteFrameData(
-		std::shared_ptr<uint8_t> pixelData, 
+		std::shared_ptr<uint8_t[]> pixelData, 
 		glm::vec<2, uint32_t> dimensions, 
 		glm::vec<2, uint32_t> offset) :
 

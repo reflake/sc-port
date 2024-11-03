@@ -8,7 +8,7 @@ namespace renderer
 	{
 	public:
 
-		Tile(std::shared_ptr<uint8_t> pixelData);
+		Tile(std::shared_ptr<uint8_t[]> pixelData);
 	};
 
 	class TilesetData
