@@ -1,11 +1,13 @@
 #pragma once
 
+#include "A_Tileset.hpp"
 #include "SpriteFrameData.hpp"
 #include "A_SpriteSheet.hpp"
+#include "TilesetData.hpp"
+#include <data/Tileset.hpp>
+
 #include <cstdint>
 #include <glm/vec2.hpp>
-
-#include <data/Tileset.hpp>
 
 namespace renderer
 {
@@ -20,9 +22,9 @@ namespace renderer
 		virtual void DrawSprite(const A_SpriteSheet*, uint32_t frame, glm::vec2 position) = 0;
 		virtual void FreeSpriteSheet(const A_SpriteSheet*) = 0;
 
-		virtual void LoadTileset(data::Tileset) = 0;
-		virtual void DrawTile(data::Tileset, tileID, glm::vec2 position) = 0;
-		virtual void FreeTileset(data::Tileset) = 0;
+		virtual void LoadTileset(std::shared_ptr<TilesetData>) = 0;
+		virtual void DrawTile(const A_Tileset*, tileID, glm::vec2 position) = 0;
+		virtual void FreeTileset(const A_Tileset*) = 0;
 
 		virtual void SetTilesetPalette(data::Tileset) = 0;
 
