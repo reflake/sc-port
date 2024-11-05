@@ -266,7 +266,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 			tileId = tileGroup.doodad.tiles[variation];
 		}
 
-		app.graphics->DrawTile(mapInfo.tileset, tileId, { x * TILE_SIZE, y * TILE_SIZE });
+		app.graphics->DrawTile(app.tilesetView, tileId, { x * TILE_SIZE, y * TILE_SIZE });
 	};
 
 	for(auto& doodad : app.scriptedDoodads)
