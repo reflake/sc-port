@@ -1,4 +1,7 @@
+#include "A_Tileset.hpp"
+#include "TilesetData.hpp"
 #include "data/Tileset.hpp"
+#include <array>
 #define SDL_MAIN_HANDLED
 
 #include <intrin.h>
@@ -102,6 +105,7 @@ struct App {
 	SDL_Surface*  screenSurface = nullptr;
 
 	TilesetData    tilesetData;
+	const renderer::A_Tileset* tilesetView;
 
 	IScriptEngine                        scriptEngine;
 	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
@@ -328,9 +332,17 @@ void placeScriptedDoodads(
 	}
 }
 
-void loadTileset(App& app, data::Tileset tileset)
+void loadTileset(App& app, Storage& storage, data::Tileset tileset)
 {
-	app.graphics->LoadTileset(tileset);
+	if (app.tilesetView != nullptr)
+	{
+		app.graphics->FreeTileset(app.tilesetView);
+		app.tilesetView = nullptr;
+	}
+
+	data::LoadTilesetData(storage, tileset, app.tilesetData);
+
+	app.tilesetView = app.graphics->LoadTileset(app.tilesetData);
 }
 
 void loadDoodadGrps(App& app, Storage& storage)
@@ -346,11 +358,7 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 {
 	try
 	{
-		auto loadedTileset = mapInfo.tileset;
-
 		loadMap(app, mapPath, storage, mapInfo);
-
-		app.graphics->FreeTileset(loadedTileset);
 
 		for(auto& grpID : app.loadedSprites)
 		{
@@ -359,7 +367,7 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 
 		app.loadedSprites.clear();
 
-		loadTileset(app, mapInfo.tileset);
+		loadTileset(app, storage, mapInfo.tileset);
 		placeScriptedDoodads(app, storage, mapInfo, app.tilesetData);
 		loadDoodadGrps(app, storage);
 

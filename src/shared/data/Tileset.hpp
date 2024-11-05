@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Common.hpp"
+
 #include <cstdint>
 
 namespace data
@@ -11,4 +13,11 @@ namespace data
 	};
 
 	extern bool HasTileSetWater(Tileset tileset);
+
+	struct A_TilesetData
+	{
+		virtual const int GetTileSize() const = 0;
+
+		virtual void GetPixelData(const tileID tileID, uint8_t* array) const = 0;
+	};
 }

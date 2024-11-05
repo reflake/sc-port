@@ -16,6 +16,14 @@ namespace data
 
 	const int TILE_SIZE = 32;
 
+	const int TILE_SQUARE = TILE_SIZE * TILE_SIZE;
+
+	const int CHIP_SIZE = 8;
+
+	const int CHIP_ARRAY_SIZE = 4;
+
+	const int CHIP_PIXELS_AMOUNT = 64;
+
 	enum class TerrainGroupFlags : uint16_t { 
 		None = 0, 
 		Walkable = 0x0001, Unknown1 = 0x0002, Unwalkable = 0x0004, Unknown2 = 0x0008,
@@ -37,15 +45,21 @@ namespace data
 
 	typedef glm::vec<4, uint16_t> Edges;
 
+	union ChipPixels
+	{
+		uint8_t array[CHIP_SIZE][CHIP_SIZE];
+		uint8_t data[CHIP_PIXELS_AMOUNT];
+	};
+
 	struct Chip
 	{
-		uint8_t palPixels[64];
+		ChipPixels palPixels;
 	};
 
 	// extended (sc:r) mega tile
 	struct Tile
 	{
-		uint32_t chips[4][4];
+		uint32_t chips[CHIP_ARRAY_SIZE][CHIP_ARRAY_SIZE];
 
 		uint32_t GetChipId(int row, int column) const;
 		bool		 IsTileMirrored(int row, int column) const;
@@ -85,7 +99,7 @@ namespace data
 		DoodadGroup    doodad;
 	};
 
-	struct TilesetData 
+	struct TilesetData : A_TilesetData
 	{
 		Palette paletteData;
 
@@ -99,6 +113,10 @@ namespace data
 
 		int tileGroupCount;
 		std::shared_ptr<TileGroup[]> tileGroups;
+
+		const int GetTileSize() const override { return TILE_SIZE; };
+
+		virtual void GetPixelData(const tileID tileID, uint8_t* array) const override;
 	};
 
 	extern void LoadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out);

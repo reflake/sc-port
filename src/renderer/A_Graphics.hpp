@@ -22,7 +22,7 @@ namespace renderer
 		virtual void DrawSprite(const A_SpriteSheet*, uint32_t frame, glm::vec2 position) = 0;
 		virtual void FreeSpriteSheet(const A_SpriteSheet*) = 0;
 
-		virtual void LoadTileset(std::shared_ptr<TilesetData>) = 0;
+		virtual const A_Tileset* LoadTileset(data::A_TilesetData&) = 0;
 		virtual void DrawTile(const A_Tileset*, tileID, glm::vec2 position) = 0;
 		virtual void FreeTileset(const A_Tileset*) = 0;
 

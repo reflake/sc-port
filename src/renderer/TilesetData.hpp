@@ -1,20 +1,18 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 
 namespace renderer
 {
-	class Tile
-	{
-	public:
-
-		Tile(std::shared_ptr<uint8_t[]> pixelData);
-	};
-
 	class TilesetData
 	{
 	public:
 
-		TilesetData(std::shared_ptr<Tile[]> tiles);
+		TilesetData(const uint8_t* pixelData, int tileCount, int size);
+
+	private:
+
+		int _tileCount;
 	};
 }
