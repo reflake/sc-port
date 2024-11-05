@@ -134,7 +134,7 @@ namespace data
 
 			if (!ReadChunk(scenarioFile, nextEntry, mapInfo))
 			{
-				ignoredEntries.push_back(string(nextEntry.name, 4));
+				ignoredEntries.emplace_back(nextEntry.name, 4);
 			}
 		}
 

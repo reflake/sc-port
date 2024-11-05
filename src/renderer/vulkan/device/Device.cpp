@@ -150,11 +150,9 @@ namespace renderer::vulkan
 		{
 			const VkDeviceQueueCreateFlags queueFlags = 0;
 
-			VkDeviceQueueCreateInfo queueCreateInfo(
+			queueCreateInfoList.emplace_back(
 				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
 			  queueFlags, familyIndex, 1, queuePriorities);
-
-				queueCreateInfoList.push_back(queueCreateInfo);
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures {
