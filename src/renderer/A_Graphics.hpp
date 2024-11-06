@@ -2,10 +2,10 @@
 
 #include "A_Tileset.hpp"
 #include "A_SpriteSheet.hpp"
-#include "SpriteFrameData.hpp"
 
 #include "data/Palette.hpp"
 #include <data/Tileset.hpp>
+#include <data/Sprite.hpp>
 
 #include <cstdint>
 #include <glm/vec2.hpp>
@@ -19,7 +19,7 @@ namespace renderer
 	{
 	public:
 
-		virtual const A_SpriteSheet* CreateSpriteSheet(std::shared_ptr<SpriteFrameData> frames) = 0;
+		virtual const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData&) = 0;
 		virtual void DrawSprite(const A_SpriteSheet*, uint32_t frame, glm::vec2 position) = 0;
 		virtual void FreeSpriteSheet(const A_SpriteSheet*) = 0;
 

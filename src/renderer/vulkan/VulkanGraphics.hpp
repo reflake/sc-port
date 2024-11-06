@@ -7,6 +7,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
+#include "data/Sprite.hpp"
 #include "device/Device.hpp"
 
 namespace renderer::vulkan
@@ -20,7 +21,7 @@ namespace renderer::vulkan
 		Graphics(SDL_Window* window, filesystem::Storage& storage);
 		~Graphics();
 
-		const A_SpriteSheet* CreateSpriteSheet(std::shared_ptr<SpriteFrameData> frames) override;
+		const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData& spriteSheet) override;
 		void DrawSprite(const A_SpriteSheet*, uint32_t frame, glm::vec2 position) override;
 		void FreeSpriteSheet(const A_SpriteSheet*) override;
 
