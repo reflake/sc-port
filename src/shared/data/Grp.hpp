@@ -7,6 +7,8 @@
 
 #include "../filesystem/Storage.hpp"
 
+#include <data/Sprite.hpp>
+
 namespace data
 {
 	struct GrpHeader
@@ -22,12 +24,17 @@ namespace data
 		uint32_t             linesOffset;
 	};
 
-	class Grp
+	class Grp : public A_SpriteSheetData
 	{
 	public:
 
-		void GetFramePixels(int frame, uint8_t* outPixels);
+		// Overridden members
+		const SpriteData GetSpriteData(int frame) const override;
+		const int        ReadPixelData(int frame, uint8_t* out) const override;
 
+		glm::vec<2, int> GetDimensionsLimit() const override;
+
+		// concrete members
 		const GrpHeader& GetHeader() const;
 		const GrpFrame&  GetFrame(int frame) const;
 		const std::vector<GrpFrame>& GetFrames() const;

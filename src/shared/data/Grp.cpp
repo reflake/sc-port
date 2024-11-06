@@ -7,46 +7,30 @@
 
 namespace data
 {
-	void Grp::ReadGrpFile(filesystem::Storage& storage, const char* path, Grp& grp)
+
+	const SpriteData Grp::GetSpriteData(int frameIndex) const
 	{
-		std::string fullpath = "unit\\" + std::string(path);
+		const int numOfChannels = 1;
 
-		filesystem::StorageFile file;
-		storage.Open(fullpath.c_str(), file);
+		auto frame = _frames[frameIndex];
 
-		auto data = std::make_shared<uint8_t[]>(file.GetFileSize());
-		file.ReadBinary(data.get(), file.GetFileSize());
-
-		ReadGrp(data, file.GetFileSize(), grp);
+		return { numOfChannels, frame.posOffset, frame.dimensions };
 	}
 
-	void Grp::ReadGrp(std::shared_ptr<uint8_t[]> data, int size, Grp& grp)
+	const int Grp::ReadPixelData(int frameIndex, uint8_t* out) const
 	{
-		auto reader = StreamReader(data, size);
+		const int TRANSPARENT_FLAG = 0x80;
+		const int REPEAT_FLAG = 0x40;
 
-		reader.Read(grp._header);
-
-		grp._frames.resize(grp._header.frameAmount);
-
-		reader.Read(grp._frames.data(), grp._header.frameAmount);
-
-		grp._data = data;
-	}
-
-	const int TRANSPARENT_FLAG = 0x80;
-	const int REPEAT_FLAG = 0x40;
-
-	void Grp::GetFramePixels(int frameIndex, uint8_t* outPixels)
-	{
-		GrpFrame& frame = _frames[frameIndex];
+		const GrpFrame& frame = _frames[frameIndex];
 		uint16_t* rleLinesOffsets = reinterpret_cast<uint16_t*>(_data.get() + frame.linesOffset);
 
-		memset(outPixels, 0, frame.dimensions.x * frame.dimensions.y);
+		memset(out, 0, frame.dimensions.x * frame.dimensions.y);
 
 		for(int y = 0; y < frame.dimensions.y; y++)
 		{
 			auto rleLines = reinterpret_cast<uint8_t*>(rleLinesOffsets) + rleLinesOffsets[y];
-			auto pixelsRow = &outPixels[y * frame.dimensions.x];
+			auto pixelsRow = &out[y * frame.dimensions.x];
 
 			for(int x = 0; x < frame.dimensions.x; )
 			{
@@ -75,6 +59,13 @@ namespace data
 		}
 	}
 
+	glm::vec<2, int> Grp::GetDimensionsLimit() const
+	{
+		const int DIMENSIONS_LIMIT = 256;
+
+		return { DIMENSIONS_LIMIT, DIMENSIONS_LIMIT };
+	}
+
 	const GrpHeader& Grp::GetHeader() const
 	{
 		return _header;
@@ -88,5 +79,31 @@ namespace data
 	const std::vector<GrpFrame>& Grp::GetFrames() const
 	{
 		return _frames;
+	}
+	
+	void Grp::ReadGrpFile(filesystem::Storage& storage, const char* path, Grp& grp)
+	{
+		std::string fullpath = "unit\\" + std::string(path);
+
+		filesystem::StorageFile file;
+		storage.Open(fullpath.c_str(), file);
+
+		auto data = std::make_shared<uint8_t[]>(file.GetFileSize());
+		file.ReadBinary(data.get(), file.GetFileSize());
+
+		ReadGrp(data, file.GetFileSize(), grp);
+	}
+
+	void Grp::ReadGrp(std::shared_ptr<uint8_t[]> data, int size, Grp& grp)
+	{
+		auto reader = StreamReader(data, size);
+
+		reader.Read(grp._header);
+
+		grp._frames.resize(grp._header.frameAmount);
+
+		reader.Read(grp._frames.data(), grp._header.frameAmount);
+
+		grp._data = data;
 	}
 }
