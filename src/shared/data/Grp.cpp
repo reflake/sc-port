@@ -61,9 +61,7 @@ namespace data
 
 	glm::vec<2, int> Grp::GetDimensionsLimit() const
 	{
-		const int DIMENSIONS_LIMIT = 256;
-
-		return { DIMENSIONS_LIMIT, DIMENSIONS_LIMIT };
+		return { GRP_DIMENSIONS_LIMIT, GRP_DIMENSIONS_LIMIT };
 	}
 
 	const GrpHeader& Grp::GetHeader() const

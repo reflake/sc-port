@@ -1,5 +1,6 @@
 #include "A_Tileset.hpp"
 #include "TilesetData.hpp"
+#include "data/TextStrings.hpp"
 #include "data/Tileset.hpp"
 #include <array>
 #define SDL_MAIN_HANDLED
@@ -55,6 +56,7 @@
 
 using boost::format;
 
+using data::Grp;
 using std::runtime_error;
 using std::string;
 using std::vector;
@@ -348,9 +350,22 @@ void loadTileset(App& app, Storage& storage, data::Tileset tileset)
 
 void loadDoodadGrps(App& app, Storage& storage)
 {
+	data::TextStringsTable imageStrings;
+	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
+
 	for(auto& doodad : app.scriptedDoodads)
 	{
-		app.graphics->LoadGrp(doodad->grpID);
+		uint8_t pixels[data::GRP_SPRITE_SQUARE_LIMIT];
+
+		if (app.spriteAtlases.contains(doodad->grpID))
+			continue;
+
+		auto grpPath = imageStrings.entries[doodad->grpID];
+
+		Grp grp;
+		Grp::ReadGrpFile(storage, grpPath, grp);
+
+		app.graphics->LoadSpriteSheet(grp);
 		app.loadedSprites.insert(doodad->grpID);
 	}
 }
