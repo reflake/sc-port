@@ -52,11 +52,11 @@ target_sources(Renderer
 
     src/renderer/SpriteFrameData.cpp
 
-    src/renderer/vulkan/Device.cpp
-    src/renderer/vulkan/Queue.cpp
+    src/renderer/vulkan/device/Device.cpp
+    src/renderer/vulkan/device/Queue.cpp
+    src/renderer/vulkan/device/SwapChain.cpp
     src/renderer/vulkan/SpritePacker.cpp
     src/renderer/vulkan/SpriteSheet.cpp
-    src/renderer/vulkan/SwapChain.cpp
     src/renderer/vulkan/VulkanGraphics.cpp
     src/renderer/vulkan/Window.cpp
 
