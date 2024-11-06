@@ -117,7 +117,7 @@ struct App {
 
 	shared_ptr<renderer::A_Graphics> graphics;
 
-	unordered_map<renderer::grpID, const renderer::A_SpriteSheet*> loadedSprites;
+	unordered_map<data::grpID, const renderer::A_SpriteSheet*> loadedSprites;
 };
 
 void freeWindow(App&);

@@ -11,6 +11,7 @@
 
 namespace data
 {
+	typedef uint32_t grpID;
 	
 	const int GRP_DIMENSIONS_LIMIT = 256;
 	const int GRP_SPRITE_SQUARE_LIMIT = GRP_DIMENSIONS_LIMIT * GRP_DIMENSIONS_LIMIT;

@@ -25,7 +25,9 @@ namespace data
 		const GrpFrame& frame = _frames[frameIndex];
 		uint16_t* rleLinesOffsets = reinterpret_cast<uint16_t*>(_data.get() + frame.linesOffset);
 
-		memset(out, 0, frame.dimensions.x * frame.dimensions.y);
+		int size = frame.dimensions.x * frame.dimensions.y;
+
+		memset(out, 0, size);
 
 		for(int y = 0; y < frame.dimensions.y; y++)
 		{
@@ -57,6 +59,8 @@ namespace data
 				}
 			}
 		}
+
+		return size;
 	}
 
 	glm::vec<2, int> Grp::GetDimensionsLimit() const

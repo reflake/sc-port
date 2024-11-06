@@ -21,8 +21,8 @@ namespace renderer::vulkan
 		Graphics(SDL_Window* window, filesystem::Storage& storage);
 		~Graphics();
 
-		const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData& spriteSheet) override;
-		void DrawSprite(const A_SpriteSheet*, uint32_t frame, glm::vec2 position) override;
+		const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData&) override;
+		void DrawSprite(const A_SpriteSheet*, frameIndex, glm::vec2 position) override;
 		void FreeSpriteSheet(const A_SpriteSheet*) override;
 
 		const A_Tileset* LoadTileset(data::A_TilesetData&) override;
