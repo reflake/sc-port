@@ -1,3 +1,4 @@
+#include "A_SpriteSheet.hpp"
 #include "A_Tileset.hpp"
 #include "TilesetData.hpp"
 #include "data/TextStrings.hpp"
@@ -115,7 +116,8 @@ struct App {
 	unordered_map<uint32_t, SpriteAtlas> spriteAtlases;
 
 	shared_ptr<renderer::A_Graphics> graphics;
-	unordered_set<renderer::grpID>   loadedSprites;
+
+	unordered_map<renderer::grpID, const renderer::A_SpriteSheet*> loadedSprites;
 };
 
 void freeWindow(App&);
@@ -276,16 +278,17 @@ void drawMap(MapInfo &mapInfo, App &app,
 	{
 		auto grpID = doodad->grpID;
 		auto frame = doodad->GetCurrentFrame();
+		auto spriteSheet = app.loadedSprites[grpID];
 
-		app.graphics->DrawGrpFrame(grpID, frame, doodad->pos);
+		app.graphics->DrawSprite(spriteSheet, frame, doodad->pos);
 	}
 
 	app.graphics->PresentToScreen();
 
-	if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
+	/*if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
 
 		app.graphics->CycleWaterPalette();
-	}
+	}*/
 }
 
 void processInput(position& pos, int &move)
@@ -363,8 +366,7 @@ void loadDoodadGrps(App& app, Storage& storage)
 		auto grpPath = imageStrings.entries[doodad->grpID];
 		auto grp = Grp::ReadGrpFile(storage, grpPath);
 
-		app.graphics->LoadSpriteSheet(grp);
-		app.loadedSprites.insert(doodad->grpID);
+		app.loadedSprites[doodad->grpID] = app.graphics->LoadSpriteSheet(grp);
 	}
 }
 
@@ -374,9 +376,9 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 	{
 		loadMap(app, mapPath, storage, mapInfo);
 
-		for(auto& grpID : app.loadedSprites)
+		for(auto& [_, spriteSheet] : app.loadedSprites)
 		{
-			app.graphics->FreeGrp(grpID);
+			app.graphics->FreeSpriteSheet(spriteSheet);
 		}
 
 		app.loadedSprites.clear();
