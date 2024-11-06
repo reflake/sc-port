@@ -8,7 +8,7 @@
 #include <data/Tileset.hpp>
 #include <filesystem/Storage.hpp>
 
-#include "Palette.hpp"
+#include <data/Palette.hpp>
 
 namespace data
 {
@@ -101,7 +101,7 @@ namespace data
 
 	struct TilesetData : A_TilesetData
 	{
-		Palette paletteData;
+		Palette palette;
 
 		data::Tileset tileset;
 

@@ -17,19 +17,19 @@ target_include_directories(Engine PUBLIC
 target_sources(Engine 
   PRIVATE 
     src/engine/data/Map.cpp
-    src/engine/data/Palette.cpp
     src/engine/data/Sprite.cpp
     src/engine/data/Tile.cpp
-
+    
     src/engine/entity/ScriptedDoodad.cpp
-
+    
     src/engine/meta/UnitTable.cpp
-
+    
     src/engine/script/IScriptEngine.cpp
-
+    
     src/shared/data/Common.cpp
     src/shared/data/Grp.cpp
     src/shared/data/Images.cpp
+    src/shared/data/Palette.cpp
     src/shared/data/TextStrings.cpp
     src/shared/data/Tileset.cpp
 
@@ -63,6 +63,7 @@ target_sources(Renderer
     src/shared/data/Common.cpp
     src/shared/data/Grp.cpp
     src/shared/data/Images.cpp
+    src/shared/data/Palette.cpp
     src/shared/data/TextStrings.cpp
     src/shared/data/Tileset.cpp
 

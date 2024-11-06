@@ -1,9 +1,10 @@
 #pragma once
 
 #include "A_Tileset.hpp"
-#include "SpriteFrameData.hpp"
 #include "A_SpriteSheet.hpp"
-#include "TilesetData.hpp"
+#include "SpriteFrameData.hpp"
+
+#include "data/Palette.hpp"
 #include <data/Tileset.hpp>
 
 #include <cstdint>
@@ -26,9 +27,7 @@ namespace renderer
 		virtual void DrawTile(const A_Tileset*, tileID, glm::vec2 position) = 0;
 		virtual void FreeTileset(const A_Tileset*) = 0;
 
-		virtual void SetTilesetPalette(data::Tileset) = 0;
-
-		virtual void CycleWaterPalette();
+		virtual void SetTilesetPalette(data::Palette) = 0;
 
 		virtual void ClearDepth();
 		virtual void PresentToScreen();

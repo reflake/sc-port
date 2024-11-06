@@ -46,11 +46,12 @@
 
 #include <vulkan/VulkanGraphics.hpp>
 
+#include "data/Tile.hpp"
 #include "data/Map.hpp"
 #include "data/Sprite.hpp"
-#include "data/Tile.hpp"
 #include "script/IScriptEngine.hpp"
 #include "entity/ScriptedDoodad.hpp"
+
 
 using boost::format;
 
@@ -243,7 +244,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 		return;
 
 	app.graphics->ClearDepth();
-	app.graphics->SetTilesetPalette(mapInfo.tileset);
+	app.graphics->SetTilesetPalette(app.tilesetData.palette);
 
 	int leftBorderIndex  = std::max<int>(0, pos.x / TILE_SIZE);
 	int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (pos.x + SCREEN_WIDTH) / TILE_SIZE + 1);

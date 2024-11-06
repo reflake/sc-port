@@ -72,7 +72,7 @@ namespace data
 		data::WpeData wpeData;
 		storage.Read(format("TileSet/%1%.wpe") % tileSetName, wpeData);
 
-		out.paletteData = Palette(wpeData);
+		out.palette = Palette(wpeData);
 
 		// Read mini tile's data
 		filesystem::StorageFile chipSetFile;
