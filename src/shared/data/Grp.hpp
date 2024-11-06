@@ -43,8 +43,8 @@ namespace data
 		const GrpFrame&  GetFrame(int frame) const;
 		const std::vector<GrpFrame>& GetFrames() const;
 
-		static void ReadGrpFile(filesystem::Storage& storage, const char* path, Grp& grp);
-		static void ReadGrp(std::shared_ptr<uint8_t[]> data, int size, Grp& grp);
+		static Grp ReadGrpFile(filesystem::Storage& storage, const char* path);
+		static Grp ReadGrp(std::shared_ptr<uint8_t[]> data, int size);
 
 	private:
 

@@ -361,9 +361,7 @@ void loadDoodadGrps(App& app, Storage& storage)
 			continue;
 
 		auto grpPath = imageStrings.entries[doodad->grpID];
-
-		Grp grp;
-		Grp::ReadGrpFile(storage, grpPath, grp);
+		auto grp = Grp::ReadGrpFile(storage, grpPath);
 
 		app.graphics->LoadSpriteSheet(grp);
 		app.loadedSprites.insert(doodad->grpID);

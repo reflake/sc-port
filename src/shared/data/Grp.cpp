@@ -79,7 +79,7 @@ namespace data
 		return _frames;
 	}
 	
-	void Grp::ReadGrpFile(filesystem::Storage& storage, const char* path, Grp& grp)
+	Grp Grp::ReadGrpFile(filesystem::Storage& storage, const char* path)
 	{
 		std::string fullpath = "unit\\" + std::string(path);
 
@@ -89,19 +89,22 @@ namespace data
 		auto data = std::make_shared<uint8_t[]>(file.GetFileSize());
 		file.ReadBinary(data.get(), file.GetFileSize());
 
-		ReadGrp(data, file.GetFileSize(), grp);
+		return ReadGrp(data, file.GetFileSize());
 	}
 
-	void Grp::ReadGrp(std::shared_ptr<uint8_t[]> data, int size, Grp& grp)
+	Grp Grp::ReadGrp(std::shared_ptr<uint8_t[]> data, int size)
 	{
 		auto reader = StreamReader(data, size);
+		Grp out;	
 
-		reader.Read(grp._header);
+		reader.Read(out._header);
 
-		grp._frames.resize(grp._header.frameAmount);
+		out._frames.resize(out._header.frameAmount);
 
-		reader.Read(grp._frames.data(), grp._header.frameAmount);
+		reader.Read(out._frames.data(), out._header.frameAmount);
 
-		grp._data = data;
+		out._data = data;
+
+		return out;
 	}
 }
