@@ -70,10 +70,11 @@ namespace renderer::vulkan
 		imageCount = min(imageCount, capabilities.maxImageCount);
 
 		const VkSwapchainCreateFlagsKHR flags = 0;
+		const int arrayLayers = 1;
 
 		VkSwapchainCreateInfoKHR createInfo(VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR, nullptr,
 			flags, surface, imageCount, surfaceFormat.format, surfaceFormat.colorSpace,
-			extent, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+			extent, arrayLayers, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 		QueueFamilyIndices familyIndices = FindQueueFamilies(device, surface);
 		array<uint32_t, 2> familyIndicesArray = { familyIndices.graphicsFamily.value(), 
@@ -93,6 +94,12 @@ namespace renderer::vulkan
 			createInfo.queueFamilyIndexCount = familyIndicesArray.size();
 			createInfo.pQueueFamilyIndices = familyIndicesArray.data();
 		}
+
+		createInfo.preTransform = capabilities.currentTransform;
+		createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+		createInfo.presentMode = presentMode;
+		createInfo.clipped = VK_TRUE;
+		createInfo.oldSwapchain = VK_NULL_HANDLE; // TODO: pass in old swapchain when window recreated
 
 		VkSwapchainKHR result;
 
