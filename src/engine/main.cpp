@@ -63,7 +63,6 @@ using std::string;
 using std::vector;
 using std::shared_ptr;
 using std::unordered_map;
-using std::unordered_set;
 
 using data::TILE_SIZE;
 using data::tileID;
@@ -109,11 +108,11 @@ struct App {
 	SDL_Surface*  screenSurface = nullptr;
 
 	TilesetData    tilesetData;
+
 	const renderer::A_Tileset* tilesetView;
 
 	IScriptEngine                        scriptEngine;
 	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
-	unordered_map<uint32_t, SpriteAtlas> spriteAtlases;
 
 	shared_ptr<renderer::A_Graphics> graphics;
 
@@ -329,7 +328,7 @@ void placeScriptedDoodads(
 		auto& imageID  = spriteTable.imageID[doodad.spriteID];
 		auto  grpID    = imagesTable.grpID[imageID] - 1;
 		auto  scriptID = imagesTable.iScriptID[imageID];
-		auto  pos = doodad.position;
+		auto  pos      = doodad.position;
 
 		auto instance = std::make_shared<ScriptedDoodad>(scriptID, grpID, pos);
 
@@ -360,7 +359,7 @@ void loadDoodadGrps(App& app, Storage& storage)
 	{
 		uint8_t pixels[data::GRP_SPRITE_SQUARE_LIMIT];
 
-		if (app.spriteAtlases.contains(doodad->grpID))
+		if (app.loadedSprites.contains(doodad->grpID))
 			continue;
 
 		auto grpPath = imageStrings.entries[doodad->grpID];
