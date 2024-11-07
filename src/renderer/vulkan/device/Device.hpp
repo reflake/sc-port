@@ -5,6 +5,10 @@
 
 namespace renderer::vulkan
 {
+	extern const bool enableValidationLayers;
+
+	extern bool CheckValidationLayerSupported(VkPhysicalDevice device);
+
 	class Device
 	{
 	public:

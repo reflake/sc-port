@@ -26,6 +26,16 @@ namespace renderer::vulkan
 		VK_KHR_MAINTENANCE1_EXTENSION_NAME
 	};
 
+	const vector<const char*> validationLayers = {
+		"VK_LAYER_KHRONOS_validation"
+	};
+
+	#ifdef NDEBUG
+		const bool enableValidationLayers = false;
+	#else
+		const bool enableValidationLayers = true;
+	#endif
+
 	Device::Device() : _logical(nullptr), _physical(nullptr)
 	{
 	}
@@ -130,6 +140,35 @@ namespace renderer::vulkan
 			if (!extensionFound)
 
 				return false;
+		}
+
+		return true;
+	}
+
+	bool CheckValidationLayerSupported(VkPhysicalDevice device)
+	{
+		uint32_t propsCount;
+
+		vkEnumerateInstanceLayerProperties(&propsCount, nullptr);
+
+		vector<VkLayerProperties> layerProps(propsCount);
+
+		vkEnumerateInstanceLayerProperties(&propsCount, layerProps.data());
+
+		for (const char* requiredLayer : validationLayers)
+		{
+			bool layerFound = any_of(
+				layerProps.begin(), layerProps.end(),
+				[requiredLayer] (auto availableProp) {
+
+					return strcmp(requiredLayer, availableProp.layerName) == 0;
+				}
+			);
+
+			if (!layerFound)
+			{
+				return false;
+			}
 		}
 
 		return true;

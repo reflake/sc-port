@@ -15,6 +15,8 @@ namespace renderer::vulkan
 {
 	extern int DeviceEvaluation(VkPhysicalDevice&);
 
+	extern const std::vector<const char*> validationLayers;
+
 	class Graphics : public A_Graphics
 	{
 	public:
@@ -40,7 +42,7 @@ namespace renderer::vulkan
 	private:
 
 		void CreateInstance();
-		void EnableValidationLayers(VkInstanceCreateInfo&);
+		void EnableValidationLayers(std::vector<const char*>& layerList);
 
 	private:
 

@@ -6,6 +6,7 @@
 
 #include <glm/vec2.hpp>
 #include <stdexcept>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 using glm::vec2;
@@ -49,12 +50,45 @@ namespace renderer::vulkan
 			enabledLayerCount, nullptr,
 			extensions.size(), extensions.data());
 
-		// TODO: implementation
-		EnableValidationLayers(instanceCreateInfo);
+		// Check out layers
+		std::vector<const char*> requiredLayers;
 
-		if (vkCreateInstance(&instanceCreateInfo, nullptr, &_instance) != VK_SUCCESS)
+		if (enableValidationLayers)
 		{
-			throw runtime_error("Failed to create Vulkan API instance");
+			if (!CheckValidationLayerSupported(_device))
+				throw runtime_error("Validation layer is not supported");
+
+			EnableValidationLayers(requiredLayers);
+		}
+
+		// Enable layers if they are required
+		if (!requiredLayers.empty())
+		{
+			instanceCreateInfo.enabledLayerCount = requiredLayers.size();
+			instanceCreateInfo.ppEnabledLayerNames = requiredLayers.data();
+		}
+
+		auto errCode = vkCreateInstance(&instanceCreateInfo, nullptr, &_instance);
+
+		if (errCode != VK_SUCCESS)
+		{
+			switch(errCode)
+			{
+				case VK_ERROR_LAYER_NOT_PRESENT:
+					throw runtime_error("Failed to create Vulkan API instance: cannot enable validation error");
+					break;
+				default:
+					throw runtime_error("Failed to create Vulkan API instance");
+					break;
+			}
+		}
+	}
+
+	void Graphics::EnableValidationLayers(std::vector<const char*>& layerList)
+	{
+		for(auto layerName : validationLayers)
+		{
+			layerList.emplace_back(layerName);
 		}
 	}
 
