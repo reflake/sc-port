@@ -7,9 +7,28 @@
 
 using std::vector;
 using std::runtime_error;
+using std::tuple;
 
 namespace renderer::vulkan
 {
+	Window::Window(SDL_Window* window) : _window(window)
+	{
+	}
+
+	tuple<uint32_t, uint32_t> Window::GetExtent() const
+	{
+		int w, h;
+
+		SDL_Vulkan_GetDrawableSize(_window, &w, &h);
+
+		return { w, h };
+	}
+
+	Window::operator SDL_Window *() const
+	{
+		return _window;
+	}
+
 	void GetSdlRequiredExtensions(SDL_Window* window, std::vector<const char*>& outExtensions)
 	{
 		uint32_t count;

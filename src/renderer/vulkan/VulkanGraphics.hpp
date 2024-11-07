@@ -9,6 +9,7 @@
 #include "../A_Graphics.hpp"
 #include "data/Sprite.hpp"
 #include "device/Device.hpp"
+#include "Window.hpp"
 
 namespace renderer::vulkan
 {
@@ -47,7 +48,7 @@ namespace renderer::vulkan
 		VkSurfaceKHR  _surface;
 		Device        _device;
 
-		SDL_Window* const _window;
+		Window _window;
 
 		const filesystem::Storage& _storage;
 	};

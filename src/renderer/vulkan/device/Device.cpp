@@ -92,20 +92,20 @@ namespace renderer::vulkan
 
 		QueueFamilyIndices queueFamilyIndices = FindQueueFamilies(device, surface);
 
-		bool areExtensionsSupported = CheckDeviceExtensionsSupported(device);
-		bool swapChainAdequate = false;
+		bool extensionsSupported = CheckDeviceExtensionsSupported(device);
+		bool swapChainSupported = false;
 
-		if (areExtensionsSupported)
+		if (extensionsSupported)
 		{
 			auto swapChainSupport = QuerySwapChainSupport(device, surface);
-			swapChainAdequate = swapChainSupport.IsComplete();
+			swapChainSupported = swapChainSupport.IsComplete();
 		}
 
 		return (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) &&
 				features.geometryShader &&
 				features.samplerAnisotropy &&
-				areExtensionsSupported && 
-				swapChainAdequate &&
+				extensionsSupported && 
+				swapChainSupported &&
 				queueFamilyIndices.IsComplete();
 	}
 

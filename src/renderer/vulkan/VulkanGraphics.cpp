@@ -2,6 +2,7 @@
 
 #include "device/Device.hpp"
 #include "Window.hpp"
+#include "device/SwapChain.hpp"
 
 #include <glm/vec2.hpp>
 #include <stdexcept>
@@ -22,6 +23,8 @@ namespace renderer::vulkan
 
 		// Only one main device is being used
 		_device = CreateDevice(physicalDevice, _surface);
+
+		_swapChain = CreateSwapchain(_device, _surface, _window);
 	}
 
 	void Graphics::CreateInstance()
@@ -77,26 +80,6 @@ namespace renderer::vulkan
 	{
 	/* Примерный алгоритм действий для чтения Grp спрайтов
 
-	TextStringsTable imageStrings;
-	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
-	uint8_t pixels[256 * 256];
-
-
-		if (app.spriteAtlases.contains(doodad->grpID))
-			continue;
-
-		auto grpPath = imageStrings.entries[doodad->grpID];
-
-		Grp grp;
-		Grp::ReadGrpFile(storage, grpPath, grp);
-
-		SpriteAtlas atlas;
-
-		atlas.frames = grp.GetHeader().frameAmount;
-		atlas.surfaces = new SDL_Surface*[atlas.frames];
-
-		int frameIndex = 0;
-
 		for(auto& frame : grp.GetFrames())
 		{
 			SDL_Surface* surface = SDL_CreateRGBSurface(0, frame.dimensions.x, frame.dimensions.y, 8, 0, 0, 0, 0);
@@ -140,14 +123,14 @@ namespace renderer::vulkan
 		SDL_BlitSurface(surface, nullptr, app.screenSurface, &destRect);*/
 	}
 
-	void Graphics::CycleWaterPalette()
+	/*void Graphics::CycleWaterPalette()
 	{
-		/* примерный алгоритм действий
+		 примерный алгоритм действий
 		
 		cyclePaletteColor<1, 6>(app.tilesetAtlas);
 		cyclePaletteColor<7, 7>(app.tilesetAtlas);
-		*/
-	}
+		
+	}*/
 
 	Graphics::~Graphics()
 	{

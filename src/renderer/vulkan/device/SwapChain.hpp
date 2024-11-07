@@ -7,6 +7,8 @@
 
 #include "Device.hpp"
 
+#include "../Window.hpp"
+
 namespace renderer::vulkan
 {
 	struct SwapChainSupportDetails
@@ -20,5 +22,5 @@ namespace renderer::vulkan
 
 	extern SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-	extern VkSwapchainKHR CreateSwapchain(Device& device);
+	extern VkSwapchainKHR CreateSwapchain(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator = nullptr);
 }

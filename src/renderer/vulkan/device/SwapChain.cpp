@@ -1,11 +1,21 @@
+#include <algorithm>
 #include "SwapChain.hpp"
 #include "Queue.hpp"
+#include <SDL_vulkan.h>
+#include <algorithm>
 #include <cstdint>
+#include <glm/ext/vector_float2.hpp>
+#include <iostream>
+#include <limits>
 #include <stdexcept>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
+using std::array;
+using std::clamp;
 using std::min;
 using std::runtime_error;
+using std::vector;
 
 namespace renderer::vulkan
 {
@@ -40,18 +50,24 @@ namespace renderer::vulkan
 
 		return details;
 	}
+
+	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats);
+
+	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	
-	VkSwapchainKHR CreateSwapchain(Device& device, VkSurfaceKHR surface, VkAllocationCallbacks* allocator = nullptr)
+	VkPresentModeKHR PickSwapPresentMode(const vector<VkPresentModeKHR>& presentModes);
+	
+	VkSwapchainKHR CreateSwapchain(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator)
 	{
-		SwapChainSupportDetails supportDetails = QuerySwapChainSupport(device, surface);
+		auto [capabilities, formats, presentModes] = QuerySwapChainSupport(device, surface);
 
-		auto surfaceFormat = PickSwapSurfaceFormat(supportDetails.formats);
-		auto presentMode = PickSwapPresentMode(supportDetails.presentModes);
-		auto extent = DefineSwapExtent(supportDetails.capabilities);
+		auto extent = DefineSwapExtent(capabilities);
+		auto surfaceFormat = PickSwapSurfaceFormat(formats);
+		auto presentMode = PickSwapPresentMode(presentModes);
 
-		uint32_t imageCount = supportDetails.capabilities.minImageCount + 1;
+		uint32_t imageCount = capabilities.minImageCount + 1;
 
-		imageCount = min(imageCount, supportDetails.capabilities.maxImageCount);
+		imageCount = min(imageCount, capabilities.maxImageCount);
 
 		const VkSwapchainCreateFlagsKHR flags = 0;
 
@@ -60,8 +76,8 @@ namespace renderer::vulkan
 			extent, 1, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 		QueueFamilyIndices familyIndices = FindQueueFamilies(device, surface);
-		std::array<uint32_t, 2> familyIndicesArray = { familyIndices.graphicsFamily.value(), 
-																									 familyIndices.presentFamily.value()};
+		array<uint32_t, 2> familyIndicesArray = { familyIndices.graphicsFamily.value(), 
+																							familyIndices.presentFamily.value()};
 
 		// If graphics and present family are the same
 		//  then it doesn't have to share resources with itself?
@@ -86,5 +102,48 @@ namespace renderer::vulkan
 		}
 
 		TODO: Create images
+	}
+
+	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& availableFormats)
+	{
+		for(const auto& format : availableFormats)
+		{
+			if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			{
+				return format;
+			}
+		}
+
+		throw runtime_error("Unsupported surface format");
+	}
+
+	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window& window)
+	{
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+		{
+			return capabilities.currentExtent;
+		}
+
+		auto [ width, height ] = window.GetExtent();
+
+		width = clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+		height = clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+		return { width, height };
+	}      
+
+	VkPresentModeKHR PickSwapPresentMode(const vector<VkPresentModeKHR>& availablePresentModes)
+	{
+		for (const auto& mode : availablePresentModes)
+		{
+			if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+			{
+				return mode;
+			}
+		}
+
+		std::cout << "VulkanAPI initialization: picking up present mode, falling back to FIFO present mode\n";
+
+		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 }
