@@ -309,7 +309,7 @@ void processInput(position& pos, int &move)
 }
 
 void placeScriptedDoodads(
-	App& app, Storage& storage, MapInfo& mapInfo, TilesetData& tilesetData)
+	App& app, Storage& storage, MapInfo& mapInfo)
 {
 	SpriteTable spriteTable;
 	data::ReadSpriteTable(storage, spriteTable);
@@ -321,6 +321,7 @@ void placeScriptedDoodads(
 
 	app.scriptEngine.Clear();
 	app.scriptEngine.Init();
+	
 	app.scriptedDoodads.clear();
 
 	for(auto& doodad : mapInfo.sprites)
@@ -383,7 +384,7 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 		app.loadedSprites.clear();
 
 		loadTileset(app, storage, mapInfo.tileset);
-		placeScriptedDoodads(app, storage, mapInfo, app.tilesetData);
+		placeScriptedDoodads(app, storage, mapInfo);
 		loadDoodadGrps(app, storage);
 
 		app.scriptEngine.Process();
