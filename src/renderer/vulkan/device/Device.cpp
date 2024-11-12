@@ -36,18 +36,17 @@ namespace renderer::vulkan
 		const bool enableValidationLayers = true;
 	#endif
 
-	Device::Device() : _logical(nullptr), _physical(nullptr)
+	Device::Device() {}
+
+	Device::Device(VkDevice logical, VkPhysicalDevice physical, const VkAllocationCallbacks* allocator) : 
+		_logical(logical), _physical(physical), _allocator(allocator)
 	{
 	}
 
-	Device::Device(VkDevice logical, VkPhysicalDevice physical) : _logical(logical), _physical(physical) 
-	{
-	}
-
-	void Device::Destroy(const VkAllocationCallbacks* allocator)
+	void Device::Destroy()
 	{
 		if (_logical)
-			vkDestroyDevice(_logical, allocator);
+			vkDestroyDevice(_logical, _allocator);
 
 		_logical = nullptr;
 	}
@@ -174,7 +173,7 @@ namespace renderer::vulkan
 		return true;
 	}
 
-	Device CreateLogicalDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkAllocationCallbacks* allocator = nullptr)
+	Device Device::Create(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const VkAllocationCallbacks* allocator)
 	{
 		QueueFamilyIndices familyIndices = FindQueueFamilies(physicalDevice, surface);
 
@@ -217,6 +216,6 @@ namespace renderer::vulkan
 			throw runtime_error("Failed to create logical device");
 		}
 
-		return Device(logicalDevice, physicalDevice);
+		return Device(logicalDevice, physicalDevice, allocator);
 	}
 }

@@ -23,8 +23,7 @@ namespace renderer::vulkan
 		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
 
 		// Only one main device is being used
-		_device = CreateDevice(physicalDevice, _surface);
-
+		_device = Device::Create(physicalDevice, _surface);
 		_swapchain = Swapchain::Create(_device, _surface, _window);
 	}
 
@@ -172,7 +171,7 @@ namespace renderer::vulkan
 
 		_swapchain.Destroy();
 
-		_device.Destroy(allocator);
+		_device.Destroy();
 
 		if (_surface)
 			vkDestroySurfaceKHR(_instance, _surface, allocator);
