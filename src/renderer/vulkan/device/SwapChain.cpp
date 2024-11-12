@@ -57,6 +57,8 @@ namespace renderer::vulkan
 	
 	VkPresentModeKHR PickSwapPresentMode(const vector<VkPresentModeKHR>& presentModes);
 
+	void CreateImageViews(Device& device, VkSwapchainKHR swapchain, vector<VkImageView>& out, VkAllocationCallbacks* allocator);
+
 	Swapchain Swapchain::Create(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator)
 	{
 		auto [capabilities, formats, presentModes] = QuerySwapChainSupport(device, surface);
@@ -108,9 +110,68 @@ namespace renderer::vulkan
 			throw runtime_error("Failed to create swapchain");
 		}
 
-		TODO: Create images
+		vector<VkImageView> imageViews;
+		CreateImageViews(device, swapchain, imageViews, allocator);
 
-		return { swapchain };
+		return Swapchain(&device, swapchain, std::move(imageViews), allocator);
+	}
+
+	void CreateImageViews(Device& device, VkSwapchainKHR swapchain, vector<VkImageView>& out, VkFormat format, VkAllocationCallbacks* allocator)
+	{
+		uint32_t imageCount;
+
+		vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+		vector<VkImage> images(imageCount);
+		vkGetSwapchainImagesKHR(device, swapchain, &imageCount, images.data());
+
+		out.reserve(imageCount);
+
+		for(auto image : images)
+		{
+			const VkShaderModuleCreateFlags flags = 0;
+			const VkComponentMapping        componentMapping(VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY,
+																				VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY);
+			const VkImageSubresourceRange   subresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
+
+			VkImageViewCreateInfo createInfo(
+				VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, nullptr, flags,
+				image, VK_IMAGE_VIEW_TYPE_2D, format, componentMapping, subresourceRange);
+
+			VkImageView imageView;
+
+			if (vkCreateImageView(device, &createInfo, allocator, &imageView) != VK_SUCCESS)
+			{
+				throw runtime_error("Failed to create swapchain image view");
+			}
+
+			out.push_back(imageView);
+		}
+	}
+
+	Swapchain::Swapchain(Device* device, VkSwapchainKHR swapchain, vector<VkImageView>&& imageViews, const VkAllocationCallbacks* allocator) : 
+		_device(device), _hwSwapchain(swapchain), _imageViews(imageViews), _allocator(allocator)
+	{
+	}
+
+	void Swapchain::Destroy()
+	{
+		if (!_imageViews.empty())
+		{
+			for(auto image : _imageViews)
+			{
+				vkDestroyImageView(*_device, image, _allocator);
+			}
+		}
+
+		_imageViews.clear();
+
+		// Destroy swapchain destroys images as well
+		if (_hwSwapchain != nullptr)
+		{
+			vkDestroySwapchainKHR(*_device, _hwSwapchain, _allocator);
+		}
+
+		_hwSwapchain = nullptr;
 	}
 
 	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& availableFormats)

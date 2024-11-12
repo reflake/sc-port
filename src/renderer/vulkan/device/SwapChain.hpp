@@ -27,15 +27,21 @@ namespace renderer::vulkan
 	public:
 
 		Swapchain() {};
+		
+		void Destroy();
 
 		static Swapchain Create(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator = nullptr);
 
 	private:
 
-		Swapchain(VkSwapchainKHR hwSwapchain);
+		Swapchain(Device*, VkSwapchainKHR, std::vector<VkImageView>&& imageViews, const VkAllocationCallbacks* allocator);
 
 	private:
 
-		VkSwapchainKHR _hwSwapchain;
+		const VkAllocationCallbacks* _allocator;
+
+		Device*                  _device;
+		VkSwapchainKHR           _hwSwapchain;
+		std::vector<VkImageView> _imageViews;
 	};
 }

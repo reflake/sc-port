@@ -170,7 +170,7 @@ namespace renderer::vulkan
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
 
-		vkDestroySwapchainKHR(_device, _swapchain, allocator);
+		_swapchain.Destroy();
 
 		_device.Destroy(allocator);
 
