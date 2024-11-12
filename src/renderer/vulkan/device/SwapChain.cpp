@@ -56,8 +56,8 @@ namespace renderer::vulkan
 	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
 	
 	VkPresentModeKHR PickSwapPresentMode(const vector<VkPresentModeKHR>& presentModes);
-	
-	VkSwapchainKHR CreateSwapchain(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator)
+
+	Swapchain Swapchain::Create(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator)
 	{
 		auto [capabilities, formats, presentModes] = QuerySwapChainSupport(device, surface);
 
@@ -101,14 +101,16 @@ namespace renderer::vulkan
 		createInfo.clipped = VK_TRUE;
 		createInfo.oldSwapchain = VK_NULL_HANDLE; // TODO: pass in old swapchain when window recreated
 
-		VkSwapchainKHR result;
+		VkSwapchainKHR swapchain;
 
-		if (vkCreateSwapchainKHR(device, &createInfo, allocator, &result) != VK_SUCCESS)
+		if (vkCreateSwapchainKHR(device, &createInfo, allocator, &swapchain) != VK_SUCCESS)
 		{
 			throw runtime_error("Failed to create swapchain");
 		}
 
 		TODO: Create images
+
+		return { swapchain };
 	}
 
 	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& availableFormats)

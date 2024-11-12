@@ -10,6 +10,7 @@
 #include "data/Sprite.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
+#include "device/SwapChain.hpp"
 
 namespace renderer::vulkan
 {
@@ -49,7 +50,7 @@ namespace renderer::vulkan
 		// TODO: hide these members in implementation
 		VkInstance     _instance;
 		VkSurfaceKHR   _surface;
-		VkSwapchainKHR _swapchain;
+		Swapchain      _swapchain;
 		Device         _device;
 		Window         _window;
 

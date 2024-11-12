@@ -22,5 +22,20 @@ namespace renderer::vulkan
 
 	extern SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-	extern VkSwapchainKHR CreateSwapchain(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator = nullptr);
+	class Swapchain
+	{
+	public:
+
+		Swapchain() {};
+
+		static Swapchain Create(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator = nullptr);
+
+	private:
+
+		Swapchain(VkSwapchainKHR hwSwapchain);
+
+	private:
+
+		VkSwapchainKHR _hwSwapchain;
+	};
 }

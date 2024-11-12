@@ -25,7 +25,7 @@ namespace renderer::vulkan
 		// Only one main device is being used
 		_device = CreateDevice(physicalDevice, _surface);
 
-		_swapChain = CreateSwapchain(_device, _surface, _window);
+		_swapchain = Swapchain::Create(_device, _surface, _window);
 	}
 
 	void Graphics::CreateInstance()
