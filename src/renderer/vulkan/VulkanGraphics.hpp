@@ -46,11 +46,12 @@ namespace renderer::vulkan
 
 	private:
 
-		VkInstance    _instance;
-		VkSurfaceKHR  _surface;
-		Device        _device;
-
-		Window _window;
+		// TODO: hide these members in implementation
+		VkInstance     _instance;
+		VkSurfaceKHR   _surface;
+		VkSwapchainKHR _swapchain;
+		Device         _device;
+		Window         _window;
 
 		const filesystem::Storage& _storage;
 	};
