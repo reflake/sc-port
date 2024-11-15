@@ -14,7 +14,7 @@ namespace renderer::vulkan
 	public:
 
 		Device();
-		Device(VkDevice, VkPhysicalDevice, const VkAllocationCallbacks*);
+		Device(VkDevice, VkPhysicalDevice, VkQueue presentQueue, const VkAllocationCallbacks*);
 
 		// implicit conversion to a logical device reference
 		operator VkDevice&();
@@ -32,6 +32,7 @@ namespace renderer::vulkan
 
 		VkDevice 				 _logical;
 		VkPhysicalDevice _physical;
+		VkQueue          _presentQueue;
 	};
 
 	extern VkPhysicalDevice PickPhysicalDevice(VkInstance instance, std::function<int(VkPhysicalDevice&)> evaluationFunction);

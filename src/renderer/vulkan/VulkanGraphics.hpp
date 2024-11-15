@@ -50,6 +50,7 @@ namespace renderer::vulkan
 		// TODO: hide these members in implementation
 		VkInstance     _instance;
 		VkSurfaceKHR   _surface;
+		VkQueue        _presentQueue;
 		Swapchain      _swapchain;
 		Device         _device;
 		Window         _window;

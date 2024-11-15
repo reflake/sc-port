@@ -216,6 +216,10 @@ namespace renderer::vulkan
 			throw runtime_error("Failed to create logical device");
 		}
 
-		return Device(logicalDevice, physicalDevice, allocator);
+		VkQueue presentQueue;
+
+		vkGetDeviceQueue(logicalDevice, familyIndices.presentFamily.value(), 0, &presentQueue);
+
+		return Device(logicalDevice, physicalDevice, presentQueue, allocator);
 	}
 }
