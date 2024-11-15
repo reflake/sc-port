@@ -24,7 +24,7 @@ namespace renderer::vulkan
 
 		void Destroy();
 	
-		static Device Create(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const VkAllocationCallbacks* allocator = nullptr);
+		static Device Create(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::vector<const char*>& enabledLayers, const VkAllocationCallbacks* allocator = nullptr);
 
 	private:
 

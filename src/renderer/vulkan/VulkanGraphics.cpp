@@ -11,46 +11,15 @@
 
 using glm::vec2;
 using std::runtime_error;
+using std::vector;
 
 namespace renderer::vulkan
 {
 	Graphics::Graphics(SDL_Window* window, filesystem::Storage& storage) : 
 		_window(window), _storage(storage)
 	{
-		CreateInstance();
-		CreateWindowSurface(window, _instance, _surface);
-
-		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
-
-		// Only one main device is being used
-		_device = Device::Create(physicalDevice, _surface);
-		_swapchain = Swapchain::Create(_device, _surface, _window);
-	}
-
-	void Graphics::CreateInstance()
-	{
-		std::vector<const char*> extensions;
-
-		GetSdlRequiredExtensions(_window, extensions);
-
-		const char* appName = "gauss-app";
-		const char* engineName = "gauss-engine";
-		const int appVersion = 0;
-		const int engineVersion = 0;
-
-		VkApplicationInfo appInfo(
-			VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, 
-			appName, appVersion, engineName, engineVersion, VK_API_VERSION_1_0);
-
-		const int enabledLayerCount = 0;
-
-		VkInstanceCreateInfo instanceCreateInfo(
-			VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, &appInfo, 
-			enabledLayerCount, nullptr,
-			extensions.size(), extensions.data());
-
 		// Check out layers
-		std::vector<const char*> requiredLayers;
+		vector<const char*> requiredLayers;
 
 		if (enableValidationLayers)
 		{
@@ -60,12 +29,38 @@ namespace renderer::vulkan
 			EnableValidationLayers(requiredLayers);
 		}
 
-		// Enable layers if they are required
-		if (!requiredLayers.empty())
-		{
-			instanceCreateInfo.enabledLayerCount = requiredLayers.size();
-			instanceCreateInfo.ppEnabledLayerNames = requiredLayers.data();
-		}
+		CreateInstance(requiredLayers);
+		CreateWindowSurface(window, _instance, _surface);
+
+		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
+
+		// Only one main device is being used
+		_device = Device::Create(physicalDevice, _surface, requiredLayers);
+		_swapchain = Swapchain::Create(_device, _surface, _window);
+	}
+
+	void Graphics::CreateInstance(vector<const char*> enabledLayers)
+	{
+		std::vector<const char*> extensions;
+
+		GetSdlRequiredExtensions(_window, extensions);
+
+		const char* appName = "gauss-app";
+		const char* engineName = "gauss-engine";
+		const int   appVersion = 0;
+		const int   engineVersion = 0;
+
+		VkApplicationInfo appInfo(
+			VK_STRUCTURE_TYPE_APPLICATION_INFO, nullptr, 
+			appName, appVersion, engineName, engineVersion, VK_API_VERSION_1_0);
+
+		const VkInstanceCreateFlags flags = 0;
+
+		VkInstanceCreateInfo instanceCreateInfo(
+			VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO, nullptr,
+			flags, &appInfo, 
+			enabledLayers.size(), enabledLayers.data(),
+			extensions.size(), extensions.data());
 
 		auto errCode = vkCreateInstance(&instanceCreateInfo, nullptr, &_instance);
 

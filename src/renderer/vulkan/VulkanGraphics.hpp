@@ -42,7 +42,7 @@ namespace renderer::vulkan
 
 	private:
 
-		void CreateInstance();
+		void CreateInstance(std::vector<const char*> enabledLayers);
 		void EnableValidationLayers(std::vector<const char*>& layerList);
 
 	private:

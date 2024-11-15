@@ -175,7 +175,7 @@ namespace renderer::vulkan
 		return true;
 	}
 
-	Device Device::Create(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const VkAllocationCallbacks* allocator)
+	Device Device::Create(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, vector<const char*>& enabledLayers, const VkAllocationCallbacks* allocator)
 	{
 		QueueFamilyIndices familyIndices       = FindQueueFamilies(physicalDevice, surface);
 		set<uint32_t>      uniqueQueueFamilies = { familyIndices.graphicsFamily.value(), familyIndices.presentFamily.value() };
@@ -205,7 +205,7 @@ namespace renderer::vulkan
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, nullptr,
 			deviceFlags,
 			queueCreateInfoList.size(), queueCreateInfoList.data(),
-			enabledLayersCount, nullptr,
+			enabledLayers.size(), enabledLayers.data(),
 			deviceExtensions.size(), deviceExtensions.data(), &deviceFeatures);
 
 		// TODO: enable validation layers
