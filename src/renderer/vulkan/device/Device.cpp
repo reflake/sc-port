@@ -4,6 +4,7 @@
 #include "SwapChain.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstring>
 #include <iterator>
 #include <set>
@@ -11,6 +12,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+using std::array;
 using std::any_of;
 using std::copy_if;
 using std::vector;
@@ -175,11 +177,8 @@ namespace renderer::vulkan
 
 	Device Device::Create(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, const VkAllocationCallbacks* allocator)
 	{
-		QueueFamilyIndices familyIndices = FindQueueFamilies(physicalDevice, surface);
-
-		set<uint32_t> uniqueQueueFamilies = { familyIndices.graphicsFamily.value(), familyIndices.presentFamily.value() };
-
-		float queuePriorities[] = { 1.0f };
+		QueueFamilyIndices familyIndices       = FindQueueFamilies(physicalDevice, surface);
+		set<uint32_t>      uniqueQueueFamilies = { familyIndices.graphicsFamily.value(), familyIndices.presentFamily.value() };
 
 		vector<VkDeviceQueueCreateInfo> queueCreateInfoList;
 		queueCreateInfoList.reserve(uniqueQueueFamilies.size());
@@ -187,10 +186,12 @@ namespace renderer::vulkan
 		for(uint32_t familyIndex : uniqueQueueFamilies)
 		{
 			const VkDeviceQueueCreateFlags queueFlags = 0;
+			const array<float, 1> queuePriorities = { 1.0f };
 
 			queueCreateInfoList.emplace_back(
 				VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
-			  queueFlags, familyIndex, 1, queuePriorities);
+			  queueFlags, familyIndex, 
+				queuePriorities.size(), queuePriorities.data());
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures {
@@ -198,7 +199,7 @@ namespace renderer::vulkan
 		};
 
 		const VkDeviceCreateFlags deviceFlags = 0;
-		const uint32_t enabledLayersCount = 0;
+		const uint32_t            enabledLayersCount = 0;
 
 		VkDeviceCreateInfo deviceCreateInfo(
 			VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, nullptr,
