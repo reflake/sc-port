@@ -40,8 +40,8 @@ namespace renderer::vulkan
 
 	Device::Device() {}
 
-	Device::Device(VkDevice logical, VkPhysicalDevice physical, const VkAllocationCallbacks* allocator) : 
-		_logical(logical), _physical(physical), _allocator(allocator)
+	Device::Device(VkDevice logical, VkPhysicalDevice physical, VkQueue presentQueue, const VkAllocationCallbacks* allocator) : 
+		_logical(logical), _physical(physical), _presentQueue(presentQueue), _allocator(allocator)
 	{
 	}
 
