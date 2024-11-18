@@ -46,7 +46,7 @@
 #include <filesystem/MpqArchive.hpp>
 #include <filesystem/Storage.hpp>
 
-#include <vulkan/VulkanGraphics.hpp>
+#include <vulkan/Api.hpp>
 
 #include "data/Tile.hpp"
 #include "data/Map.hpp"
@@ -177,7 +177,7 @@ void freeWindow(App& app)
 
 void initializeGraphicsAPI(App& app, Storage& storage)
 {
-	app.graphics = std::make_shared<VulkanGraphics>(app.window, storage);
+	app.graphics = renderer::vulkan::CreateGraphics(app.window, &storage);
 }
 
 bool showOpenDialog(char* out, int size, HWND hwnd)

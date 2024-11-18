@@ -19,6 +19,8 @@ namespace renderer
 	{
 	public:
 
+		virtual ~A_Graphics() = 0;
+
 		virtual const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData&) = 0;
 		virtual void DrawSprite(const A_SpriteSheet*, frameIndex, glm::vec2 position) = 0;
 		virtual void FreeSpriteSheet(const A_SpriteSheet*) = 0;

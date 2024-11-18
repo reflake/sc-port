@@ -23,7 +23,7 @@ namespace renderer::vulkan
 	public:
 
 		Graphics(SDL_Window* window, filesystem::Storage& storage);
-		~Graphics();
+		~Graphics() override;
 
 		const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData&) override;
 		void DrawSprite(const A_SpriteSheet*, frameIndex, glm::vec2 position) override;
