@@ -175,9 +175,9 @@ void freeWindow(App& app)
 	}
 }
 
-void initializeGraphicsAPI(App& app, Storage& storage)
+void initializeGraphicsAPI(App& app)
 {
-	app.graphics = renderer::vulkan::CreateGraphics(app.window, &storage);
+	app.graphics = renderer::vulkan::CreateGraphics(app.window);
 }
 
 bool showOpenDialog(char* out, int size, HWND hwnd)
@@ -415,7 +415,7 @@ int main(int argc, char *argv[]) {
 	
 	initSDL();
 	createWindow(app);
-	initializeGraphicsAPI(app, storage);
+	initializeGraphicsAPI(app);
 
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);

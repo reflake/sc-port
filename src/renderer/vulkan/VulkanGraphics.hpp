@@ -22,7 +22,7 @@ namespace renderer::vulkan
 	{
 	public:
 
-		Graphics(SDL_Window* window, filesystem::Storage& storage);
+		Graphics(SDL_Window* window);
 		~Graphics() override;
 
 		const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData&) override;
@@ -54,7 +54,5 @@ namespace renderer::vulkan
 		Swapchain      _swapchain;
 		Device         _device;
 		Window         _window;
-
-		const filesystem::Storage& _storage;
 	};
 }

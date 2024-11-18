@@ -15,8 +15,7 @@ using std::vector;
 
 namespace renderer::vulkan
 {
-	Graphics::Graphics(SDL_Window* window, filesystem::Storage& storage) : 
-		_window(window), _storage(storage)
+	Graphics::Graphics(SDL_Window* window) : _window(window)
 	{
 		// Check out layers
 		vector<const char*> requiredLayers;

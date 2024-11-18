@@ -6,5 +6,5 @@
 
 namespace renderer::vulkan
 {
-	extern std::unique_ptr<A_Graphics> CreateGraphics(void* window, void* storage);
+	extern std::unique_ptr<A_Graphics> CreateGraphics(void* window);
 }
