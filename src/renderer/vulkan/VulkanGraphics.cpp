@@ -103,7 +103,7 @@ namespace renderer::vulkan
 		return score;
 	}
 	
-	void Graphics::LoadGrp(grpID grpID)
+	const A_SpriteSheet* Graphics::LoadSpriteSheet(data::A_SpriteSheetData& spriteSheetData)
 	{
 	/* Примерный алгоритм действий для чтения Grp спрайтов
 

@@ -130,3 +130,6 @@ target_link_libraries(Renderer
   PRIVATE casc_static
   PRIVATE storm
   PRIVATE SDL2::SDL2-static)
+
+file(COPY static/shader.frag static/shader.vert
+     DESTINATION shaders/)
