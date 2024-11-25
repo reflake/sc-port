@@ -8,7 +8,28 @@
 
 namespace renderer::vulkan
 {
-	class ShaderModule;
+	class Shader;
+
+	class ShaderModule
+	{
+	public:
+
+		enum class Stage : uint32_t 
+		{
+			Fragment, Vertex
+		};
+
+		ShaderModule(VkShaderModule, Stage);
+
+		Stage GetType() const;
+
+		operator VkShaderModule() const;
+
+	private:
+
+		VkShaderModule _module;
+		const Stage     _type;
+	};
 
 	class ShaderManager
 	{
@@ -18,7 +39,8 @@ namespace renderer::vulkan
 
 		void Destroy();
 
-		ShaderModule CreateShaderModule(const char* src, size_t size);
+		const Shader*       CreateShader(const ShaderModule** modules, int count); // actually creates a whole pipeline for vulkan api
+		const ShaderModule* CreateShaderModule(ShaderModule::Stage, const char* src, size_t size);
 
 	private:
 
@@ -26,19 +48,13 @@ namespace renderer::vulkan
 
 		Device& _device;
 
+		std::vector<Shader>       _shaders;
 		std::vector<ShaderModule> _modules;
 	};
 
-	class ShaderModule
+	// Consist rendering pipeline
+	class Shader
 	{
-	public:
 
-		ShaderModule(VkShaderModule);
-
-		operator VkShaderModule() const;
-
-	private:
-
-		VkShaderModule _module;
 	};
 }
