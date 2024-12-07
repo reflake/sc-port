@@ -6,6 +6,8 @@
 
 #include "device/Device.hpp"
 
+#include "Config.hpp"
+
 namespace renderer::vulkan
 {
 	class Shader;
@@ -35,16 +37,17 @@ namespace renderer::vulkan
 	{
 	public:
 	
-		ShaderManager(Device&, const VkAllocationCallbacks*);
+		ShaderManager(Device&, Config&, const VkAllocationCallbacks*);
 
 		void Destroy();
 
-		const Shader*       CreateShader(const ShaderModule** modules, int count); // actually creates a whole pipeline for vulkan api
+		const Shader*       CreateShader(const ShaderModule* modules, int count); // actually creates a whole pipeline for vulkan api
 		const ShaderModule* CreateShaderModule(ShaderModule::Stage, const char* src, size_t size);
 
 	private:
 
 		const VkAllocationCallbacks* _allocator;
+		const Config&                _config;
 
 		Device& _device;
 
