@@ -1,10 +1,12 @@
 #include "VulkanGraphics.hpp"
 
+#include "data/Assets.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
 #include "device/SwapChain.hpp"
 
 #include <glm/vec2.hpp>
+#include <memory>
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
@@ -15,7 +17,7 @@ using std::vector;
 
 namespace renderer::vulkan
 {
-	Graphics::Graphics(SDL_Window* window) : _window(window)
+	Graphics::Graphics(SDL_Window* window, const data::Assets* assets) : _window(window), _assets(assets)
 	{
 		// Check out layers
 		vector<const char*> requiredLayers;
@@ -36,6 +38,16 @@ namespace renderer::vulkan
 		// Only one main device is being used
 		_device = Device::Create(physicalDevice, _surface, requiredLayers);
 		_swapchain = Swapchain::Create(_device, _surface, _window);
+
+		int   fragmentShaderSize = _assets->GetSize("shader.frag");
+		auto  fragmentShaderCode = std::make_unique<uint8_t[]>(fragmentShaderSize);
+
+		_assets->ReadBytes("shader.frag", fragmentShaderCode.get());
+
+		int   vertexShaderSize = _assets->GetSize("shader.vert");
+		auto  vertexShaderCode = std::make_unique<uint8_t[]>(vertexShaderSize);
+
+		_assets->ReadBytes("shader.vert", vertexShaderCode.get());
 	}
 
 	void Graphics::CreateInstance(vector<const char*> enabledLayers)

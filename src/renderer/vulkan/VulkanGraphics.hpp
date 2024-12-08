@@ -7,6 +7,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
+#include "data/Assets.hpp"
 #include "data/Sprite.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
@@ -22,7 +23,7 @@ namespace renderer::vulkan
 	{
 	public:
 
-		Graphics(SDL_Window* window);
+		Graphics(SDL_Window* window, const data::Assets* assets);
 		~Graphics() override;
 
 		const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData&) override;
@@ -48,6 +49,8 @@ namespace renderer::vulkan
 	private:
 
 		// TODO: hide these members in implementation
+		const data::Assets*  _assets;
+
 		VkInstance     _instance;
 		VkSurfaceKHR   _surface;
 		VkQueue        _presentQueue;

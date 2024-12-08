@@ -3,6 +3,7 @@
 #include "TilesetData.hpp"
 #include "data/TextStrings.hpp"
 #include "data/Tileset.hpp"
+#include "vulkan/VulkanGraphics.hpp"
 #include <array>
 #define SDL_MAIN_HANDLED
 
@@ -43,6 +44,7 @@
 #include <data/Common.hpp>
 #include <data/Grp.hpp>
 #include <data/Images.hpp>
+#include <data/Assets.hpp>
 #include <filesystem/MpqArchive.hpp>
 #include <filesystem/Storage.hpp>
 
@@ -115,6 +117,7 @@ struct App {
 	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
 
 	shared_ptr<renderer::A_Graphics> graphics;
+	data::Assets assets;
 
 	unordered_map<data::grpID, const renderer::A_SpriteSheet*> loadedSprites;
 };
@@ -177,7 +180,7 @@ void freeWindow(App& app)
 
 void initializeGraphicsAPI(App& app)
 {
-	app.graphics = renderer::vulkan::CreateGraphics(app.window);
+	app.graphics = renderer::vulkan::CreateGraphics(app.window, &app.assets);
 }
 
 bool showOpenDialog(char* out, int size, HWND hwnd)

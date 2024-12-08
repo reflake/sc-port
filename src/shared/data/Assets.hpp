@@ -9,7 +9,7 @@ namespace data
 	{
 	public:
 
-		int ReadBytes(const char* path, uint8_t* output);
-		int GetSize(const char* path);
+		int ReadBytes(const char* path, uint8_t* output) const;
+		int GetSize(const char* path) const;
 	};
 }
