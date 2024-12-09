@@ -51,19 +51,24 @@ namespace renderer::vulkan
 		return details;
 	}
 
+	Swapchain::Swapchain(Device* device, VkSwapchainKHR swapchain, vector<VkImageView>&& imageViews, const VkAllocationCallbacks* allocator) : 
+		_device(device), _hwSwapchain(swapchain), _imageViews(imageViews), _allocator(allocator)
+	{
+	}
+
 	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats);
 
-	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities);
+	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Config& config);
 	
 	VkPresentModeKHR PickSwapPresentMode(const vector<VkPresentModeKHR>& presentModes);
 
-	void CreateImageViews(Device& device, VkSwapchainKHR swapchain, vector<VkImageView>& out, VkAllocationCallbacks* allocator);
+	void CreateImageViews(Device& device, VkSwapchainKHR swapchain, vector<VkImageView>& out, VkFormat format, VkAllocationCallbacks* allocator);
 
-	Swapchain Swapchain::Create(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator)
+	Swapchain Swapchain::Create(Device& device, VkSurfaceKHR surface, Config& config, VkAllocationCallbacks* allocator)
 	{
 		auto [capabilities, formats, presentModes] = QuerySwapChainSupport(device, surface);
 
-		auto extent = DefineSwapExtent(capabilities);
+		auto extent = DefineSwapExtent(capabilities, config);
 		auto surfaceFormat = PickSwapSurfaceFormat(formats);
 		auto presentMode = PickSwapPresentMode(presentModes);
 
@@ -111,7 +116,7 @@ namespace renderer::vulkan
 		}
 
 		vector<VkImageView> imageViews;
-		CreateImageViews(device, swapchain, imageViews, allocator);
+		CreateImageViews(device, swapchain, imageViews, surfaceFormat.format, allocator);
 
 		return Swapchain(&device, swapchain, std::move(imageViews), allocator);
 	}
@@ -148,9 +153,47 @@ namespace renderer::vulkan
 		}
 	}
 
-	Swapchain::Swapchain(Device* device, VkSwapchainKHR swapchain, vector<VkImageView>&& imageViews, const VkAllocationCallbacks* allocator) : 
-		_device(device), _hwSwapchain(swapchain), _imageViews(imageViews), _allocator(allocator)
+	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& availableFormats)
 	{
+		for(const auto& format : availableFormats)
+		{
+			if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+			{
+				return format;
+			}
+		}
+
+		throw runtime_error("Unsupported surface format");
+	}
+
+	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Config& config)
+	{
+		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+		{
+			return capabilities.currentExtent;
+		}
+
+		auto [ width, height ] = config.GetExtents();
+
+		width = clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+		height = clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+		return { width, height };
+	}      
+
+	VkPresentModeKHR PickSwapPresentMode(const vector<VkPresentModeKHR>& availablePresentModes)
+	{
+		for (const auto& mode : availablePresentModes)
+		{
+			if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+			{
+				return mode;
+			}
+		}
+
+		std::cout << "VulkanAPI initialization: picking up present mode, falling back to FIFO present mode\n";
+
+		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
 	void Swapchain::Destroy()
@@ -172,48 +215,5 @@ namespace renderer::vulkan
 		}
 
 		_hwSwapchain = nullptr;
-	}
-
-	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& availableFormats)
-	{
-		for(const auto& format : availableFormats)
-		{
-			if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-			{
-				return format;
-			}
-		}
-
-		throw runtime_error("Unsupported surface format");
-	}
-
-	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Window& window)
-	{
-		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-		{
-			return capabilities.currentExtent;
-		}
-
-		auto [ width, height ] = window.GetExtent();
-
-		width = clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-		height = clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
-		return { width, height };
-	}      
-
-	VkPresentModeKHR PickSwapPresentMode(const vector<VkPresentModeKHR>& availablePresentModes)
-	{
-		for (const auto& mode : availablePresentModes)
-		{
-			if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
-			{
-				return mode;
-			}
-		}
-
-		std::cout << "VulkanAPI initialization: picking up present mode, falling back to FIFO present mode\n";
-
-		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 }

@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #include "Device.hpp"
+#include "../Config.hpp"
 
 #include "../Window.hpp"
 
@@ -30,7 +31,7 @@ namespace renderer::vulkan
 		
 		void Destroy();
 
-		static Swapchain Create(Device& device, VkSurfaceKHR surface, Window& window, VkAllocationCallbacks* allocator = nullptr);
+		static Swapchain Create(Device&, VkSurfaceKHR, Config&, VkAllocationCallbacks* allocator = nullptr);
 
 	private:
 
