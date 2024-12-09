@@ -28,19 +28,19 @@ namespace renderer::vulkan
 		}
 	}
 
-	const Shader* ShaderManager::CreateShader(const ShaderModule* modules, int count)
+	const Shader* ShaderManager::CreateShader(const ShaderModule** modules, int count)
 	{
 		vector<VkPipelineShaderStageCreateInfo> stageCreateInfoList(count);
 
 		for(int i = 0; i < count; i++)
 		{
-			auto& module = modules[i];
+			auto module = modules[i];
 			VkPipelineShaderStageCreateInfo& stageCreateInfo = stageCreateInfoList[i];
 
 			stageCreateInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			stageCreateInfo.stage  = GetShaderFlags(module.GetType());
+			stageCreateInfo.stage  = GetShaderFlags(module->GetType());
 			stageCreateInfo.pName  = "main";
-			stageCreateInfo.module = module;
+			stageCreateInfo.module = *module;
 		}
 
 		VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
@@ -97,12 +97,12 @@ namespace renderer::vulkan
 
 	}
 
-	const ShaderModule* ShaderManager::CreateShaderModule(ShaderModule::Stage type, const char* src, size_t size)
+	const ShaderModule* ShaderManager::CreateShaderModule(ShaderModule::Stage type, const ShaderCode& shader)
 	{
 		const VkShaderModuleCreateFlags flags = 0;
-		VkShaderModuleCreateInfo createInfo { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, flags, size };
+		VkShaderModuleCreateInfo createInfo { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, flags, shader.size };
 
-		createInfo.pCode = reinterpret_cast<const uint32_t*>(src);
+		createInfo.pCode = reinterpret_cast<const uint32_t*>(shader.code.get());
 
 		VkShaderModule hwModule;
 

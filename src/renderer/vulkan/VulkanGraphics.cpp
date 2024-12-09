@@ -1,5 +1,7 @@
 #include "VulkanGraphics.hpp"
 
+#include "Config.hpp"
+#include "Shader.hpp"
 #include "data/Assets.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
@@ -12,11 +14,14 @@
 #include <vulkan/vulkan_core.h>
 
 using glm::vec2;
+using std::array;
 using std::runtime_error;
 using std::vector;
 
 namespace renderer::vulkan
 {
+	using ShaderStage = ShaderModule::Stage;
+
 	Graphics::Graphics(SDL_Window* window, const data::Assets* assets) : _window(window), _assets(assets)
 	{
 		// Check out layers
@@ -33,21 +38,22 @@ namespace renderer::vulkan
 		CreateInstance(requiredLayers);
 		CreateWindowSurface(window, _instance, _surface);
 
+		auto [screenWidth, screenHeight] = _window.GetExtent();
+		Config config(screenWidth, screenHeight);
+
 		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
 
 		// Only one main device is being used
-		_device = Device::Create(physicalDevice, _surface, requiredLayers);
+		_device    = Device::Create(physicalDevice, _surface, requiredLayers);
 		_swapchain = Swapchain::Create(_device, _surface, _window);
 
-		int   fragmentShaderSize = _assets->GetSize("shader.frag");
-		auto  fragmentShaderCode = std::make_unique<uint8_t[]>(fragmentShaderSize);
+		auto _shaders = ShaderManager(_device, config);
 
-		_assets->ReadBytes("shader.frag", fragmentShaderCode.get());
+		auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shader.frag"));
+		auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shader.vert"));
+		array<const ShaderModule*, 2> modules = { fragmentShaderModule, vertexShaderModule };
 
-		int   vertexShaderSize = _assets->GetSize("shader.vert");
-		auto  vertexShaderCode = std::make_unique<uint8_t[]>(vertexShaderSize);
-
-		_assets->ReadBytes("shader.vert", vertexShaderCode.get());
+		_shaders.CreateShader(modules.data(), modules.size());
 	}
 
 	void Graphics::CreateInstance(vector<const char*> enabledLayers)
@@ -170,6 +176,17 @@ namespace renderer::vulkan
 		cyclePaletteColor<7, 7>(app.tilesetAtlas);
 		
 	}*/
+
+	ShaderCode Graphics::ReadShaderCode(const char* path)
+	{
+		ShaderCode output;
+		output.size = _assets->GetSize(path);
+		output.code = std::make_unique<uint8_t[]>(output.size);
+
+		_assets->ReadBytes("shader.frag", output.code.get());
+
+		return output;
+	}
 
 	Graphics::~Graphics()
 	{

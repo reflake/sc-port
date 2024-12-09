@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 #include <vulkan/vulkan_core.h>
 
 #include "Config.hpp"
@@ -22,14 +23,17 @@ namespace renderer::vulkan
 	const VkViewport Config::GetViewport() const
 	{
 		return {
-			0.0f, 0.0f,
-			TAKE SWAPCHAIN SIZE,
-			0.0, 1.0f
-		}
+			0.0f, 
+			0.0f,
+			static_cast<float>(std::round(screenWidth)), 
+			static_cast<float>(std::round(screenWidth)),
+			0.0, 
+			1.0f
+		};
 	}
 
 	const VkExtent2D Config::GetExtents() const
 	{
-		return { GET EXTENTS FROM SURFACE OF WINDOW }
+		return { static_cast<uint32_t>(screenWidth), static_cast<uint32_t>(screenHeight) };
 	}
 }

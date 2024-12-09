@@ -10,6 +10,12 @@
 
 namespace renderer::vulkan
 {
+	struct ShaderCode
+	{
+		std::unique_ptr<uint8_t[]> code;
+		size_t size;
+	};
+
 	class Shader;
 
 	class ShaderModule
@@ -37,12 +43,12 @@ namespace renderer::vulkan
 	{
 	public:
 	
-		ShaderManager(Device&, Config&, const VkAllocationCallbacks*);
+		ShaderManager(Device&, Config&, const VkAllocationCallbacks* = nullptr);
 
 		void Destroy();
 
-		const Shader*       CreateShader(const ShaderModule* modules, int count); // actually creates a whole pipeline for vulkan api
-		const ShaderModule* CreateShaderModule(ShaderModule::Stage, const char* src, size_t size);
+		const Shader*       CreateShader(const ShaderModule** modules, int count); // actually creates a whole pipeline for vulkan api
+		const ShaderModule* CreateShaderModule(ShaderModule::Stage, const ShaderCode& );
 
 	private:
 

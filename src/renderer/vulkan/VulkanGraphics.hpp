@@ -4,13 +4,15 @@
 #include <SDL_surface.h>
 
 #include <filesystem/Storage.hpp>
+#include <memory>
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
+#include "Shader.hpp"
+#include "Window.hpp"
 #include "data/Assets.hpp"
 #include "data/Sprite.hpp"
 #include "device/Device.hpp"
-#include "Window.hpp"
 #include "device/SwapChain.hpp"
 
 namespace renderer::vulkan
@@ -45,6 +47,8 @@ namespace renderer::vulkan
 
 		void CreateInstance(std::vector<const char*> enabledLayers);
 		void EnableValidationLayers(std::vector<const char*>& layerList);
+
+		ShaderCode ReadShaderCode(const char* path);
 
 	private:
 
