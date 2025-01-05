@@ -5,9 +5,11 @@
 
 #include <filesystem/Storage.hpp>
 #include <memory>
+#include <vector>
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
+#include "RenderPass.hpp"
 #include "Shader.hpp"
 #include "Window.hpp"
 #include "data/Assets.hpp"
@@ -58,8 +60,11 @@ namespace renderer::vulkan
 		VkInstance     _instance;
 		VkSurfaceKHR   _surface;
 		VkQueue        _presentQueue;
+		VkCommandPool  _commandPool;
 		Swapchain      _swapchain;
 		Device         _device;
 		Window         _window;
+		RenderPass     _renderPass;
+		ShaderManager  _shaders;
 	};
 }

@@ -4,6 +4,7 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "RenderPass.hpp"
 #include "device/Device.hpp"
 
 #include "Config.hpp"
@@ -16,7 +17,20 @@ namespace renderer::vulkan
 		size_t size;
 	};
 
-	class Shader;
+	// Consist rendering pipeline
+	class Shader
+	{
+	public:
+
+		Shader(VkPipeline, VkPipelineLayout);
+
+		void Destroy(const VkDevice device, const VkAllocationCallbacks* allocator);
+
+	private:
+
+		const VkPipeline _pipeline;
+		const VkPipelineLayout _pipelineLayout;
+	};
 
 	class ShaderModule
 	{
@@ -43,27 +57,23 @@ namespace renderer::vulkan
 	{
 	public:
 	
-		ShaderManager(Device&, Config&, const VkAllocationCallbacks* = nullptr);
+		ShaderManager();
+		ShaderManager(Device*, Config*, RenderPass* renderPass, const VkAllocationCallbacks* = nullptr);
 
 		void Destroy();
 
-		const Shader*       CreateShader(const ShaderModule** modules, int count); // actually creates a whole pipeline for vulkan api
+		const Shader*       CreateShader(const ShaderModule** modules, int count, VkFormat swapchainImageFormat); // actually creates a whole pipeline for vulkan api
 		const ShaderModule* CreateShaderModule(ShaderModule::Stage, const ShaderCode& );
 
 	private:
 
 		const VkAllocationCallbacks* _allocator;
-		const Config&                _config;
+		const Config*                _config;
 
-		Device& _device;
+		Device*     _device;
+		RenderPass* _renderPass;
 
 		std::vector<Shader>       _shaders;
 		std::vector<ShaderModule> _modules;
-	};
-
-	// Consist rendering pipeline
-	class Shader
-	{
-
 	};
 }

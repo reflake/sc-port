@@ -1,10 +1,13 @@
 #include "VulkanGraphics.hpp"
 
+#include "Command.hpp"
 #include "Config.hpp"
 #include "Shader.hpp"
 #include "data/Assets.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
+#include "device/Framebuffer.hpp"
+#include "device/Queue.hpp"
 #include "device/SwapChain.hpp"
 
 #include <glm/vec2.hpp>
@@ -45,15 +48,20 @@ namespace renderer::vulkan
 
 		// Only one main device is being used
 		_device    = Device::Create(physicalDevice, _surface, requiredLayers);
-		_swapchain = Swapchain::Create(_device, _surface, _window);
-
-		auto _shaders = ShaderManager(_device, config);
+		_renderPass = RenderPass::Create(_device, _swapchain.GetFormat());
+		_swapchain = Swapchain::Create(_device, &_renderPass, _surface, config);
+		_shaders = ShaderManager(&_device, &config, &_renderPass);
 
 		auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shader.frag"));
 		auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shader.vert"));
 		array<const ShaderModule*, 2> modules = { fragmentShaderModule, vertexShaderModule };
 
-		_shaders.CreateShader(modules.data(), modules.size());
+		_shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat());
+
+		QueueFamilyIndices familyIndices = FindQueueFamilies(_device, _surface);
+		_commandPool = CreateCommandPool(_device, familyIndices.graphicsFamily.value());
+
+		create command buffer
 	}
 
 	void Graphics::CreateInstance(vector<const char*> enabledLayers)
@@ -191,6 +199,13 @@ namespace renderer::vulkan
 	Graphics::~Graphics()
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
+
+		if (_commandPool)
+			vkDestroyCommandPool(_device, _commandPool, allocator);
+
+		_shaders.Destroy();
+		
+		_renderPass.Destroy();
 
 		_swapchain.Destroy();
 

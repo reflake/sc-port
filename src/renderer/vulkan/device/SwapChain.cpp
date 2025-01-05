@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "SwapChain.hpp"
+#include "Framebuffer.hpp"
 #include "Queue.hpp"
 #include <SDL_vulkan.h>
 #include <algorithm>
@@ -51,8 +52,8 @@ namespace renderer::vulkan
 		return details;
 	}
 
-	Swapchain::Swapchain(Device* device, VkSwapchainKHR swapchain, vector<VkImageView>&& imageViews, const VkAllocationCallbacks* allocator) : 
-		_device(device), _hwSwapchain(swapchain), _imageViews(imageViews), _allocator(allocator)
+	Swapchain::Swapchain(Device* device, VkSwapchainKHR swapchain, VkFormat format, vector<VkImageView>&& imageViews, vector<FrameBuffer>&& frameBuffers, const VkAllocationCallbacks* allocator) : 
+		_device(device), _hwSwapchain(swapchain), _currentFormat(format), _imageViews(imageViews), _frameBuffers(frameBuffers), _allocator(allocator)
 	{
 	}
 
@@ -64,7 +65,9 @@ namespace renderer::vulkan
 
 	void CreateImageViews(Device& device, VkSwapchainKHR swapchain, vector<VkImageView>& out, VkFormat format, VkAllocationCallbacks* allocator);
 
-	Swapchain Swapchain::Create(Device& device, VkSurfaceKHR surface, Config& config, VkAllocationCallbacks* allocator)
+	void CreateFrameBuffers(Device& device, RenderPass* renderPass, const vector<VkImageView>& imageViews, vector<FrameBuffer>& out, Config& config, VkAllocationCallbacks* allocator);
+
+	Swapchain Swapchain::Create(Device& device, RenderPass* renderPass, VkSurfaceKHR surface, Config& config, VkAllocationCallbacks* allocator)
 	{
 		auto [capabilities, formats, presentModes] = QuerySwapChainSupport(device, surface);
 
@@ -118,7 +121,10 @@ namespace renderer::vulkan
 		vector<VkImageView> imageViews;
 		CreateImageViews(device, swapchain, imageViews, surfaceFormat.format, allocator);
 
-		return Swapchain(&device, swapchain, std::move(imageViews), allocator);
+		vector<FrameBuffer> framebuffers;
+		CreateFrameBuffers(device, renderPass, imageViews, framebuffers, config, allocator);
+
+		return Swapchain(&device, swapchain, surfaceFormat.format, std::move(imageViews), std::move(framebuffers), allocator);
 	}
 
 	void CreateImageViews(Device& device, VkSwapchainKHR swapchain, vector<VkImageView>& out, VkFormat format, VkAllocationCallbacks* allocator)
@@ -150,6 +156,14 @@ namespace renderer::vulkan
 			}
 
 			out.push_back(imageView);
+		}
+	}
+	
+	void CreateFrameBuffers(Device& device, RenderPass* renderPass, const vector<VkImageView>& imageViews, vector<FrameBuffer>& out, Config& config, VkAllocationCallbacks* allocator)
+	{
+		for(auto image : imageViews)
+		{
+			out.push_back(FrameBuffer::CreateBuffer(&device, renderPass, &config, image));
 		}
 	}
 
@@ -198,6 +212,14 @@ namespace renderer::vulkan
 
 	void Swapchain::Destroy()
 	{
+		if (!_frameBuffers.empty())
+		{
+			for(auto& buffer : _frameBuffers)
+			{
+				buffer.Destroy();
+			}
+		}
+
 		if (!_imageViews.empty())
 		{
 			for(auto image : _imageViews)

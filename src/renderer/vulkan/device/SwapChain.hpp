@@ -6,6 +6,7 @@
 #include <sys/types.h>
 
 #include "Device.hpp"
+#include "Framebuffer.hpp"
 #include "../Config.hpp"
 
 #include "../Window.hpp"
@@ -31,11 +32,13 @@ namespace renderer::vulkan
 		
 		void Destroy();
 
-		static Swapchain Create(Device&, VkSurfaceKHR, Config&, VkAllocationCallbacks* allocator = nullptr);
+		VkFormat GetFormat() const;
+
+		static Swapchain Create(Device&, RenderPass*, VkSurfaceKHR, Config&, VkAllocationCallbacks* allocator = nullptr);
 
 	private:
 
-		Swapchain(Device*, VkSwapchainKHR, std::vector<VkImageView>&& imageViews, const VkAllocationCallbacks* allocator);
+		Swapchain(Device*, VkSwapchainKHR, VkFormat, std::vector<VkImageView>&& imageViews, std::vector<FrameBuffer>&& framebuffers, const VkAllocationCallbacks* = nullptr);
 
 	private:
 
@@ -43,6 +46,8 @@ namespace renderer::vulkan
 
 		Device*                  _device;
 		VkSwapchainKHR           _hwSwapchain;
+		VkFormat                 _currentFormat;
 		std::vector<VkImageView> _imageViews;
+		std::vector<FrameBuffer> _frameBuffers;
 	};
 }
