@@ -249,7 +249,8 @@ void drawMap(MapInfo &mapInfo, App &app,
 	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
 		return;
 
-	app.graphics->ClearDepth();
+	app.graphics->BeginRendering();
+	
 	app.graphics->SetTilesetPalette(app.tilesetData.palette);
 
 	int leftBorderIndex  = std::max<int>(0, pos.x / TILE_SIZE);

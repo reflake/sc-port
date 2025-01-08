@@ -38,9 +38,9 @@ namespace renderer::vulkan
 		void DrawTile(const A_Tileset*, tileID, glm::vec2 position) override;
 		void FreeTileset(const A_Tileset*) override;
 
-		void SetTilesetPalette(data::Palette) override;
+		void SetTilesetPalette(data::Palette&) override;
 
-		void ClearDepth() override;
+		void BeginRendering() override;
 		void PresentToScreen() override;
 
 		const char* GetName() const override { return "Vulkan"; }

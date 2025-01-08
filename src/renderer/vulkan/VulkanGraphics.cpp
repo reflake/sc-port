@@ -61,8 +61,6 @@ namespace renderer::vulkan
 		QueueFamilyIndices familyIndices = FindQueueFamilies(_device, _surface);
 		_commandPool = CreateCommandPool(_device, familyIndices.graphicsFamily.value());
 		_commandBuffer = CreateCommandBuffer(_device, _commandPool);
-
-		record commands
 	}
 
 	void Graphics::CreateInstance(vector<const char*> enabledLayers)
@@ -185,6 +183,11 @@ namespace renderer::vulkan
 		cyclePaletteColor<7, 7>(app.tilesetAtlas);
 		
 	}*/
+
+	void Graphics::BeginRendering()
+	{
+		
+	}
 
 	ShaderCode Graphics::ReadShaderCode(const char* path)
 	{

@@ -31,7 +31,7 @@ namespace renderer
 
 		virtual void SetTilesetPalette(data::Palette&) = 0;
 
-		virtual void ClearDepth() = 0;
+		virtual void BeginRendering() = 0;
 		virtual void PresentToScreen() = 0;
 
 		virtual const char* GetName() const;
