@@ -29,7 +29,7 @@ namespace renderer
 		virtual void DrawTile(const A_Tileset*, tileID, glm::vec2 position) = 0;
 		virtual void FreeTileset(const A_Tileset*) = 0;
 
-		virtual void SetTilesetPalette(data::Palette) = 0;
+		virtual void SetTilesetPalette(data::Palette&) = 0;
 
 		virtual void ClearDepth() = 0;
 		virtual void PresentToScreen() = 0;

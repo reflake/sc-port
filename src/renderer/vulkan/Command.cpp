@@ -20,4 +20,22 @@ namespace renderer::vulkan
 
 		return commandPool;
 	}
+
+	VkCommandBuffer CreateCommandBuffer(Device& device, VkCommandPool pool)
+	{
+		VkCommandBufferAllocateInfo info { VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
+
+		info.commandPool = pool;
+		info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		info.commandBufferCount = 1;
+
+		VkCommandBuffer buffer;
+
+		if (vkAllocateCommandBuffers(device, &info, &buffer) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate command buffer");
+		}
+
+		return buffer;
+	}
 }

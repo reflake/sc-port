@@ -57,14 +57,15 @@ namespace renderer::vulkan
 		// TODO: hide these members in implementation
 		const data::Assets*  _assets;
 
-		VkInstance     _instance;
-		VkSurfaceKHR   _surface;
-		VkQueue        _presentQueue;
-		VkCommandPool  _commandPool;
-		Swapchain      _swapchain;
-		Device         _device;
-		Window         _window;
-		RenderPass     _renderPass;
-		ShaderManager  _shaders;
+		VkInstance      _instance;
+		VkSurfaceKHR    _surface;
+		VkQueue         _presentQueue;
+		VkCommandPool   _commandPool;
+		VkCommandBuffer _commandBuffer;
+		Swapchain       _swapchain;
+		Device          _device;
+		Window          _window;
+		RenderPass      _renderPass;
+		ShaderManager   _shaders;
 	};
 }

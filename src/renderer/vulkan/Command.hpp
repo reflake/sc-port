@@ -6,5 +6,7 @@
 
 namespace renderer::vulkan
 {
-	VkCommandPool CreateCommandPool(Device& device, uint32_t queueFamily, const VkAllocationCallbacks* allocator = nullptr);
+	VkCommandPool CreateCommandPool(Device&, uint32_t queueFamily, const VkAllocationCallbacks* allocator = nullptr);
+
+	VkCommandBuffer CreateCommandBuffer(Device&, VkCommandPool);
 }

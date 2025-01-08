@@ -47,10 +47,10 @@ namespace renderer::vulkan
 		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
 
 		// Only one main device is being used
-		_device    = Device::Create(physicalDevice, _surface, requiredLayers);
+		_device     = Device::Create(physicalDevice, _surface, requiredLayers);
 		_renderPass = RenderPass::Create(_device, _swapchain.GetFormat());
-		_swapchain = Swapchain::Create(_device, &_renderPass, _surface, config);
-		_shaders = ShaderManager(&_device, &config, &_renderPass);
+		_swapchain  = Swapchain::Create(_device, &_renderPass, _surface, config);
+		_shaders    = ShaderManager(&_device, &config, &_renderPass);
 
 		auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shader.frag"));
 		auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shader.vert"));
@@ -60,8 +60,9 @@ namespace renderer::vulkan
 
 		QueueFamilyIndices familyIndices = FindQueueFamilies(_device, _surface);
 		_commandPool = CreateCommandPool(_device, familyIndices.graphicsFamily.value());
+		_commandBuffer = CreateCommandBuffer(_device, _commandPool);
 
-		create command buffer
+		record commands
 	}
 
 	void Graphics::CreateInstance(vector<const char*> enabledLayers)
