@@ -37,5 +37,7 @@ namespace renderer
 		virtual void PresentToScreen() = 0;
 
 		virtual const char* GetName() const;
+
+		void WaitIdle();
 	};
 }

@@ -47,6 +47,8 @@ namespace renderer::vulkan
 
 		const char* GetName() const override { return "Vulkan"; }
 
+		void WaitIdle();
+
 	private:
 
 		void CreateInstance(std::vector<const char*> enabledLayers);

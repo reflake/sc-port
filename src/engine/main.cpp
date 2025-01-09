@@ -531,6 +531,8 @@ int main(int argc, char *argv[]) {
 		usleep(16000);
 	};
 
+	app.graphics->WaitIdle();
+
 	freeWindow(app);
 
 	return 0;

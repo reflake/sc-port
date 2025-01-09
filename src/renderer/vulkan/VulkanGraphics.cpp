@@ -320,6 +320,11 @@ namespace renderer::vulkan
 		return output;
 	}
 
+	void Graphics::WaitIdle()
+	{
+		vkDeviceWaitIdle(_device);
+	}
+
 	Graphics::~Graphics()
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
