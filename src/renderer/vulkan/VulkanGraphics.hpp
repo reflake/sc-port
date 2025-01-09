@@ -13,6 +13,7 @@
 #include "Shader.hpp"
 #include "Window.hpp"
 #include "data/Assets.hpp"
+#include "data/Common.hpp"
 #include "data/Sprite.hpp"
 #include "device/Device.hpp"
 #include "device/SwapChain.hpp"
@@ -40,6 +41,7 @@ namespace renderer::vulkan
 
 		void SetTilesetPalette(data::Palette&) override;
 
+		void SetView(data::position pos);
 		void BeginRendering() override;
 		void PresentToScreen() override;
 
@@ -49,6 +51,9 @@ namespace renderer::vulkan
 
 		void CreateInstance(std::vector<const char*> enabledLayers);
 		void EnableValidationLayers(std::vector<const char*>& layerList);
+		void CreateSyncObjects();
+		void Submit();
+		void Present();
 
 		ShaderCode ReadShaderCode(const char* path);
 
@@ -57,9 +62,9 @@ namespace renderer::vulkan
 		// TODO: hide these members in implementation
 		const data::Assets*  _assets;
 
+		Config          _config;
 		VkInstance      _instance;
 		VkSurfaceKHR    _surface;
-		VkQueue         _presentQueue;
 		VkCommandPool   _commandPool;
 		VkCommandBuffer _commandBuffer;
 		Swapchain       _swapchain;
@@ -67,5 +72,13 @@ namespace renderer::vulkan
 		Window          _window;
 		RenderPass      _renderPass;
 		ShaderManager   _shaders;
+
+		VkSemaphore _imageAvailableSemaphore, _renderFinishedSemaphore;
+		VkFence     _fence;
+
+		glm::vec2 _currentPosition;
+		uint32_t _currentImageIndex;
+
+		const Shader*   _mainShader;
 	};
 }

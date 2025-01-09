@@ -8,6 +8,7 @@ namespace renderer::vulkan
 	{
 	public:
 
+		Config();
 		Config(int screenWidth, int screenHeight);
 
 		const VkDynamicState* GetDynamicStates() const;

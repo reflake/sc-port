@@ -38,4 +38,9 @@ namespace renderer::vulkan
 		vkDestroyFramebuffer(*_device, _lwFramebuffer, _allocator);
 	}
 
+	FrameBuffer::operator VkFramebuffer() const
+	{
+		return _lwFramebuffer;
+	}
+
 }

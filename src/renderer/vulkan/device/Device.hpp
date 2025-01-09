@@ -14,7 +14,10 @@ namespace renderer::vulkan
 	public:
 
 		Device();
-		Device(VkDevice, VkPhysicalDevice, VkQueue presentQueue, const VkAllocationCallbacks*);
+		Device(VkDevice, VkPhysicalDevice, VkQueue presentQueue, VkQueue graphicsQueue, const VkAllocationCallbacks*);
+
+		VkQueue GetPresentQueue() { return _presentQueue; }
+		VkQueue GetGraphicsQueue() { return _graphicsQueue; }
 
 		// implicit conversion to a logical device reference
 		operator VkDevice&();
@@ -32,7 +35,7 @@ namespace renderer::vulkan
 
 		VkDevice 				 _logical;
 		VkPhysicalDevice _physical;
-		VkQueue          _presentQueue;
+		VkQueue          _presentQueue, _graphicsQueue;
 	};
 
 	extern VkPhysicalDevice PickPhysicalDevice(VkInstance instance, std::function<int(VkPhysicalDevice&)> evaluationFunction);

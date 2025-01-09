@@ -18,6 +18,8 @@ namespace renderer::vulkan
 
 		void Destroy();
 
+		operator VkFramebuffer() const;
+
 	private:
 
 		Device* _device;

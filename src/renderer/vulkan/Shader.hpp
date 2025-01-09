@@ -26,6 +26,8 @@ namespace renderer::vulkan
 
 		void Destroy(const VkDevice device, const VkAllocationCallbacks* allocator);
 
+		const VkPipeline GetPipeline() const;
+
 	private:
 
 		const VkPipeline _pipeline;

@@ -67,6 +67,22 @@ namespace renderer::vulkan
 
 	void CreateFrameBuffers(Device& device, RenderPass* renderPass, const vector<VkImageView>& imageViews, vector<FrameBuffer>& out, Config& config, VkAllocationCallbacks* allocator);
 
+	VkFormat Swapchain::GetFormat() const { return _currentFormat; }
+
+	uint32_t Swapchain::GetNextImageIndex(VkSemaphore semaphore) const
+	{
+		uint32_t imageIndex;
+
+		vkAcquireNextImageKHR(*_device, _hwSwapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &imageIndex);
+
+		return imageIndex;
+	}
+
+	const FrameBuffer& Swapchain::GetFrameBuffer(uint32_t imageIndex) const
+	{
+		return _frameBuffers[imageIndex];
+	}
+
 	Swapchain Swapchain::Create(Device& device, RenderPass* renderPass, VkSurfaceKHR surface, Config& config, VkAllocationCallbacks* allocator)
 	{
 		auto [capabilities, formats, presentModes] = QuerySwapChainSupport(device, surface);

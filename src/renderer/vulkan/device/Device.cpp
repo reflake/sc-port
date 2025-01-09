@@ -40,8 +40,8 @@ namespace renderer::vulkan
 
 	Device::Device() {}
 
-	Device::Device(VkDevice logical, VkPhysicalDevice physical, VkQueue presentQueue, const VkAllocationCallbacks* allocator) : 
-		_logical(logical), _physical(physical), _presentQueue(presentQueue), _allocator(allocator)
+	Device::Device(VkDevice logical, VkPhysicalDevice physical, VkQueue presentQueue, VkQueue graphicsQueue, const VkAllocationCallbacks* allocator) : 
+		_logical(logical), _physical(physical), _presentQueue(presentQueue), _graphicsQueue(graphicsQueue), _allocator(allocator)
 	{
 	}
 
@@ -217,10 +217,11 @@ namespace renderer::vulkan
 			throw runtime_error("Failed to create logical device");
 		}
 
-		VkQueue presentQueue;
+		VkQueue presentQueue, graphicsQueue;
 
 		vkGetDeviceQueue(logicalDevice, familyIndices.presentFamily.value(), 0, &presentQueue);
+		vkGetDeviceQueue(logicalDevice, familyIndices.graphicsFamily.value(), 0, &graphicsQueue);
 
-		return Device(logicalDevice, physicalDevice, presentQueue, allocator);
+		return Device(logicalDevice, physicalDevice, presentQueue, graphicsQueue, allocator);
 	}
 }

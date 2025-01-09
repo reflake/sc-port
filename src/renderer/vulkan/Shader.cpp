@@ -145,6 +145,11 @@ namespace renderer::vulkan
 		return &_shaders.emplace_back(pipeline, pipelineLayout);
 	}
 
+	const VkPipeline Shader::GetPipeline() const
+	{
+		return _pipeline;
+	}
+
 	const ShaderModule* ShaderManager::CreateShaderModule(ShaderModule::Stage type, const ShaderCode& shader)
 	{
 		const VkShaderModuleCreateFlags flags = 0;

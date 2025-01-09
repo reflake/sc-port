@@ -13,7 +13,7 @@ namespace data
 	typedef uint16_t  tileGroupID;
 	typedef uint8_t   tileVariation;
 	typedef uint16_t  tileID;
-	typedef glm::vec2 position;
+	typedef glm::vec<2, int> position;
 
 	class StreamReader
 	{

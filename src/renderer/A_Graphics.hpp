@@ -3,6 +3,7 @@
 #include "A_Tileset.hpp"
 #include "A_SpriteSheet.hpp"
 
+#include "data/Common.hpp"
 #include "data/Palette.hpp"
 #include <data/Tileset.hpp>
 #include <data/Sprite.hpp>
@@ -31,6 +32,7 @@ namespace renderer
 
 		virtual void SetTilesetPalette(data::Palette&) = 0;
 
+		void SetView(data::position pos);
 		virtual void BeginRendering() = 0;
 		virtual void PresentToScreen() = 0;
 

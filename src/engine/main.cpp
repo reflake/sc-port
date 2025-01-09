@@ -253,6 +253,8 @@ void drawMap(MapInfo &mapInfo, App &app,
 	
 	app.graphics->SetTilesetPalette(app.tilesetData.palette);
 
+	app.graphics->SetView(pos);
+
 	int leftBorderIndex  = std::max<int>(0, pos.x / TILE_SIZE);
 	int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (pos.x + SCREEN_WIDTH) / TILE_SIZE + 1);
 	int upBorderIndex    = std::max<int>(0, pos.y / TILE_SIZE);

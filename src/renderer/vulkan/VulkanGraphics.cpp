@@ -4,26 +4,28 @@
 #include "Config.hpp"
 #include "Shader.hpp"
 #include "data/Assets.hpp"
+#include "data/Common.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
-#include "device/Framebuffer.hpp"
 #include "device/Queue.hpp"
 #include "device/SwapChain.hpp"
 
+#include <cstdint>
 #include <glm/vec2.hpp>
 #include <memory>
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
-using glm::vec2;
-using std::array;
-using std::runtime_error;
-using std::vector;
-
 namespace renderer::vulkan
 {
+	using glm::vec2;
+	using std::array;
+	using std::runtime_error;
+	using std::vector;
 	using ShaderStage = ShaderModule::Stage;
+
+	const float unitsPerPixel = 1 / 256.0f;
 
 	Graphics::Graphics(SDL_Window* window, const data::Assets* assets) : _window(window), _assets(assets)
 	{
@@ -42,25 +44,28 @@ namespace renderer::vulkan
 		CreateWindowSurface(window, _instance, _surface);
 
 		auto [screenWidth, screenHeight] = _window.GetExtent();
-		Config config(screenWidth, screenHeight);
+
+		_config = Config(screenWidth, screenHeight);
 
 		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
 
 		// Only one main device is being used
 		_device     = Device::Create(physicalDevice, _surface, requiredLayers);
 		_renderPass = RenderPass::Create(_device, _swapchain.GetFormat());
-		_swapchain  = Swapchain::Create(_device, &_renderPass, _surface, config);
-		_shaders    = ShaderManager(&_device, &config, &_renderPass);
+		_swapchain  = Swapchain::Create(_device, &_renderPass, _surface, _config);
+		_shaders    = ShaderManager(&_device, &_config, &_renderPass);
 
 		auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shader.frag"));
 		auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shader.vert"));
 		array<const ShaderModule*, 2> modules = { fragmentShaderModule, vertexShaderModule };
 
-		_shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat());
+		_mainShader = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat());
 
 		QueueFamilyIndices familyIndices = FindQueueFamilies(_device, _surface);
 		_commandPool = CreateCommandPool(_device, familyIndices.graphicsFamily.value());
 		_commandBuffer = CreateCommandBuffer(_device, _commandPool);
+
+		CreateSyncObjects();
 	}
 
 	void Graphics::CreateInstance(vector<const char*> enabledLayers)
@@ -107,6 +112,24 @@ namespace renderer::vulkan
 		for(auto layerName : validationLayers)
 		{
 			layerList.emplace_back(layerName);
+		}
+	}
+
+	void Graphics::CreateSyncObjects()
+	{
+		const VkAllocationCallbacks* allocator = nullptr;
+
+		VkSemaphoreCreateInfo semaphoreCreateInfo { VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
+		VkFenceCreateInfo     fenceCreateInfo { VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
+
+		// must be signaled initially so the program won't halt on the first frame
+		fenceCreateInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+
+		if (vkCreateSemaphore(_device, &semaphoreCreateInfo, allocator, &_imageAvailableSemaphore) != VK_SUCCESS || 
+				vkCreateSemaphore(_device, &semaphoreCreateInfo, allocator, &_renderFinishedSemaphore) != VK_SUCCESS ||
+				vkCreateFence(_device, &fenceCreateInfo, allocator, &_fence) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to create synchronization objects");
 		}
 	}
 
@@ -175,18 +198,115 @@ namespace renderer::vulkan
 		SDL_BlitSurface(surface, nullptr, app.screenSurface, &destRect);*/
 	}
 
-	/*void Graphics::CycleWaterPalette()
+	void Graphics::SetView(data::position pos)
 	{
-		 примерный алгоритм действий
-		
-		cyclePaletteColor<1, 6>(app.tilesetAtlas);
-		cyclePaletteColor<7, 7>(app.tilesetAtlas);
-		
-	}*/
+		_currentPosition = { pos.x * unitsPerPixel, pos.y * unitsPerPixel };
+	}
 
 	void Graphics::BeginRendering()
 	{
-		
+		// Wait for previous frame to be rendered
+		vkWaitForFences(_device, 1, &_fence, VK_TRUE, UINT64_MAX);
+		vkResetFences(_device, 1, &_fence);
+
+		vkResetCommandBuffer(_commandBuffer, 0);
+
+		VkCommandBufferBeginInfo beginInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+
+		beginInfo.flags = 0;
+		beginInfo.pInheritanceInfo = nullptr;
+
+		if (vkBeginCommandBuffer(_commandBuffer, &beginInfo) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to begin recording command buffer");
+		}
+
+		VkRenderPassBeginInfo renderBeginInfo { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+
+		_currentImageIndex = _swapchain.GetNextImageIndex(_imageAvailableSemaphore);
+
+		renderBeginInfo.renderPass = _renderPass;
+		renderBeginInfo.framebuffer = _swapchain.GetFrameBuffer(_currentImageIndex);
+		renderBeginInfo.renderArea.offset = {0, 0};
+		renderBeginInfo.renderArea.extent = _config.GetExtents();
+
+		VkClearValue clearColor = {{{0, 0, 0, 1}}};
+		renderBeginInfo.clearValueCount = 1;
+		renderBeginInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(_commandBuffer, &renderBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _mainShader->GetPipeline());
+
+		auto [width, height] = _config.GetExtents();
+
+		VkViewport viewport { 
+			0.0, 0.0f, 
+			static_cast<float>(width), static_cast<float>(height), 
+			0.0f, 1.0f};
+
+		VkRect2D scissor { 
+			0, 0,
+			_config.GetExtents() };
+	}
+
+	void Graphics::PresentToScreen()
+	{
+		vkCmdEndRenderPass(_commandBuffer);
+
+		if (vkEndCommandBuffer(_commandBuffer) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to record command buffer");
+		}
+
+		Submit();
+		Present();
+	}
+
+	void Graphics::Submit()
+	{
+		VkSubmitInfo submitInfo { VK_STRUCTURE_TYPE_SUBMIT_INFO };
+
+		array<VkSemaphore, 1> waitSemaphores = { _imageAvailableSemaphore };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+		submitInfo.waitSemaphoreCount = waitSemaphores.size();
+		submitInfo.pWaitSemaphores = waitSemaphores.data();
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &_commandBuffer;
+
+		array<VkSemaphore, 1> signalSemaphores = { _renderFinishedSemaphore };
+		submitInfo.signalSemaphoreCount = signalSemaphores.size();
+		submitInfo.pSignalSemaphores = signalSemaphores.data();
+
+		if (vkQueueSubmit(_device.GetGraphicsQueue(), 1, &submitInfo, _fence) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to submit draw command buffer");
+		}
+	}
+
+	void Graphics::Present()
+	{
+		VkPresentInfoKHR presentInfo { VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
+
+		array<VkSemaphore, 1> waitSemaphores = { _renderFinishedSemaphore };
+
+		presentInfo.waitSemaphoreCount = waitSemaphores.size();
+		presentInfo.pWaitSemaphores = waitSemaphores.data();
+
+		const uint32_t swapchainCount = 1;
+
+		array<VkSwapchainKHR, swapchainCount> swapchains = { _swapchain };
+		array<uint32_t, swapchainCount> imageIndices = { _currentImageIndex };
+
+		presentInfo.swapchainCount = swapchains.size();
+		presentInfo.pSwapchains = swapchains.data();
+		presentInfo.pImageIndices = imageIndices.data();
+
+		presentInfo.pResults = VK_NULL_HANDLE;
+
+		vkQueuePresentKHR(_device.GetPresentQueue(), &presentInfo);
 	}
 
 	ShaderCode Graphics::ReadShaderCode(const char* path)
@@ -204,8 +324,24 @@ namespace renderer::vulkan
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
 
+		if (_imageAvailableSemaphore)
+			vkDestroySemaphore(_device, _imageAvailableSemaphore, allocator);
+
+		if (_renderFinishedSemaphore)
+			vkDestroySemaphore(_device, _renderFinishedSemaphore, allocator);
+
+		if (_fence)
+			vkDestroyFence(_device, _fence, allocator);
+
+		if (_commandBuffer)
+			vkFreeCommandBuffers(_device, _commandPool, 1, &_commandBuffer);
+
+		_commandBuffer = nullptr;
+
 		if (_commandPool)
 			vkDestroyCommandPool(_device, _commandPool, allocator);
+
+		_commandPool = nullptr;
 
 		_shaders.Destroy();
 		
@@ -225,4 +361,13 @@ namespace renderer::vulkan
 
 		_instance = nullptr;
 	}
+
+	/*void Graphics::CycleWaterPalette()
+	{
+		 примерный алгоритм действий
+		
+		cyclePaletteColor<1, 6>(app.tilesetAtlas);
+		cyclePaletteColor<7, 7>(app.tilesetAtlas);
+		
+	}*/
 }

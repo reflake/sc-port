@@ -34,7 +34,13 @@ namespace renderer::vulkan
 
 		VkFormat GetFormat() const;
 
+		uint32_t GetNextImageIndex(VkSemaphore) const;
+
+		const FrameBuffer& GetFrameBuffer(uint32_t imageIndex) const;
+
 		static Swapchain Create(Device&, RenderPass*, VkSurfaceKHR, Config&, VkAllocationCallbacks* allocator = nullptr);
+
+		operator VkSwapchainKHR() const { return _hwSwapchain; }
 
 	private:
 
