@@ -1,7 +1,6 @@
 #pragma once
 
-#include "A_Tileset.hpp"
-#include "A_SpriteSheet.hpp"
+#include "A_Drawable.hpp"
 
 #include "data/Common.hpp"
 #include "data/Palette.hpp"
@@ -22,13 +21,11 @@ namespace renderer
 
 		virtual ~A_Graphics() = 0;
 
-		virtual const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData&) = 0;
-		virtual void DrawSprite(const A_SpriteSheet*, frameIndex, glm::vec2 position) = 0;
-		virtual void FreeSpriteSheet(const A_SpriteSheet*) = 0;
+		virtual const A_Drawable* LoadSpriteSheet(data::A_SpriteSheetData&) = 0;
+		virtual const A_Drawable* LoadTileset(data::A_TilesetData&) = 0;
 
-		virtual const A_Tileset* LoadTileset(data::A_TilesetData&) = 0;
-		virtual void DrawTile(const A_Tileset*, tileID, glm::vec2 position) = 0;
-		virtual void FreeTileset(const A_Tileset*) = 0;
+		virtual void Draw(const A_Drawable*, frameIndex, data::position) = 0;
+		virtual void FreeDrawable(const A_Drawable*) = 0;
 
 		virtual void SetTilesetPalette(data::Palette&) = 0;
 

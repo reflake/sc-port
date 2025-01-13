@@ -5,17 +5,23 @@
 #include "Shader.hpp"
 #include "data/Assets.hpp"
 #include "data/Common.hpp"
+#include "data/Tileset.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
 #include "device/Queue.hpp"
 #include "device/SwapChain.hpp"
+#include "memory/BufferAllocator.hpp"
 
 #include <cstdint>
-#include <glm/vec2.hpp>
+#include <glm/ext/matrix_transform.hpp>
 #include <memory>
 #include <stdexcept>
 #include <vector>
+
 #include <vulkan/vulkan_core.h>
+
+#include <glm/detail/qualifier.hpp>
+#include <glm/vec2.hpp>
 
 namespace renderer::vulkan
 {
@@ -29,6 +35,8 @@ namespace renderer::vulkan
 
 	Graphics::Graphics(SDL_Window* window, const data::Assets* assets) : _window(window), _assets(assets)
 	{
+		const VkAllocationCallbacks* allocator = nullptr;
+
 		// Check out layers
 		vector<const char*> requiredLayers;
 
@@ -66,6 +74,8 @@ namespace renderer::vulkan
 		_commandBuffer = CreateCommandBuffer(_device, _commandPool);
 
 		CreateSyncObjects();
+
+		_bufferAllocator = BufferAllocator(&_device, allocator);
 	}
 
 	void Graphics::CreateInstance(vector<const char*> enabledLayers)
@@ -151,7 +161,7 @@ namespace renderer::vulkan
 		return score;
 	}
 	
-	const A_SpriteSheet* Graphics::LoadSpriteSheet(data::A_SpriteSheetData& spriteSheetData)
+	const A_Drawable* Graphics::LoadSpriteSheet(data::A_SpriteSheetData& spriteSheetData)
 	{
 	/* Примерный алгоритм действий для чтения Grp спрайтов
 
@@ -182,20 +192,42 @@ namespace renderer::vulkan
 		}
 
 		app.spriteAtlases[doodad->grpID] = atlas;*/
+
+		return nullptr; // TODO:
 	}
 
-	void Graphics::DrawGrpFrame(grpID grpID, uint32_t frame, vec2 position)
+	const A_Drawable* Graphics::LoadTileset(data::A_TilesetData& tilesetData)
 	{
-		/* Примерный алгоритм отрисовки спрайта на экран
-		
-		auto spriteAtlas = spriteAtlases[grpID];
-		auto surface     = spriteAtlas.surfaces[frame];
-		auto destRect    = spriteAtlas.rects[frame];
+		return nullptr;
+	}
 
-		destRect.x += doodad->pos.x;
-		destRect.y += doodad->pos.y;
+	void Graphics::Draw(const A_Drawable*, frameIndex, data::position position)
+	{
+		array<Vertex, 6> quad = { 
+			Vertex( { 0.0f, 0.0f } ),
+			Vertex( { 0.0f, 1.0f } ),
+			Vertex( { 1.0f, 1.0f } ),
+			Vertex( { 0.0f, 0.0f } ),
+			Vertex( { 1.0f, 0.0f } ),
+			Vertex( { 1.0f, 1.0f } ),
+		};
 
-		SDL_BlitSurface(surface, nullptr, app.screenSurface, &destRect);*/
+		glm::vec2 translatePosition = { position.x *  unitsPerPixel, position.y * unitsPerPixel };
+
+		for(auto& vertex : quad)
+		{
+			vertex.pos += translatePosition - _currentPosition;
+		}
+
+		for(int i = 0; i < quad.size(); i++)
+		{
+			_vertexBuffer[_verticesWritten++] = quad[i];
+		}
+	}
+
+	void Graphics::FreeDrawable(const A_Drawable*)
+	{
+		// TODO:
 	}
 
 	void Graphics::SetView(data::position pos)
@@ -221,6 +253,7 @@ namespace renderer::vulkan
 			throw runtime_error("Failed to begin recording command buffer");
 		}
 
+		// Start render pass
 		VkRenderPassBeginInfo renderBeginInfo { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
 
 		_currentImageIndex = _swapchain.GetNextImageIndex(_imageAvailableSemaphore);
@@ -236,6 +269,7 @@ namespace renderer::vulkan
 
 		vkCmdBeginRenderPass(_commandBuffer, &renderBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+		// Bind main pipeline and prepare viewport
 		vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _mainShader->GetPipeline());
 
 		auto [width, height] = _config.GetExtents();
@@ -248,10 +282,21 @@ namespace renderer::vulkan
 		VkRect2D scissor { 
 			0, 0,
 			_config.GetExtents() };
+
+		_bufferAllocator.OnBeginRendering();
+
+		_verticesWritten = 0;
 	}
 
 	void Graphics::PresentToScreen()
 	{
+		auto buffer = _bufferAllocator.WriteDynamicVertexBuffer(sizeof(Vertex) * _verticesWritten, _vertexBuffer);
+		buffer.BindToCommandBuffer(_commandBuffer);
+
+		_bufferAllocator.OnPrepareForPresentation();
+
+		vkCmdDraw(_commandBuffer, _verticesWritten, 1, 0, 0);
+
 		vkCmdEndRenderPass(_commandBuffer);
 
 		if (vkEndCommandBuffer(_commandBuffer) != VK_SUCCESS)

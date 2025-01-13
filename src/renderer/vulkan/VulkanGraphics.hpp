@@ -17,6 +17,8 @@
 #include "data/Sprite.hpp"
 #include "device/Device.hpp"
 #include "device/SwapChain.hpp"
+#include "memory/BufferAllocator.hpp"
+#include "Vertex.hpp"
 
 namespace renderer::vulkan
 {
@@ -31,13 +33,11 @@ namespace renderer::vulkan
 		Graphics(SDL_Window* window, const data::Assets* assets);
 		~Graphics() override;
 
-		const A_SpriteSheet* LoadSpriteSheet(data::A_SpriteSheetData&) override;
-		void DrawSprite(const A_SpriteSheet*, frameIndex, glm::vec2 position) override;
-		void FreeSpriteSheet(const A_SpriteSheet*) override;
+		const A_Drawable* LoadSpriteSheet(data::A_SpriteSheetData&) override;
+		const A_Drawable* LoadTileset(data::A_TilesetData&) override;
 
-		const A_Tileset* LoadTileset(data::A_TilesetData&) override;
-		void DrawTile(const A_Tileset*, tileID, glm::vec2 position) override;
-		void FreeTileset(const A_Tileset*) override;
+		void Draw(const A_Drawable*, frameIndex, data::position) override;
+		void FreeDrawable(const A_Drawable*) override;
 
 		void SetTilesetPalette(data::Palette&) override;
 
@@ -74,6 +74,7 @@ namespace renderer::vulkan
 		Window          _window;
 		RenderPass      _renderPass;
 		ShaderManager   _shaders;
+		BufferAllocator _bufferAllocator;
 
 		VkSemaphore _imageAvailableSemaphore, _renderFinishedSemaphore;
 		VkFence     _fence;
@@ -82,5 +83,8 @@ namespace renderer::vulkan
 		uint32_t _currentImageIndex;
 
 		const Shader*   _mainShader;
+
+		int _verticesWritten = 0; // TODO: a better solution
+		Vertex _vertexBuffer[2048];
 	};
 }

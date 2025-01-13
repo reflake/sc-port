@@ -97,4 +97,16 @@ namespace data
 
 		T elements[EndIndex - StartIndex + 1];
 	};
+
+	template<typename T>
+	T Aligned(T&& offset, T alignment)
+	{
+		return (offset + alignment - 1) / alignment * alignment;
+	}
+
+	template<typename T>
+	void Align(T& offset, T alignment)
+	{
+		offset = (offset + alignment - 1) / alignment * alignment;
+	}
 }

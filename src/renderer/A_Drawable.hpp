@@ -2,7 +2,7 @@
 
 namespace renderer
 {
-	class A_Tileset
+	class A_Drawable
 	{
 	};
 }
