@@ -27,17 +27,17 @@ namespace renderer::vulkan
 		BindMemoryToBuffer(_dynamicBuffer);
 	}
 
-	const BufferPart BufferAllocator::WriteDynamicVertexBuffer(uint64_t size, const void* srcData)
+	const StreamData BufferAllocator::WriteToStreamBuffer(uint64_t size, const void* srcData)
 	{
 		if (_dynamicBufferOffset + size > _dynamicBuffer.GetSize())
 		{
 			throw runtime_error("Failed to write to vertex buffer: buffer size exceeded");
 		}
 
-		BufferPart buffer = { &_dynamicBuffer, _dynamicBufferOffset, size };
+		StreamData streamData = { &_dynamicBuffer, _dynamicBufferOffset, size };
 
 		// Write data to freshly created buffer part
-		uint8_t *dstData = reinterpret_cast<uint8_t*>(_dynamicBufferMappedMemory) + buffer.offsetInMemory;
+		uint8_t *dstData = reinterpret_cast<uint8_t*>(_dynamicBufferMappedMemory) + streamData.offsetInMemory;
 
 		memcpy(dstData, srcData, size);
 
@@ -45,7 +45,7 @@ namespace renderer::vulkan
 		const uint64_t alignment = 16;
 		_dynamicBufferOffset += Aligned(_dynamicBufferOffset + size, alignment);
 
-		return buffer;
+		return streamData;
 	}
 
 	VkDeviceMemory BufferAllocator::CreateMemory(uint32_t typeIndex, VkDeviceSize size)
@@ -127,7 +127,7 @@ namespace renderer::vulkan
 		}
 	}
 
-	void BufferPart::BindToCommandBuffer(VkCommandBuffer commandBuffer)
+	void StreamData::BindToCommandBuffer(VkCommandBuffer commandBuffer)
 	{
 		const uint32_t bufferCount = 1;
 		array<VkBuffer, bufferCount> buffers = { buffer->GetHandle() };

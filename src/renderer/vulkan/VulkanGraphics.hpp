@@ -55,6 +55,7 @@ namespace renderer::vulkan
 		void CreateInstance(std::vector<const char*>& enabledLayers);
 		void EnableValidationLayers(std::vector<const char*>& layerList);
 		void CreateSyncObjects();
+		void DrawStreamVertexBuffer();
 		void Submit();
 		void Present();
 
@@ -84,6 +85,8 @@ namespace renderer::vulkan
 		uint32_t _currentImageIndex;
 
 		uint32_t   _mainShaderIndex;
+
+		A_Drawable* _currentDrawable;
 
 		std::vector<Vertex> _vertexBuffer;
 	};

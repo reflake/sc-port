@@ -12,7 +12,7 @@
 
 namespace renderer::vulkan
 {
-	struct BufferPart
+	struct StreamData
 	{
 		Buffer*  buffer;
 		uint64_t offsetInMemory;
@@ -30,7 +30,7 @@ namespace renderer::vulkan
 
 		void Initialize();
 
-		const BufferPart WriteDynamicVertexBuffer(uint64_t size, const void* data);
+		const StreamData WriteToStreamBuffer(uint64_t size, const void* data);
 
 		// Needs to be reset every frame
 		void OnBeginRendering();

@@ -206,18 +206,26 @@ namespace renderer::vulkan
 
 	const A_Drawable* Graphics::LoadTileset(data::A_TilesetData& tilesetData)
 	{
-		return nullptr;
+		return reinterpret_cast<A_Drawable*>(1);
 	}
 
-	void Graphics::Draw(const A_Drawable*, frameIndex, data::position position)
+	void Graphics::Draw(const A_Drawable* drawable, frameIndex, data::position position)
 	{
+		// Break into another draw call
+		if (drawable != _currentDrawable && !_vertexBuffer.empty())
+		{
+			DrawStreamVertexBuffer();
+		}
+
+		_currentDrawable = const_cast<A_Drawable*>(drawable);
+
 		array<Vertex, 6> quad = { 
 			Vertex( { 0.0f, 0.0f },   { 0, 0 } ),
 			Vertex( { 0.0f, 32.0f },  { 0, 1 } ),
 			Vertex( { 32.0f, 32.0f }, { 1, 1 } ),
 			Vertex( { 0.0f, 0.0f },   { 0, 0 } ),
 			Vertex( { 32.0f, 0.0f },  { 1, 0 } ),
-			Vertex( { 32.0f, 32.0f }, { 1, 1} ),
+			Vertex( { 32.0f, 32.0f }, { 1, 1 } ),
 		};
 
 		for(auto& vertex : quad)
@@ -233,6 +241,16 @@ namespace renderer::vulkan
 		{
 			_vertexBuffer.push_back(quad[i]);
 		}
+	}
+
+	void Graphics::DrawStreamVertexBuffer()
+	{
+		auto streamData = _bufferAllocator.WriteToStreamBuffer(sizeof(Vertex) * _vertexBuffer.size(), _vertexBuffer.data());
+
+		streamData.BindToCommandBuffer(_commandBuffer);
+		vkCmdDraw(_commandBuffer, _vertexBuffer.size(), 1, 0, 0);
+
+		_vertexBuffer.clear();
 	}
 
 	void Graphics::FreeDrawable(const A_Drawable*)
@@ -257,17 +275,6 @@ namespace renderer::vulkan
 		vkResetFences(_device, 1, &_fence);
 
 		vkResetCommandBuffer(_commandBuffer, 0);
-
-		_bufferAllocator.OnBeginRendering();
-
-		_vertexBuffer.clear();
-	}
-
-	void Graphics::PresentToScreen()
-	{
-		auto buffer = _bufferAllocator.WriteToStreamBuffer(sizeof(Vertex) * _vertexBuffer.size(), _vertexBuffer.data());
-
-		_bufferAllocator.OnPrepareForPresentation();
 		
 		// ==============================================
 		VkCommandBufferBeginInfo beginInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -317,9 +324,21 @@ namespace renderer::vulkan
 		vkCmdSetScissor(_commandBuffer, 0, 1, &scissor);
 
 		// ==============================================
-		// Draw
-		buffer.BindToCommandBuffer(_commandBuffer);
-		vkCmdDraw(_commandBuffer, _vertexBuffer.size(), 1, 0, 0);
+
+		_bufferAllocator.OnBeginRendering();
+
+		_vertexBuffer.clear();
+
+		_currentDrawable = nullptr;
+	}
+
+	void Graphics::PresentToScreen()
+	{
+		if (!_vertexBuffer.empty())
+
+			DrawStreamVertexBuffer();
+
+		_bufferAllocator.OnPrepareForPresentation();
 
 		vkCmdEndRenderPass(_commandBuffer);
 
