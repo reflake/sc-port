@@ -53,6 +53,7 @@ add_library(Renderer STATIC
   src/renderer/vulkan/Api.cpp
   src/renderer/vulkan/Command.cpp
   src/renderer/vulkan/Config.cpp
+  src/renderer/vulkan/Drawable.cpp
   src/renderer/vulkan/RenderPass.cpp
   src/renderer/vulkan/Shader.cpp
   src/renderer/vulkan/Vertex.cpp

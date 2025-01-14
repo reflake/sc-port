@@ -114,9 +114,11 @@ namespace data
 		int tileGroupCount;
 		std::shared_ptr<TileGroup[]> tileGroups;
 
-		const int GetTileSize() const override { return TILE_SIZE; };
+		int GetTileCount() const override { return tileGroupCount; }
 
-		virtual void GetPixelData(const tileID tileID, uint8_t* array) const override;
+		int GetTileSize() const override { return TILE_SIZE; };
+
+		void GetPixelData(const tileID tileID, uint8_t* array) const override;
 	};
 
 	extern void LoadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out);

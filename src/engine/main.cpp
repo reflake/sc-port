@@ -53,7 +53,6 @@
 #include "script/IScriptEngine.hpp"
 #include "entity/ScriptedDoodad.hpp"
 
-#include "A_Drawable.hpp"
 #include "TilesetData.hpp"
 #include "vulkan/VulkanGraphics.hpp"
 
@@ -88,6 +87,8 @@ using filesystem::Storage;
 using script::IScriptEngine;
 
 using VulkanGraphics = renderer::vulkan::Graphics;
+
+using renderer::DrawableHandle;
  
 struct SpriteAtlas;
 
@@ -113,7 +114,7 @@ struct App {
 
 	TilesetData    tilesetData;
 
-	const renderer::A_Drawable* tilesetView;
+	DrawableHandle tilesetView;
 
 	IScriptEngine                        scriptEngine;
 	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
@@ -121,7 +122,7 @@ struct App {
 	shared_ptr<renderer::A_Graphics> graphics;
 	data::Assets assets;
 
-	unordered_map<data::grpID, const renderer::A_Drawable*> loadedSprites;
+	unordered_map<data::grpID, DrawableHandle> loadedSprites;
 };
 
 void freeWindow(App&);

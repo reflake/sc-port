@@ -16,7 +16,9 @@ namespace data
 
 	struct A_TilesetData
 	{
-		virtual const int GetTileSize() const = 0;
+
+		virtual int GetTileCount() const =0;
+		virtual int GetTileSize() const = 0;
 
 		virtual void GetPixelData(const tileID tileID, uint8_t* array) const = 0;
 	};

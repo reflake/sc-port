@@ -9,6 +9,7 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
+#include "Drawable.hpp"
 #include "RenderPass.hpp"
 #include "Shader.hpp"
 #include "Window.hpp"
@@ -32,11 +33,11 @@ namespace renderer::vulkan
 
 		Graphics(SDL_Window* window, const data::Assets* assets);
 
-		const A_Drawable* LoadSpriteSheet(data::A_SpriteSheetData&) override;
-		const A_Drawable* LoadTileset(data::A_TilesetData&) override;
+		DrawableHandle LoadSpriteSheet(data::A_SpriteSheetData&) override;
+		DrawableHandle LoadTileset(data::A_TilesetData&) override;
 
-		void Draw(const A_Drawable*, frameIndex, data::position) override;
-		void FreeDrawable(const A_Drawable*) override;
+		void Draw(DrawableHandle, frameIndex, data::position) override;
+		void FreeDrawable(DrawableHandle) override;
 
 		void SetTilesetPalette(data::Palette&) override;
 
@@ -86,8 +87,9 @@ namespace renderer::vulkan
 
 		uint32_t   _mainShaderIndex;
 
-		A_Drawable* _currentDrawable;
+		A_VulkanDrawable* _currentDrawable;
 
-		std::vector<Vertex> _vertexBuffer;
+		std::vector<Vertex>            _vertexBuffer;
+		std::vector<A_VulkanDrawable*> _drawables;
 	};
 }

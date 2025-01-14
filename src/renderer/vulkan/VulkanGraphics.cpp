@@ -2,6 +2,7 @@
 
 #include "Command.hpp"
 #include "Config.hpp"
+#include "Drawable.hpp"
 #include "Shader.hpp"
 #include "data/Assets.hpp"
 #include "data/Common.hpp"
@@ -14,6 +15,7 @@
 #include "device/SwapChain.hpp"
 #include "memory/BufferAllocator.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <glm/ext/matrix_transform.hpp>
 #include <memory>
@@ -169,7 +171,7 @@ namespace renderer::vulkan
 		return score;
 	}
 	
-	const A_Drawable* Graphics::LoadSpriteSheet(data::A_SpriteSheetData& spriteSheetData)
+	DrawableHandle Graphics::LoadSpriteSheet(data::A_SpriteSheetData& spriteSheetData)
 	{
 	/* Примерный алгоритм действий для чтения Grp спрайтов
 
@@ -204,42 +206,64 @@ namespace renderer::vulkan
 		return nullptr; // TODO:
 	}
 
-	const A_Drawable* Graphics::LoadTileset(data::A_TilesetData& tilesetData)
+	DrawableHandle Graphics::LoadTileset(data::A_TilesetData& tilesetData)
 	{
-		return reinterpret_cast<A_Drawable*>(1);
-	}
+		Tileset* tileset = new Tileset(tilesetData.GetTileSize());
 
-	void Graphics::Draw(const A_Drawable* drawable, frameIndex, data::position position)
-	{
-		// Break into another draw call
-		if (drawable != _currentDrawable && !_vertexBuffer.empty())
+		for(int i = 0; i < tilesetData.GetTileCount(); i++)
 		{
-			DrawStreamVertexBuffer();
+
 		}
 
-		_currentDrawable = const_cast<A_Drawable*>(drawable);
+		_drawables.push_back(tileset);
 
-		array<Vertex, 6> quad = { 
-			Vertex( { 0.0f, 0.0f },   { 0, 0 } ),
-			Vertex( { 0.0f, 32.0f },  { 0, 1 } ),
-			Vertex( { 32.0f, 32.0f }, { 1, 1 } ),
-			Vertex( { 0.0f, 0.0f },   { 0, 0 } ),
-			Vertex( { 32.0f, 0.0f },  { 1, 0 } ),
-			Vertex( { 32.0f, 32.0f }, { 1, 1 } ),
-		};
+		return tileset;
+	}
 
-		for(auto& vertex : quad)
+	void Graphics::Draw(DrawableHandle drawable, frameIndex frame, data::position position)
+	{
+		// Break into another draw call
+		if (drawable != _currentDrawable)
 		{
-			vertex.pos += position - _currentPosition;
+			if (!_vertexBuffer.empty())
+
+				DrawStreamVertexBuffer();
+
+			// Validate new drawable
+			auto vulkanDrawable = reinterpret_cast<A_VulkanDrawable*>(drawable);
+
+			// TODO: search drawables from cache
+			if (std::find(_drawables.begin(), _drawables.end(), vulkanDrawable) == _drawables.end())
+			{
+				throw runtime_error("Incompatible drawable object");
+			}
+
+			_currentDrawable = vulkanDrawable;
+		}
+
+		array<Vertex, 10> polygonVertices;
+
+		auto size = _currentDrawable->GetPolygon(frame, polygonVertices, polygonVertices.size());
+
+		if (size > polygonVertices.size())
+		{
+			throw runtime_error("Too much polygons");
+		}
+
+		for(int i = 0; i < size; i++)
+		{
+			auto& vertex = polygonVertices[i];
+
+			vertex.pos   += position - _currentPosition;
 			vertex.pos.x /= _config.GetExtents().width;
 			vertex.pos.y /= _config.GetExtents().height;
 
 			vertex.pos = vertex.pos * 2.0f - 1.0f;
 		}
 
-		for(int i = 0; i < quad.size(); i++)
+		for(int i = 0; i < size; i++)
 		{
-			_vertexBuffer.push_back(quad[i]);
+			_vertexBuffer.push_back(polygonVertices[i]);
 		}
 	}
 
@@ -253,7 +277,7 @@ namespace renderer::vulkan
 		_vertexBuffer.clear();
 	}
 
-	void Graphics::FreeDrawable(const A_Drawable*)
+	void Graphics::FreeDrawable(DrawableHandle)
 	{
 		// TODO:
 	}
@@ -416,6 +440,20 @@ namespace renderer::vulkan
 	void Graphics::Release()
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
+
+		for(auto drawable : _drawables)
+		{
+			switch(drawable->GetType())
+			{
+				case SpriteSheetType:
+					delete dynamic_cast<SpriteSheet*>(drawable);
+					break;
+
+				case TilesetType:
+					delete dynamic_cast<Tileset*>(drawable);
+					break;
+			}
+		}
 
 		_bufferAllocator.Release();
 
