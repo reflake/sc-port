@@ -1,18 +1,7 @@
-#include "A_SpriteSheet.hpp"
-#include "A_Tileset.hpp"
-#include "TilesetData.hpp"
-#include "data/TextStrings.hpp"
-#include "data/Tileset.hpp"
-#include "vulkan/VulkanGraphics.hpp"
-#include <array>
 #define SDL_MAIN_HANDLED
 
-#include <intrin.h>
-
 #include <algorithm>
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
-#include <boost/format/format_fwd.hpp>
+#include <array>
 #include <CascLib.h>
 #include <cassert>
 #include <commdlg.h> // windows only
@@ -29,6 +18,12 @@
 #include <vector>
 #include <windows.h>
 
+#include <intrin.h>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/format.hpp>
+#include <boost/format/format_fwd.hpp>
+
 #include <SDL_events.h>
 #include <SDL_hints.h>
 #include <SDL_keycode.h>
@@ -41,10 +36,10 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL.h>
 
+#include <data/Assets.hpp>
 #include <data/Common.hpp>
 #include <data/Grp.hpp>
 #include <data/Images.hpp>
-#include <data/Assets.hpp>
 #include <filesystem/MpqArchive.hpp>
 #include <filesystem/Storage.hpp>
 
@@ -53,8 +48,15 @@
 #include "data/Tile.hpp"
 #include "data/Map.hpp"
 #include "data/Sprite.hpp"
+#include "data/TextStrings.hpp"
+#include "data/Tileset.hpp"
 #include "script/IScriptEngine.hpp"
 #include "entity/ScriptedDoodad.hpp"
+
+#include "A_Drawable.hpp"
+#include "TilesetData.hpp"
+#include "vulkan/VulkanGraphics.hpp"
+
 
 
 using boost::format;
@@ -111,7 +113,7 @@ struct App {
 
 	TilesetData    tilesetData;
 
-	const renderer::A_Tileset* tilesetView;
+	const renderer::A_Drawable* tilesetView;
 
 	IScriptEngine                        scriptEngine;
 	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
@@ -119,7 +121,7 @@ struct App {
 	shared_ptr<renderer::A_Graphics> graphics;
 	data::Assets assets;
 
-	unordered_map<data::grpID, const renderer::A_SpriteSheet*> loadedSprites;
+	unordered_map<data::grpID, const renderer::A_Drawable*> loadedSprites;
 };
 
 void freeWindow(App&);
@@ -129,8 +131,7 @@ const int SCREEN_HEIGHT = 960;
 
 void createWindow(App& app)
 {
-	const int rendererFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
-	const int windowFlags   = 0;
+	const int windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
 
 	freeWindow(app);
 
@@ -145,24 +146,6 @@ void createWindow(App& app)
 	{
 		throwSdlError("Failed to create the window");
 	}
-
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "linear");
-
-	app.renderer = SDL_CreateRenderer(app.window, -1, rendererFlags);
-
-	if (!app.renderer)
-	{
-		throwSdlError("Failed to create the renderer");
-	}
-
-	app.screenSurface = SDL_GetWindowSurface(app.window);
-
-	if (!app.screenSurface)
-	{
-		throwSdlError("Couldn't get the screen of the window");
-	}
-	
-	SDL_FillRect( app.screenSurface, NULL, SDL_MapRGB( app.screenSurface->format, 0xFF, 0xFF, 0xFF ) );
 }
 
 void freeWindow(App& app)
@@ -276,7 +259,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 			tileId = tileGroup.doodad.tiles[variation];
 		}
 
-		app.graphics->DrawTile(app.tilesetView, tileId, { x * TILE_SIZE, y * TILE_SIZE });
+		app.graphics->Draw(app.tilesetView, tileId, { x * TILE_SIZE, y * TILE_SIZE });
 	};
 
 	for(auto& doodad : app.scriptedDoodads)
@@ -285,7 +268,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 		auto frame = doodad->GetCurrentFrame();
 		auto spriteSheet = app.loadedSprites[grpID];
 
-		app.graphics->DrawSprite(spriteSheet, frame, doodad->pos);
+		// app.graphics->Draw(spriteSheet, frame, doodad->pos);
 	}
 
 	app.graphics->PresentToScreen();
@@ -348,7 +331,7 @@ void loadTileset(App& app, Storage& storage, data::Tileset tileset)
 {
 	if (app.tilesetView != nullptr)
 	{
-		app.graphics->FreeTileset(app.tilesetView);
+		app.graphics->FreeDrawable(app.tilesetView);
 		app.tilesetView = nullptr;
 	}
 
@@ -384,7 +367,7 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 
 		for(auto& [_, spriteSheet] : app.loadedSprites)
 		{
-			app.graphics->FreeSpriteSheet(spriteSheet);
+			app.graphics->FreeDrawable(spriteSheet);
 		}
 
 		app.loadedSprites.clear();
@@ -462,7 +445,7 @@ int main(int argc, char *argv[]) {
 
 	int      waterCycle = 0;
 	int      moveInput = 0;
-	position viewPos;
+	position viewPos = { 0, 0 };
 
 	while (running) {
 		while (SDL_PollEvent(&event)) {
@@ -528,10 +511,11 @@ int main(int argc, char *argv[]) {
 
 		app.scriptEngine.PlayNextFrame();
 
-		usleep(16000);
+		usleep(1000);
 	};
 
 	app.graphics->WaitIdle();
+	app.graphics->Release();
 
 	freeWindow(app);
 

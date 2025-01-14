@@ -7,7 +7,7 @@ namespace renderer::vulkan
 {
 	extern const bool enableValidationLayers;
 
-	extern bool CheckValidationLayerSupported(VkPhysicalDevice device);
+	extern bool CheckValidationLayerSupported();
 
 	class Device
 	{
@@ -38,5 +38,5 @@ namespace renderer::vulkan
 		VkQueue          _presentQueue, _graphicsQueue;
 	};
 
-	extern VkPhysicalDevice PickPhysicalDevice(VkInstance instance, std::function<int(VkPhysicalDevice&)> evaluationFunction);
+	extern VkPhysicalDevice PickPhysicalDevice(VkInstance, VkSurfaceKHR, std::function<int(VkPhysicalDevice&)> evaluationFunction);
 }

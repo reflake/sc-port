@@ -16,7 +16,6 @@ namespace renderer::vulkan
 	struct SwapChainSupportDetails
 	{
 		VkSurfaceCapabilitiesKHR capabilities;
-		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 
 		bool IsComplete();
@@ -38,7 +37,7 @@ namespace renderer::vulkan
 
 		const FrameBuffer& GetFrameBuffer(uint32_t imageIndex) const;
 
-		static Swapchain Create(Device&, RenderPass*, VkSurfaceKHR, Config&, VkAllocationCallbacks* allocator = nullptr);
+		static Swapchain Create(Device&, RenderPass*, VkSurfaceKHR, VkSurfaceFormatKHR&, Config&, VkAllocationCallbacks* allocator = nullptr);
 
 		operator VkSwapchainKHR() const { return _hwSwapchain; }
 

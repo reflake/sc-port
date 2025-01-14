@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include <vector>
 #include <vulkan/vulkan_core.h>
+#include <iostream>
 
 using std::array;
 using std::any_of;
@@ -90,6 +91,12 @@ namespace renderer::vulkan
 				return evaluationFunction(a) < evaluationFunction(b);
 			});
 
+		
+		VkPhysicalDeviceProperties props;
+		vkGetPhysicalDeviceProperties(bestSuitableDevice, &props);
+
+		std::cout << "  Vulkan API: picked " << props.deviceName << " device is selected" << std::endl;
+
 		return bestSuitableDevice;
 	}
 
@@ -146,7 +153,7 @@ namespace renderer::vulkan
 		return true;
 	}
 
-	bool CheckValidationLayerSupported(VkPhysicalDevice device)
+	bool CheckValidationLayerSupported()
 	{
 		uint32_t propsCount;
 

@@ -24,5 +24,5 @@ namespace renderer::vulkan {
 
 	extern void GetSdlRequiredExtensions(SDL_Window*, std::vector<const char*>& outExtensions);
 
-	extern void CreateWindowSurface(SDL_Window*, VkInstance&, VkSurfaceKHR&);
+	extern void CreateWindowSurface(SDL_Window*, VkInstance, VkSurfaceKHR&);
 }

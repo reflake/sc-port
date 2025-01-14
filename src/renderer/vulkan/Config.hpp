@@ -18,6 +18,6 @@ namespace renderer::vulkan
 
 	private:
 
-		int screenWidth, screenHeight;
+		int _screenWidth, _screenHeight;
 	};
 }

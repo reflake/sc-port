@@ -5,9 +5,11 @@
 #include "Shader.hpp"
 #include "data/Assets.hpp"
 #include "data/Common.hpp"
+#include "data/Palette.hpp"
 #include "data/Tileset.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
+#include "device/Format.hpp"
 #include "device/Queue.hpp"
 #include "device/SwapChain.hpp"
 #include "memory/BufferAllocator.hpp"
@@ -31,18 +33,20 @@ namespace renderer::vulkan
 	using std::vector;
 	using ShaderStage = ShaderModule::Stage;
 
-	const float unitsPerPixel = 1 / 256.0f;
+	const std::vector<const char*> validationLayers = {
+		"VK_LAYER_KHRONOS_validation"
+	};
 
 	Graphics::Graphics(SDL_Window* window, const data::Assets* assets) : _window(window), _assets(assets)
 	{
-		const VkAllocationCallbacks* allocator = nullptr;
+		const VkAllocationCallbacks* allocator = VK_NULL_HANDLE;
 
 		// Check out layers
 		vector<const char*> requiredLayers;
 
 		if (enableValidationLayers)
 		{
-			if (!CheckValidationLayerSupported(_device))
+			if (!CheckValidationLayerSupported())
 				throw runtime_error("Validation layer is not supported");
 
 			EnableValidationLayers(requiredLayers);
@@ -55,19 +59,22 @@ namespace renderer::vulkan
 
 		_config = Config(screenWidth, screenHeight);
 
-		auto physicalDevice = PickPhysicalDevice(_instance, &DeviceEvaluation);
+		auto physicalDevice = PickPhysicalDevice(_instance, _surface, &DeviceEvaluation);
 
 		// Only one main device is being used
 		_device     = Device::Create(physicalDevice, _surface, requiredLayers);
-		_renderPass = RenderPass::Create(_device, _swapchain.GetFormat());
-		_swapchain  = Swapchain::Create(_device, &_renderPass, _surface, _config);
+
+		auto surfaceFormat = PickSwapSurfaceFormat(physicalDevice, _surface);
+
+		_renderPass = RenderPass::Create(_device, surfaceFormat.format);
+		_swapchain  = Swapchain::Create(_device, &_renderPass, _surface, surfaceFormat, _config);
 		_shaders    = ShaderManager(&_device, &_config, &_renderPass);
 
-		auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shader.frag"));
-		auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shader.vert"));
-		array<const ShaderModule*, 2> modules = { fragmentShaderModule, vertexShaderModule };
+		auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shaders/frag.spv"));
+		auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shaders/vert.spv"));
+		array<uint32_t, 2> modules = { fragmentShaderModule, vertexShaderModule };
 
-		_mainShader = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat());
+		_mainShaderIndex = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat());
 
 		QueueFamilyIndices familyIndices = FindQueueFamilies(_device, _surface);
 		_commandPool = CreateCommandPool(_device, familyIndices.graphicsFamily.value());
@@ -76,9 +83,10 @@ namespace renderer::vulkan
 		CreateSyncObjects();
 
 		_bufferAllocator = BufferAllocator(&_device, allocator);
+		_bufferAllocator.Initialize();
 	}
 
-	void Graphics::CreateInstance(vector<const char*> enabledLayers)
+	void Graphics::CreateInstance(vector<const char*>& enabledLayers)
 	{
 		std::vector<const char*> extensions;
 
@@ -155,8 +163,8 @@ namespace renderer::vulkan
 			score += 2000;
 		}
 
-		score += props.limits.maxImageDimension2D;
-		score += props.limits.maxMemoryAllocationCount;
+		// score += props.limits.maxImageDimension2D;
+		score += props.limits.maxMemoryAllocationCount / 20000;
 
 		return score;
 	}
@@ -204,24 +212,26 @@ namespace renderer::vulkan
 	void Graphics::Draw(const A_Drawable*, frameIndex, data::position position)
 	{
 		array<Vertex, 6> quad = { 
-			Vertex( { 0.0f, 0.0f } ),
-			Vertex( { 0.0f, 1.0f } ),
-			Vertex( { 1.0f, 1.0f } ),
-			Vertex( { 0.0f, 0.0f } ),
-			Vertex( { 1.0f, 0.0f } ),
-			Vertex( { 1.0f, 1.0f } ),
+			Vertex( { 0.0f, 0.0f },   { 0, 0 } ),
+			Vertex( { 0.0f, 32.0f },  { 0, 1 } ),
+			Vertex( { 32.0f, 32.0f }, { 1, 1 } ),
+			Vertex( { 0.0f, 0.0f },   { 0, 0 } ),
+			Vertex( { 32.0f, 0.0f },  { 1, 0 } ),
+			Vertex( { 32.0f, 32.0f }, { 1, 1} ),
 		};
-
-		glm::vec2 translatePosition = { position.x *  unitsPerPixel, position.y * unitsPerPixel };
 
 		for(auto& vertex : quad)
 		{
-			vertex.pos += translatePosition - _currentPosition;
+			vertex.pos += position - _currentPosition;
+			vertex.pos.x /= _config.GetExtents().width;
+			vertex.pos.y /= _config.GetExtents().height;
+
+			vertex.pos = vertex.pos * 2.0f - 1.0f;
 		}
 
 		for(int i = 0; i < quad.size(); i++)
 		{
-			_vertexBuffer[_verticesWritten++] = quad[i];
+			_vertexBuffer.push_back(quad[i]);
 		}
 	}
 
@@ -230,9 +240,14 @@ namespace renderer::vulkan
 		// TODO:
 	}
 
+	void Graphics::SetTilesetPalette(data::Palette&)
+	{
+		// TODO:
+	}
+
 	void Graphics::SetView(data::position pos)
 	{
-		_currentPosition = { pos.x * unitsPerPixel, pos.y * unitsPerPixel };
+		_currentPosition = pos;
 	}
 
 	void Graphics::BeginRendering()
@@ -243,6 +258,18 @@ namespace renderer::vulkan
 
 		vkResetCommandBuffer(_commandBuffer, 0);
 
+		_bufferAllocator.OnBeginRendering();
+
+		_vertexBuffer.clear();
+	}
+
+	void Graphics::PresentToScreen()
+	{
+		auto buffer = _bufferAllocator.WriteToStreamBuffer(sizeof(Vertex) * _vertexBuffer.size(), _vertexBuffer.data());
+
+		_bufferAllocator.OnPrepareForPresentation();
+		
+		// ==============================================
 		VkCommandBufferBeginInfo beginInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 
 		beginInfo.flags = 0;
@@ -263,39 +290,36 @@ namespace renderer::vulkan
 		renderBeginInfo.renderArea.offset = {0, 0};
 		renderBeginInfo.renderArea.extent = _config.GetExtents();
 
-		VkClearValue clearColor = {{{0, 0, 0, 1}}};
+		VkClearValue clearColor = {{{0.66, 0.66, 0.66, 1}}};
 		renderBeginInfo.clearValueCount = 1;
 		renderBeginInfo.pClearValues = &clearColor;
 
 		vkCmdBeginRenderPass(_commandBuffer, &renderBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 		// Bind main pipeline and prepare viewport
-		vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _mainShader->GetPipeline());
+		auto pipeline = _shaders.GetShaderPipeline(_mainShaderIndex);
+
+		vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		auto [width, height] = _config.GetExtents();
 
 		VkViewport viewport { 
-			0.0, 0.0f, 
+			0.0, 0.0, 
 			static_cast<float>(width), static_cast<float>(height), 
 			0.0f, 1.0f};
+
+		vkCmdSetViewport(_commandBuffer, 0, 1, &viewport);
 
 		VkRect2D scissor { 
 			0, 0,
 			_config.GetExtents() };
 
-		_bufferAllocator.OnBeginRendering();
+		vkCmdSetScissor(_commandBuffer, 0, 1, &scissor);
 
-		_verticesWritten = 0;
-	}
-
-	void Graphics::PresentToScreen()
-	{
-		auto buffer = _bufferAllocator.WriteDynamicVertexBuffer(sizeof(Vertex) * _verticesWritten, _vertexBuffer);
+		// ==============================================
+		// Draw
 		buffer.BindToCommandBuffer(_commandBuffer);
-
-		_bufferAllocator.OnPrepareForPresentation();
-
-		vkCmdDraw(_commandBuffer, _verticesWritten, 1, 0, 0);
+		vkCmdDraw(_commandBuffer, _vertexBuffer.size(), 1, 0, 0);
 
 		vkCmdEndRenderPass(_commandBuffer);
 
@@ -360,7 +384,7 @@ namespace renderer::vulkan
 		output.size = _assets->GetSize(path);
 		output.code = std::make_unique<uint8_t[]>(output.size);
 
-		_assets->ReadBytes("shader.frag", output.code.get());
+		_assets->ReadBytes(path, output.code.get());
 
 		return output;
 	}
@@ -370,9 +394,11 @@ namespace renderer::vulkan
 		vkDeviceWaitIdle(_device);
 	}
 
-	Graphics::~Graphics()
+	void Graphics::Release()
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
+
+		_bufferAllocator.Release();
 
 		if (_imageAvailableSemaphore)
 			vkDestroySemaphore(_device, _imageAvailableSemaphore, allocator);

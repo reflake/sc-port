@@ -39,38 +39,43 @@ target_sources(Engine
     src/shared/filesystem/Storage.cpp
   )
 
-add_library(Renderer STATIC src/renderer/render/Atlas.cpp)
+add_library(Renderer STATIC 
+
+  src/renderer/SpriteFrameData.cpp
+
+  src/renderer/vulkan/device/Device.cpp
+  src/renderer/vulkan/device/Format.cpp
+  src/renderer/vulkan/device/Framebuffer.cpp
+  src/renderer/vulkan/device/Queue.cpp
+  src/renderer/vulkan/device/SwapChain.cpp
+  src/renderer/vulkan/memory/Buffer.cpp
+  src/renderer/vulkan/memory/BufferAllocator.cpp
+  src/renderer/vulkan/Api.cpp
+  src/renderer/vulkan/Command.cpp
+  src/renderer/vulkan/Config.cpp
+  src/renderer/vulkan/RenderPass.cpp
+  src/renderer/vulkan/Shader.cpp
+  src/renderer/vulkan/Vertex.cpp
+  src/renderer/vulkan/VulkanGraphics.cpp
+  src/renderer/vulkan/Window.cpp
+
+  src/shared/data/Assets.cpp
+  src/shared/data/Common.cpp
+  src/shared/data/Grp.cpp
+  src/shared/data/Images.cpp
+  src/shared/data/Palette.cpp
+  src/shared/data/TextStrings.cpp
+  src/shared/data/Tileset.cpp
+
+  src/shared/filesystem/MpqArchive.cpp
+  src/shared/filesystem/MpqFile.cpp
+  src/shared/filesystem/StorageFile.cpp
+  src/shared/filesystem/Storage.cpp
+  )
 
 target_include_directories(Renderer 
   PUBLIC
     src/shared/
-  )
-
-target_sources(Renderer
-  PRIVATE
-    src/shared/data/Tileset.cpp
-
-    src/renderer/SpriteFrameData.cpp
-
-    src/renderer/vulkan/device/Device.cpp
-    src/renderer/vulkan/device/Queue.cpp
-    src/renderer/vulkan/device/SwapChain.cpp
-    src/renderer/vulkan/SpritePacker.cpp
-    src/renderer/vulkan/SpriteSheet.cpp
-    src/renderer/vulkan/VulkanGraphics.cpp
-    src/renderer/vulkan/Window.cpp
-
-    src/shared/data/Common.cpp
-    src/shared/data/Grp.cpp
-    src/shared/data/Images.cpp
-    src/shared/data/Palette.cpp
-    src/shared/data/TextStrings.cpp
-    src/shared/data/Tileset.cpp
-
-    src/shared/filesystem/MpqArchive.cpp
-    src/shared/filesystem/MpqFile.cpp
-    src/shared/filesystem/StorageFile.cpp
-    src/shared/filesystem/Storage.cpp
   )
 
 # Find Winsock library
@@ -121,6 +126,7 @@ if(Boost_FOUND)
 endif()
 
 target_link_libraries(Engine 
+  PRIVATE Renderer
   PRIVATE casc_static
   PRIVATE storm
   PRIVATE SDL2::SDL2-static)
@@ -129,7 +135,8 @@ target_link_libraries(Engine
 target_link_libraries(Renderer 
   PRIVATE casc_static
   PRIVATE storm
-  PRIVATE SDL2::SDL2-static)
+  PRIVATE SDL2::SDL2-static
+  PRIVATE vulkan-1)
 
-file(COPY static/shader.frag static/shader.vert
+file(COPY static/frag.spv static/vert.spv
      DESTINATION shaders/)

@@ -5,6 +5,8 @@
 #include <stdexcept>
 #include <vulkan/vulkan_core.h>
 
+#include "Vertex.hpp"
+
 using std::array;
 using std::vector;
 using std::runtime_error;
@@ -32,21 +34,24 @@ namespace renderer::vulkan
 			case ShaderStage::Fragment:
 				return VK_SHADER_STAGE_FRAGMENT_BIT;
 		}
+
+		throw runtime_error("Unexpected exception");
 	}
 
-	const Shader* ShaderManager::CreateShader(const ShaderModule** modules, int count, VkFormat swapchainImageFormat)
+	const uint32_t ShaderManager::CreateShader(const uint32_t* moduleIndices, int count, VkFormat swapchainImageFormat)
 	{
 		vector<VkPipelineShaderStageCreateInfo> stageCreateInfoList(count);
 
 		for(int i = 0; i < count; i++)
 		{
-			auto module = modules[i];
+			auto  moduleIndex = moduleIndices[i];
+			auto& module = _modules[moduleIndex];
 			VkPipelineShaderStageCreateInfo& stageCreateInfo = stageCreateInfoList[i];
 
 			stageCreateInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			stageCreateInfo.stage  = GetShaderFlags(module->GetType());
+			stageCreateInfo.stage  = GetShaderFlags(module.GetType());
 			stageCreateInfo.pName  = "main";
-			stageCreateInfo.module = *module;
+			stageCreateInfo.module = module;
 		}
 
 		VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = { VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
@@ -54,8 +59,14 @@ namespace renderer::vulkan
 		dynamicStateCreateInfo.pDynamicStates	   = _config->GetDynamicStates();
 		dynamicStateCreateInfo.dynamicStateCount = _config->GetDynamicStateCount();
 
-		VkPipelineVertexInputStateCreateInfo vertexInputInfo { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-		// TODO
+		const auto vertexInputFlags = 0;
+		auto attributeDescription = Vertex::GetAttributeDescriptions();
+		auto bindingDescription   = Vertex::GetBindingDescription();
+
+		VkPipelineVertexInputStateCreateInfo vertexInputInfo { VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, 0,
+		vertexInputFlags,
+		1, &bindingDescription,
+		attributeDescription.size(), attributeDescription.data() };
 
 		const VkPipelineInputAssemblyStateCreateFlags inputAssemblyFlags = 0;
 		const VkBool32                                primiteRestartEnable = VK_FALSE;
@@ -83,13 +94,16 @@ namespace renderer::vulkan
 		const auto rasterizerDiscardEnabled = VK_FALSE;
 		const auto depthClampEnable = VK_FALSE;
 		const auto depthBiasEnable = VK_FALSE;
+		const auto lineWidth = 1.0f;
 
 		// I feel like some of these parameters should be controlled by material not by shader
 		VkPipelineRasterizationStateCreateInfo rasterizerCreateInfo { 
 			VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, nullptr, rasterizerFlags,
-			rasterizerDiscardEnabled, depthClampEnable, VK_POLYGON_MODE_FILL, VK_CULL_MODE_BACK_BIT,
-			VK_FRONT_FACE_CLOCKWISE, depthBiasEnable
+			rasterizerDiscardEnabled, depthClampEnable, VK_POLYGON_MODE_FILL, VK_CULL_MODE_NONE,
+			VK_FRONT_FACE_CLOCKWISE, depthBiasEnable, 0.0f, 0.0f, 0.0f,
 		};
+
+		rasterizerCreateInfo.lineWidth = lineWidth;
 
 		const VkPipelineMultisampleStateCreateFlags multisampleFlags = 0;
 
@@ -101,6 +115,13 @@ namespace renderer::vulkan
 		};
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachmentState { VK_FALSE };
+		colorBlendAttachmentState.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+		colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD; // Optional
+		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
+		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+		colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 
 		VkPipelineColorBlendStateCreateInfo colorBlendingCreateInfo { 
 			VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, nullptr, 
@@ -142,7 +163,9 @@ namespace renderer::vulkan
 			throw runtime_error("Failed to create graphics pipeline");
 		}
 
-		return &_shaders.emplace_back(pipeline, pipelineLayout);
+		_shaders.emplace_back(pipeline, pipelineLayout);
+
+		return _shaders.size() - 1;
 	}
 
 	const VkPipeline Shader::GetPipeline() const
@@ -150,7 +173,7 @@ namespace renderer::vulkan
 		return _pipeline;
 	}
 
-	const ShaderModule* ShaderManager::CreateShaderModule(ShaderModule::Stage type, const ShaderCode& shader)
+	const uint32_t ShaderManager::CreateShaderModule(ShaderModule::Stage type, const ShaderCode& shader)
 	{
 		const VkShaderModuleCreateFlags flags = 0;
 		VkShaderModuleCreateInfo createInfo { VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO, nullptr, flags, shader.size };
@@ -166,7 +189,7 @@ namespace renderer::vulkan
 
 		_modules.emplace_back(hwModule, type);
 
-		return &_modules.back();
+		return _modules.size() - 1;
 	}
 
 	void Shader::Destroy(const VkDevice device, const VkAllocationCallbacks* allocator)

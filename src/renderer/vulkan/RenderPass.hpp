@@ -22,7 +22,7 @@ namespace renderer::vulkan
 	private:
 
 		Device* _device;
-		VkRenderPass _lwRenderPass;
+		VkRenderPass _hwRenderPass;
 		VkAllocationCallbacks* _allocator;
 	};
 }

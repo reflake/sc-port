@@ -8,8 +8,8 @@ namespace renderer::vulkan
 
 	Buffer::Buffer() {}
 
-	Buffer::Buffer(Device* device, VkDeviceSize size, VkBuffer buffer, VkDeviceSize alignment)
-		: _device(device), _size(size), _hwBuffer(buffer), _alignment(alignment)
+	Buffer::Buffer(Device* device, VkDeviceSize size, VkBuffer buffer, VkDeviceSize alignment, const VkAllocationCallbacks* allocator)
+		: _device(device), _size(size), _hwBuffer(buffer), _alignment(alignment), _allocator(allocator)
 		{}
 
 	Buffer Buffer::Create(VkDeviceSize bufferSize, Device* device, const VkAllocationCallbacks* allocator)
@@ -29,7 +29,7 @@ namespace renderer::vulkan
 		VkMemoryRequirements requirements;
 		vkGetBufferMemoryRequirements(*device, hwBuffer, &requirements);
 
-		return Buffer(device, bufferSize, hwBuffer, requirements.alignment);
+		return Buffer(device, bufferSize, hwBuffer, requirements.alignment, allocator);
 	}
 
 	void Buffer::BindMemory(VkDeviceMemory memory, VkDeviceSize offsetInMemory)

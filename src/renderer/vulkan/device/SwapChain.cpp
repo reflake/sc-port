@@ -22,7 +22,7 @@ namespace renderer::vulkan
 {
 	bool SwapChainSupportDetails::IsComplete()
 	{
-		return !formats.empty() && !presentModes.empty();
+		return !presentModes.empty();
 	}
 
 	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice device, VkSurfaceKHR surface)
@@ -30,15 +30,6 @@ namespace renderer::vulkan
 		SwapChainSupportDetails details;
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
-
-		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
-
-		if (formatCount != 0) 
-		{
-			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
-		}
 
 		uint32_t presentModeCount;
 		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
@@ -57,8 +48,6 @@ namespace renderer::vulkan
 	{
 	}
 
-	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& formats);
-
 	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Config& config);
 	
 	VkPresentModeKHR PickSwapPresentMode(const vector<VkPresentModeKHR>& presentModes);
@@ -67,28 +56,11 @@ namespace renderer::vulkan
 
 	void CreateFrameBuffers(Device& device, RenderPass* renderPass, const vector<VkImageView>& imageViews, vector<FrameBuffer>& out, Config& config, VkAllocationCallbacks* allocator);
 
-	VkFormat Swapchain::GetFormat() const { return _currentFormat; }
-
-	uint32_t Swapchain::GetNextImageIndex(VkSemaphore semaphore) const
+	Swapchain Swapchain::Create(Device& device, RenderPass* renderPass, VkSurfaceKHR surface, VkSurfaceFormatKHR& surfaceFormat, Config& config, VkAllocationCallbacks* allocator)
 	{
-		uint32_t imageIndex;
+		auto [capabilities, presentModes] = QuerySwapChainSupport(device, surface);
 
-		vkAcquireNextImageKHR(*_device, _hwSwapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &imageIndex);
-
-		return imageIndex;
-	}
-
-	const FrameBuffer& Swapchain::GetFrameBuffer(uint32_t imageIndex) const
-	{
-		return _frameBuffers[imageIndex];
-	}
-
-	Swapchain Swapchain::Create(Device& device, RenderPass* renderPass, VkSurfaceKHR surface, Config& config, VkAllocationCallbacks* allocator)
-	{
-		auto [capabilities, formats, presentModes] = QuerySwapChainSupport(device, surface);
-
-		auto extent = DefineSwapExtent(capabilities, config);
-		auto surfaceFormat = PickSwapSurfaceFormat(formats);
+		auto extent      = DefineSwapExtent(capabilities, config);
 		auto presentMode = PickSwapPresentMode(presentModes);
 
 		uint32_t imageCount = capabilities.minImageCount + 1;
@@ -183,19 +155,6 @@ namespace renderer::vulkan
 		}
 	}
 
-	VkSurfaceFormatKHR PickSwapSurfaceFormat(const vector<VkSurfaceFormatKHR>& availableFormats)
-	{
-		for(const auto& format : availableFormats)
-		{
-			if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-			{
-				return format;
-			}
-		}
-
-		throw runtime_error("Unsupported surface format");
-	}
-
 	VkExtent2D DefineSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, Config& config)
 	{
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
@@ -224,6 +183,22 @@ namespace renderer::vulkan
 		std::cout << "VulkanAPI initialization: picking up present mode, falling back to FIFO present mode\n";
 
 		return VK_PRESENT_MODE_FIFO_KHR;
+	}
+
+	VkFormat Swapchain::GetFormat() const { return _currentFormat; }
+
+	uint32_t Swapchain::GetNextImageIndex(VkSemaphore semaphore) const
+	{
+		uint32_t imageIndex;
+
+		vkAcquireNextImageKHR(*_device, _hwSwapchain, UINT64_MAX, semaphore, VK_NULL_HANDLE, &imageIndex);
+
+		return imageIndex;
+	}
+
+	const FrameBuffer& Swapchain::GetFrameBuffer(uint32_t imageIndex) const
+	{
+		return _frameBuffers[imageIndex];
 	}
 
 	void Swapchain::Destroy()

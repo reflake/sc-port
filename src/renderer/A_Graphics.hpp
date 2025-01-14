@@ -19,8 +19,6 @@ namespace renderer
 	{
 	public:
 
-		virtual ~A_Graphics() = 0;
-
 		virtual const A_Drawable* LoadSpriteSheet(data::A_SpriteSheetData&) = 0;
 		virtual const A_Drawable* LoadTileset(data::A_TilesetData&) = 0;
 
@@ -29,12 +27,14 @@ namespace renderer
 
 		virtual void SetTilesetPalette(data::Palette&) = 0;
 
-		void SetView(data::position pos);
+		virtual void SetView(data::position pos) = 0;
 		virtual void BeginRendering() = 0;
 		virtual void PresentToScreen() = 0;
 
-		virtual const char* GetName() const;
+		virtual const char* GetName() const = 0;
 
-		void WaitIdle();
+		virtual void WaitIdle() = 0;
+
+		virtual void Release() = 0;
 	};
 }

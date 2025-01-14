@@ -1,5 +1,6 @@
 #include "Window.hpp"
 
+#include <SDL_error.h>
 #include <cstdint>
 #include <stdexcept>
 #include <SDL_stdinc.h>
@@ -40,11 +41,15 @@ namespace renderer::vulkan
 		SDL_Vulkan_GetInstanceExtensions(window, &count, outExtensions.data());
 	}
 
-	void CreateWindowSurface(SDL_Window* window, VkInstance& instance, VkSurfaceKHR& surface)
+	void CreateWindowSurface(SDL_Window* window, VkInstance instance, VkSurfaceKHR& surface)
 	{
 		if (SDL_Vulkan_CreateSurface(window, instance, &surface) == SDL_FALSE)
 		{
-			throw runtime_error("Failed to create window surface");
+			char errMsg[260];
+
+			SDL_GetErrorMsg(errMsg, 260);
+
+			throw runtime_error(std::string("Failed to create window surface: ") + errMsg);
 		}
 	}
 

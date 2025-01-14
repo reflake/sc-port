@@ -31,7 +31,6 @@ namespace renderer::vulkan
 	public:
 
 		Graphics(SDL_Window* window, const data::Assets* assets);
-		~Graphics() override;
 
 		const A_Drawable* LoadSpriteSheet(data::A_SpriteSheetData&) override;
 		const A_Drawable* LoadTileset(data::A_TilesetData&) override;
@@ -41,17 +40,19 @@ namespace renderer::vulkan
 
 		void SetTilesetPalette(data::Palette&) override;
 
-		void SetView(data::position pos);
+		void SetView(data::position pos) override;
 		void BeginRendering() override;
 		void PresentToScreen() override;
 
 		const char* GetName() const override { return "Vulkan"; }
 
-		void WaitIdle();
+		void WaitIdle() override;
+
+		void Release() override;
 
 	private:
 
-		void CreateInstance(std::vector<const char*> enabledLayers);
+		void CreateInstance(std::vector<const char*>& enabledLayers);
 		void EnableValidationLayers(std::vector<const char*>& layerList);
 		void CreateSyncObjects();
 		void Submit();
@@ -79,12 +80,11 @@ namespace renderer::vulkan
 		VkSemaphore _imageAvailableSemaphore, _renderFinishedSemaphore;
 		VkFence     _fence;
 
-		glm::vec2 _currentPosition;
+		data::position _currentPosition;
 		uint32_t _currentImageIndex;
 
-		const Shader*   _mainShader;
+		uint32_t   _mainShaderIndex;
 
-		int _verticesWritten = 0; // TODO: a better solution
-		Vertex _vertexBuffer[2048];
+		std::vector<Vertex> _vertexBuffer;
 	};
 }

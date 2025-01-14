@@ -13,7 +13,7 @@ namespace renderer::vulkan
 	public:
 
 		Buffer();
-		Buffer(Device* device, VkDeviceSize size, VkBuffer, VkDeviceSize alignment);
+		Buffer(Device* device, VkDeviceSize size, VkBuffer, VkDeviceSize alignment, const VkAllocationCallbacks*);
 
 		static Buffer Create(VkDeviceSize bufferSize, Device*, const VkAllocationCallbacks*);
 

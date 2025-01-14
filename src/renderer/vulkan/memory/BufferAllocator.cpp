@@ -20,7 +20,7 @@ namespace renderer::vulkan
 
 	void BufferAllocator::Initialize()
 	{
-		const VkDeviceSize dynamicBufferSize = 1024 * 10;
+		const VkDeviceSize dynamicBufferSize = 1024 * 200;
 
 		_dynamicBuffer = Buffer::Create(dynamicBufferSize, _device, _allocator);
 
