@@ -34,6 +34,13 @@ namespace renderer::vulkan
 
 	const uint32_t POOL_MAX_SETS = 200;
 
+	struct DrawCall
+	{
+		A_VulkanDrawable* drawable = nullptr;
+		uint32_t          vertexCount = 0;
+		StreamData        streamData;
+	};
+
 	class Graphics : public A_Graphics
 	{
 	public:
@@ -65,7 +72,6 @@ namespace renderer::vulkan
 		void CreateSyncObjects();
 		void CreateDescriptorPools();
 		void CreateDescriptorSet();
-		void DrawStreamVertexBuffer();
 		void Submit();
 		void Present();
 
@@ -96,15 +102,14 @@ namespace renderer::vulkan
 		VkFence     _fence;
 
 		data::position _currentPosition;
-		uint32_t _currentImageIndex;
+		uint32_t       _currentImageIndex;
+		uint32_t       _mainShaderIndex;
 
-		uint32_t   _mainShaderIndex;
-
-		A_VulkanDrawable* _currentDrawable;
+		DrawCall* _currentDrawCall;
 
 		Sampler _textureSampler, _paletteSampler;
 
-		std::vector<Vertex>            _vertexBuffer;
 		std::vector<A_VulkanDrawable*> _drawables;
+		std::vector<DrawCall>          _drawCalls;
 	};
 }

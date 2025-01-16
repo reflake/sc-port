@@ -11,13 +11,15 @@
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
+#include "../Drawable.hpp"
+
 namespace renderer::vulkan
 {
 	struct StreamData
 	{
-		Buffer*  buffer;
-		uint64_t offsetInMemory;
-		uint64_t size;
+		Buffer*  buffer = nullptr;
+		uint64_t offsetInMemory = 0;
+		uint64_t size = 0;
 
 		void BindToCommandBuffer(VkCommandBuffer);
 	};
@@ -32,6 +34,8 @@ namespace renderer::vulkan
 		void Initialize();
 
 		const StreamData WriteToStreamBuffer(uint64_t size, const void* data);
+
+		void WriteToStreamBuffer(StreamData& streamData, uint64_t size, const void* data);
 
 		const Image* CreateTextureImage(uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize);
 

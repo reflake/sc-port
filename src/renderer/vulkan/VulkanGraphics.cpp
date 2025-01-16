@@ -306,12 +306,8 @@ namespace renderer::vulkan
 	void Graphics::Draw(DrawableHandle drawable, frameIndex frame, data::position position)
 	{
 		// Break into another draw call
-		if (drawable != _currentDrawable)
+		if (_currentDrawCall == nullptr || drawable != _currentDrawCall->drawable)
 		{
-			if (!_vertexBuffer.empty())
-
-				DrawStreamVertexBuffer();
-
 			// Validate new drawable
 			auto vulkanDrawable = reinterpret_cast<A_VulkanDrawable*>(drawable);
 
@@ -321,19 +317,22 @@ namespace renderer::vulkan
 				throw runtime_error("Incompatible drawable object");
 			}
 
-			_currentDrawable = vulkanDrawable;
+			_drawCalls.emplace_back(vulkanDrawable);
+			_currentDrawCall = &_drawCalls.back();
 		}
 
 		array<Vertex, 10> polygonVertices;
 
-		auto size = _currentDrawable->GetPolygon(frame, polygonVertices, polygonVertices.size());
+		auto count = _currentDrawCall->drawable->GetPolygon(frame, polygonVertices, polygonVertices.size());
 
-		if (size > polygonVertices.size())
+		_currentDrawCall->vertexCount += count;
+
+		if (count > polygonVertices.size())
 		{
 			throw runtime_error("Too much polygons");
 		}
 
-		for(int i = 0; i < size; i++)
+		for(int i = 0; i < count; i++)
 		{
 			auto& vertex = polygonVertices[i];
 
@@ -344,20 +343,7 @@ namespace renderer::vulkan
 			vertex.pos = vertex.pos * 2.0f - 1.0f;
 		}
 
-		for(int i = 0; i < size; i++)
-		{
-			_vertexBuffer.push_back(polygonVertices[i]);
-		}
-	}
-
-	void Graphics::DrawStreamVertexBuffer()
-	{
-		auto streamData = _bufferAllocator.WriteToStreamBuffer(sizeof(Vertex) * _vertexBuffer.size(), _vertexBuffer.data());
-
-		streamData.BindToCommandBuffer(_commandBuffer);
-		vkCmdDraw(_commandBuffer, _vertexBuffer.size(), 1, 0, 0);
-
-		_vertexBuffer.clear();
+		_bufferAllocator.WriteToStreamBuffer(_currentDrawCall->streamData, sizeof(Vertex) * count, polygonVertices.data());
 	}
 
 	void Graphics::FreeDrawable(DrawableHandle)
@@ -382,7 +368,17 @@ namespace renderer::vulkan
 		vkResetFences(_device, 1, &_fence);
 
 		vkResetCommandBuffer(_commandBuffer, 0);
-		
+
+		_bufferAllocator.OnBeginRendering();
+
+		_drawCalls.clear();
+		_currentDrawCall = nullptr;
+	}
+
+	void Graphics::PresentToScreen()
+	{
+		_bufferAllocator.OnPrepareForPresentation();
+
 		// ==============================================
 		VkCommandBufferBeginInfo beginInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
 
@@ -431,21 +427,15 @@ namespace renderer::vulkan
 		vkCmdSetScissor(_commandBuffer, 0, 1, &scissor);
 
 		// ==============================================
+		//   Draw
 
-		_bufferAllocator.OnBeginRendering();
+		for(auto& drawCall : _drawCalls)
+		{
+			drawCall.streamData.BindToCommandBuffer(_commandBuffer);
+			vkCmdDraw(_commandBuffer, drawCall.vertexCount, 1, 0, 0);
+		}
 
-		_vertexBuffer.clear();
-
-		_currentDrawable = nullptr;
-	}
-
-	void Graphics::PresentToScreen()
-	{
-		if (!_vertexBuffer.empty())
-
-			DrawStreamVertexBuffer();
-
-		_bufferAllocator.OnPrepareForPresentation();
+		// ==============================================
 
 		vkCmdEndRenderPass(_commandBuffer);
 

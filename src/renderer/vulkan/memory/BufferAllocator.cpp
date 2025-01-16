@@ -44,6 +44,8 @@ namespace renderer::vulkan
 			throw runtime_error("Failed to allocate command buffer");
 		}
 	}
+		
+	const uint64_t bufferAlignment = 16;
 
 	const StreamData BufferAllocator::WriteToStreamBuffer(uint64_t size, const void* srcData)
 	{
@@ -51,6 +53,8 @@ namespace renderer::vulkan
 		{
 			throw runtime_error("Failed to write to vertex buffer: buffer size exceeded");
 		}
+
+		_dynamicBufferOffset = Aligned(_dynamicBufferOffset, bufferAlignment);
 
 		StreamData streamData = { &_dynamicBuffer, _dynamicBufferOffset, size };
 
@@ -60,10 +64,37 @@ namespace renderer::vulkan
 		memcpy(dstData, srcData, size);
 
 		// Move buffer pointer
-		const uint64_t alignment = 16;
-		_dynamicBufferOffset += Aligned(_dynamicBufferOffset + size, alignment);
+		_dynamicBufferOffset += _dynamicBufferOffset + size;
 
 		return streamData;
+	}
+
+	void BufferAllocator::WriteToStreamBuffer(StreamData& streamData, uint64_t size, const void* srcData)
+	{
+		if (_dynamicBufferOffset + size > _dynamicBuffer.GetSize())
+		{
+			throw runtime_error("Failed to write to vertex buffer: buffer size exceeded");
+		}
+
+		if (streamData.buffer == nullptr)
+		{
+			_dynamicBufferOffset = Aligned(_dynamicBufferOffset, bufferAlignment);
+
+			streamData.buffer = &_dynamicBuffer;
+			streamData.offsetInMemory = _dynamicBufferOffset;
+		}
+
+		// Write data to streaming buffer
+		uint8_t *dstData = reinterpret_cast<uint8_t*>(_dynamicBufferMappedMemory) + _dynamicBufferOffset;
+
+		memcpy(dstData, srcData, size);
+
+		streamData.size += size;
+
+		// Move buffer pointer
+		_dynamicBufferOffset += size;
+		
+		assert(streamData.offsetInMemory + streamData.size == _dynamicBufferOffset);
 	}
 
 	const Image* BufferAllocator::CreateTextureImage(uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize)
