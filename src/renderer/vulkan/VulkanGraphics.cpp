@@ -14,6 +14,7 @@
 #include "device/Queue.hpp"
 #include "device/SwapChain.hpp"
 #include "memory/BufferAllocator.hpp"
+#include "memory/MemoryManager.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -84,7 +85,9 @@ namespace renderer::vulkan
 
 		CreateSyncObjects();
 
-		_bufferAllocator = BufferAllocator(&_device, allocator);
+		_memoryManager = MemoryManager(&_device, allocator);
+
+		_bufferAllocator = BufferAllocator(&_device, &_memoryManager, allocator);
 		_bufferAllocator.Initialize();
 	}
 
@@ -456,6 +459,8 @@ namespace renderer::vulkan
 		}
 
 		_bufferAllocator.Release();
+
+		_memoryManager.Release();
 
 		if (_imageAvailableSemaphore)
 			vkDestroySemaphore(_device, _imageAvailableSemaphore, allocator);

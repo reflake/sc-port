@@ -5,8 +5,8 @@
 #include "../device/Device.hpp"
 
 #include "Buffer.hpp"
+#include "MemoryManager.hpp"
 
-#include <memory>
 #include <vector>
 #include <vulkan/vulkan_core.h>
 
@@ -26,7 +26,7 @@ namespace renderer::vulkan
 	public:
 
 		BufferAllocator();
-		BufferAllocator(Device* device, const VkAllocationCallbacks*);
+		BufferAllocator(Device* device, MemoryManager*, const VkAllocationCallbacks*);
 
 		void Initialize();
 
@@ -39,31 +39,23 @@ namespace renderer::vulkan
 
 		void Release();
 
-		/*CreateTileset
-		CreateVertexData
-
-		std::unique_ptr<Texture> CreateTexture(Atlas& atlas);*/
-
 	private:
 
-		VkBuffer       CreateBuffer(VkDeviceSize);
-		VkDeviceMemory CreateMemory(uint32_t typeIndex, VkDeviceSize size);
+		VkBuffer CreateBuffer(VkDeviceSize);
 
 		// Binds buffer to some memory; might create one as well if needed
 		void BindMemoryToBuffer(Buffer& buffer);
 
-		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags);
-
 	private:
 
 		const VkAllocationCallbacks* _allocator;
+
+		MemoryManager* _memoryManager;
 
 		Device* _device;
 
 		Buffer   _dynamicBuffer;
 		uint64_t _dynamicBufferOffset = 0;
 		void*    _dynamicBufferMappedMemory = nullptr;
-
-		std::vector<VkDeviceMemory>  _memories;
 	};
 }

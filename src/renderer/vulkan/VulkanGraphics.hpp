@@ -20,6 +20,7 @@
 #include "device/SwapChain.hpp"
 #include "memory/BufferAllocator.hpp"
 #include "Vertex.hpp"
+#include "memory/MemoryManager.hpp"
 
 namespace renderer::vulkan
 {
@@ -78,6 +79,7 @@ namespace renderer::vulkan
 		RenderPass      _renderPass;
 		ShaderManager   _shaders;
 		BufferAllocator _bufferAllocator;
+		MemoryManager   _memoryManager;
 
 		VkSemaphore _imageAvailableSemaphore, _renderFinishedSemaphore;
 		VkFence     _fence;
