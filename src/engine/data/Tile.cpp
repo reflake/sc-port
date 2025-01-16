@@ -37,7 +37,7 @@ namespace data
 		return (static_cast<uint16_t>(flags) & static_cast<uint16_t>(requiredFlag)) > 0;
 	}
 
-	void TilesetData::GetPixelData(const tileID tileID, uint8_t* array) const
+	void TilesetData::GetPixelData(const tileID tileID, uint8_t* dstArray, uint32_t dstOffset, uint32_t dstStride) const
 	{
 		auto tile = tiles[tileID];
 		
@@ -47,7 +47,7 @@ namespace data
 			uint32_t chipId = tile.GetChipId(k / CHIP_SIZE, j / CHIP_SIZE);
 			auto&    chip = chips[chipId];
 
-			auto arrayStride = array + j + k * TILE_SIZE;
+			auto arrayStride = dstArray + dstOffset + j + k * dstStride;
 
 			if (tile.IsTileMirrored(k / CHIP_SIZE, j / CHIP_SIZE))
 			{

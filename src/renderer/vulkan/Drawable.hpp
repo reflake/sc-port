@@ -43,12 +43,13 @@ namespace renderer::vulkan
 	{
 	public:
 
-		Tileset(int cellSize);
+		Tileset(int cellSize, int textureLength);
 
 		std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const override;
 
 		DrawableType GetType() const override;
 
 		const int CellSize;
+		const int TextureLength;
 	};
 }

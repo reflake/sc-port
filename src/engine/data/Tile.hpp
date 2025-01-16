@@ -118,7 +118,7 @@ namespace data
 
 		int GetTileSize() const override { return TILE_SIZE; };
 
-		void GetPixelData(const tileID tileID, uint8_t* array) const override;
+		void GetPixelData(const tileID tileID, uint8_t* dstArray, uint32_t dstOffset, uint32_t dstStride) const override;
 	};
 
 	extern void LoadTilesetData(filesystem::Storage& storage, data::Tileset tileset, TilesetData& out);

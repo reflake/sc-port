@@ -17,6 +17,7 @@
 #include "memory/MemoryManager.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <glm/ext/matrix_transform.hpp>
 #include <memory>
@@ -211,11 +212,27 @@ namespace renderer::vulkan
 
 	DrawableHandle Graphics::LoadTileset(data::A_TilesetData& tilesetData)
 	{
-		Tileset* tileset = new Tileset(tilesetData.GetTileSize());
+		const int tilesCount    = tilesetData.GetTileCount();
+		const int tileSize      = tilesetData.GetTileSize();
+		const int tilesetSquare = tilesCount * (tileSize * tileSize);
+		const int textureLength = pow(2, ceil(log2(tilesetSquare) * 0.5));
 
-		for(int i = 0; i < tilesetData.GetTileCount(); i++)
+		Tileset *tileset = new Tileset(tileSize, textureLength);
+		auto     texturePixelData = std::make_shared<uint8_t[]>(textureLength * textureLength);
+
+		int offsetX = 0, offsetY = 0;
+
+		for (int i = 0; i < tilesCount; i++)
 		{
+			tilesetData.GetPixelData(i, texturePixelData.get(), offsetX + offsetY, textureLength);
 
+			offsetX += tileSize;
+
+			if (offsetX >= textureLength)
+			{
+				offsetX = 0;
+				offsetY += textureLength * tileSize;
+			}
 		}
 
 		_drawables.push_back(tileset);

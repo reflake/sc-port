@@ -8,20 +8,28 @@ namespace renderer::vulkan {
 
 	DrawableType SpriteSheet::GetType() const { return SpriteSheetType; }
 
-	Tileset::Tileset(int cellSize)
-		: CellSize(cellSize) {}
+	Tileset::Tileset(int cellSize, int textureLength)
+		: CellSize(cellSize), TextureLength(textureLength)
+	{
+		
+	}
 
 	std::size_t Tileset::GetPolygon(frameIndex frameIndex, Vertex* output, std::size_t maxCount) const
 	{
-		// TODO: frame index is unused
+		const uint32_t column = frameIndex * CellSize % TextureLength;
+		const uint32_t row    = (frameIndex * CellSize / TextureLength) * CellSize;
+		const float uvTop = static_cast<float>(row + CellSize) / TextureLength;
+		const float uvBottom = static_cast<float>(row) / TextureLength;
+		const float uvLeft = static_cast<float>(column) / TextureLength;
+		const float uvRight = static_cast<float>(column + CellSize) / TextureLength;
 
 		array<Vertex, 6> quad = { 
-			Vertex( { 0.0f, 0.0f },   { 0, 0 } ),
-			Vertex( { 0.0f, CellSize },  { 0, 1 } ),
-			Vertex( { CellSize, CellSize }, { 1, 1 } ),
-			Vertex( { 0.0f, 0.0f },   { 0, 0 } ),
-			Vertex( { CellSize, 0.0f },  { 1, 0 } ),
-			Vertex( { CellSize, CellSize }, { 1, 1 } ),
+			Vertex( { 0.0f, 0.0f },         { uvLeft,  uvBottom } ),
+			Vertex( { 0.0f, CellSize },     { uvLeft,  uvTop    } ),
+			Vertex( { CellSize, CellSize }, { uvRight, uvTop    } ),
+			Vertex( { 0.0f, 0.0f },         { uvLeft,  uvBottom } ),
+			Vertex( { CellSize, 0.0f },     { uvRight, uvBottom } ),
+			Vertex( { CellSize, CellSize }, { uvRight, uvTop    } ),
 		};
 
 		memcpy(output, quad.data(), std::min(maxCount, quad.size()) * sizeof(Vertex));

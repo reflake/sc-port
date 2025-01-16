@@ -20,6 +20,6 @@ namespace data
 		virtual int GetTileCount() const =0;
 		virtual int GetTileSize() const = 0;
 
-		virtual void GetPixelData(const tileID tileID, uint8_t* array) const = 0;
+		virtual void GetPixelData(const tileID tileID, uint8_t* dstArray, uint32_t dstOffset, uint32_t dstStride) const = 0;
 	};
 }
