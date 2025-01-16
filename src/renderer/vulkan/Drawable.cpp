@@ -8,10 +8,9 @@ namespace renderer::vulkan {
 
 	DrawableType SpriteSheet::GetType() const { return SpriteSheetType; }
 
-	Tileset::Tileset(int cellSize, int textureLength)
-		: CellSize(cellSize), TextureLength(textureLength)
+	Tileset::Tileset(const Image* image, int cellSize, int textureLength)
+		: _image(image), CellSize(cellSize), TextureLength(textureLength)
 	{
-		
 	}
 
 	std::size_t Tileset::GetPolygon(frameIndex frameIndex, Vertex* output, std::size_t maxCount) const

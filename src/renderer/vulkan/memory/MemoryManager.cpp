@@ -1,4 +1,6 @@
 #include "MemoryManager.hpp"
+#include "Image.hpp"
+#include "data/Common.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -13,24 +15,43 @@ namespace renderer::vulkan
 	MemoryManager::MemoryManager(Device* device, const VkAllocationCallbacks* allocator)
 		: _device(device), _allocator(allocator) {}
 
-	void MemoryManager::BindMemoryToBuffer(Buffer& buffer, uint32_t typeBits, VkMemoryPropertyFlagBits properties, VkDeviceSize requiredSize)
+	void MemoryManager::BindMemoryToBuffer(Buffer& buffer, VkMemoryRequirements& requirements, VkMemoryPropertyFlagBits properties)
 	{
-		auto& memory = UseMemory(typeBits, properties, requiredSize);
+		auto [requiredSize, alignment, typeBits] = requirements;
 
-		auto [offset, size] = memory.GetLockedMemory(requiredSize);
+		auto& memory        = UseMemory(alignment, typeBits, properties, requiredSize);
+		auto [offset, size] = memory.GetLockedMemory(alignment, requiredSize);
+
 		assert(size == requiredSize);
 
 		buffer.BindMemory(memory.hwMemory, offset);
 	}
 
-	Memory& MemoryManager::UseMemory(uint32_t typeBits, VkMemoryPropertyFlagBits properties, VkDeviceSize requiredSize)
+	void MemoryManager::BindMemoryToImage(Image& image, VkMemoryRequirements& requirements, VkMemoryPropertyFlagBits properties)
+	{
+		auto [requiredSize, alignment, typeBits] = requirements;
+
+		if (requiredSize > MinimalMemorySize)
+		{
+			throw runtime_error("Memory size is too high!");
+		}
+
+		auto& memory        = UseMemory(alignment, typeBits, properties, requiredSize);
+		auto [offset, size] = memory.GetLockedMemory(alignment, requiredSize);
+
+		assert(size == requiredSize);
+
+		image.BindMemory(memory.hwMemory, offset);
+	}
+
+	Memory& MemoryManager::UseMemory(VkDeviceSize alignment, uint32_t typeBits, VkMemoryPropertyFlagBits properties, VkDeviceSize requiredSize)
 	{
 		// Find if memory with this specific properties already exists
 		auto memoryIt = std::find_if(_memories.begin(), _memories.end(), 
-			[typeBits, properties, requiredSize] (auto& mem) { 
+			[alignment, typeBits, properties, requiredSize] (auto& mem) { 
 				return mem.typeBits == typeBits && 
 							mem.properties == properties && 
-							mem.CanAllocateMemory(requiredSize); 
+							mem.CanAllocateMemory(alignment, requiredSize); 
 				});
 
 		if (memoryIt != _memories.end())
@@ -87,24 +108,27 @@ namespace renderer::vulkan
 		}
 	}
 
-	bool Memory::CanAllocateMemory(VkDeviceSize size)
+	bool Memory::CanAllocateMemory(VkDeviceSize alignment, VkDeviceSize requiredSize)
 	{
-		return std::any_of(freeRegions.begin(), freeRegions.end(), [size] (auto region) {
+		return std::any_of(freeRegions.begin(), freeRegions.end(), [alignment, requiredSize] (auto region) {
 
-			auto [_, regionSize] = region;
+			auto [offset, regionSize] = region;
+			auto alignedOffset = data::Aligned(offset, alignment);
+			auto localOffset = alignedOffset - offset;
 
-			return size <= regionSize;
+			return localOffset + requiredSize <= regionSize;
 		});
 	}
 
-	MemoryRegion Memory::GetLockedMemory(VkDeviceSize allocatedSize)
+	MemoryRegion Memory::GetLockedMemory(VkDeviceSize alignment, VkDeviceSize allocatedSize)
 	{
-		auto it = std::find_if(freeRegions.begin(), freeRegions.end(), [allocatedSize] (auto region) {
+		auto it = std::find_if(freeRegions.begin(), freeRegions.end(), [alignment, allocatedSize] (auto region) {
 
-			auto [_, regionSize] = region;
+			auto [offset, regionSize] = region;
+			auto alignedOffset = data::Aligned(offset, alignment);
+			auto localOffset = alignedOffset - offset;
 
-			return allocatedSize <= regionSize;
-
+			return localOffset + allocatedSize <= regionSize;
 		});
 
 		if (it == freeRegions.end())
@@ -113,13 +137,21 @@ namespace renderer::vulkan
 		}
 
 		auto [offset, space] = *it;
-		auto remainingSpace = space - allocatedSize;
 
 		freeRegions.erase(it);
 
-		if (remainingSpace > 0)
-			freeRegions.push_back( { offset + allocatedSize, remainingSpace } );
+		auto alignedOffset = data::Aligned(offset, alignment);
+		auto trailingSpace = alignedOffset - offset;
 
-		return { offset, allocatedSize };
+		if (trailingSpace > 0)
+			freeRegions.push_back( { offset, trailingSpace });
+
+		auto headingSpace = space - (allocatedSize + trailingSpace);
+
+		if (headingSpace > 0)
+			freeRegions.push_back( { alignedOffset + allocatedSize, headingSpace } );
+
+		// Offset must be aligned
+		return { alignedOffset, allocatedSize };
 	}
 };

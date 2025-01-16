@@ -3,6 +3,7 @@
 #include "Command.hpp"
 #include "Config.hpp"
 #include "Drawable.hpp"
+#include "Sampler.hpp"
 #include "Shader.hpp"
 #include "data/Assets.hpp"
 #include "data/Common.hpp"
@@ -28,6 +29,8 @@
 
 #include <glm/detail/qualifier.hpp>
 #include <glm/vec2.hpp>
+
+#include "DescriptorSetLayout.hpp"
 
 namespace renderer::vulkan
 {
@@ -78,7 +81,15 @@ namespace renderer::vulkan
 		auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shaders/vert.spv"));
 		array<uint32_t, 2> modules = { fragmentShaderModule, vertexShaderModule };
 
-		_mainShaderIndex = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat());
+		_standardLayout = DescriptorSetLayout::Builder(&_device)
+			.AddBinding(BindSampler)
+			.AddBinding(BindSampler)
+			.Create(allocator);
+
+		CreateDescriptorPools();
+		CreateDescriptorSet();
+
+		_mainShaderIndex = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat(), nullptr);
 
 		QueueFamilyIndices familyIndices = FindQueueFamilies(_device, _surface);
 		_commandPool = CreateCommandPool(_device, familyIndices.graphicsFamily.value());
@@ -88,8 +99,22 @@ namespace renderer::vulkan
 
 		_memoryManager = MemoryManager(&_device, allocator);
 
-		_bufferAllocator = BufferAllocator(&_device, &_memoryManager, allocator);
+		_bufferAllocator = BufferAllocator(&_device, _device.GetGraphicsQueue(), _commandPool, 
+																				&_memoryManager, allocator);
 		_bufferAllocator.Initialize();
+
+		_textureSampler = Sampler::Builder(_device)
+			.Filtering(VK_FILTER_NEAREST)
+			.RepeatMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+			.Create(allocator);
+
+		_paletteSampler = Sampler::Builder(_device)
+			.MipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
+			.AnisotropyEnabled(VK_FALSE)
+			.Filtering(VK_FILTER_NEAREST)
+			.RepeatMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+			.UnnormalizedCoordinates(true)
+			.Create(allocator);
 	}
 
 	void Graphics::CreateInstance(vector<const char*>& enabledLayers)
@@ -157,6 +182,41 @@ namespace renderer::vulkan
 		}
 	}
 
+	void Graphics::CreateDescriptorPools()
+	{
+		const VkAllocationCallbacks* allocator = nullptr;
+		const uint32_t MAX_SETS = 200;
+
+		array<VkDescriptorPoolSize, 1> poolSizes {
+			VkDescriptorPoolSize(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_SETS),
+		};
+
+		VkDescriptorPoolCreateInfo poolInfo { VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+
+		poolInfo.poolSizeCount = poolSizes.size();
+		poolInfo.pPoolSizes    = poolSizes.data();
+		poolInfo.maxSets       = MAX_SETS;
+
+		if (vkCreateDescriptorPool(_device, &poolInfo, allocator, &_descriptorPool) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to create descriptor pool");
+		}
+	}
+
+	void Graphics::CreateDescriptorSet()
+	{
+		vector<VkDescriptorSetLayout> layouts(POOL_MAX_SETS, _standardLayout);
+		VkDescriptorSetAllocateInfo   allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+		allocInfo.descriptorPool     = _descriptorPool;
+		allocInfo.pSetLayouts        = layouts.data();
+		allocInfo.descriptorSetCount = layouts.size();
+
+		if (vkAllocateDescriptorSets(_device, &allocInfo, _descriptorSet) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to create descriptor pool");
+		}
+	}
+
 	int DeviceEvaluation(VkPhysicalDevice& device)
 	{
 		int score = 0;
@@ -216,9 +276,7 @@ namespace renderer::vulkan
 		const int tileSize      = tilesetData.GetTileSize();
 		const int tilesetSquare = tilesCount * (tileSize * tileSize);
 		const int textureLength = pow(2, ceil(log2(tilesetSquare) * 0.5));
-
-		Tileset *tileset = new Tileset(tileSize, textureLength);
-		auto     texturePixelData = std::make_shared<uint8_t[]>(textureLength * textureLength);
+		auto   texturePixelData = std::make_shared<uint8_t[]>(textureLength * textureLength);
 
 		int offsetX = 0, offsetY = 0;
 
@@ -234,6 +292,11 @@ namespace renderer::vulkan
 				offsetY += textureLength * tileSize;
 			}
 		}
+
+		const int pixelSize = 1;
+
+		auto image = _bufferAllocator.CreateTextureImage(texturePixelData.get(), textureLength, textureLength, pixelSize);
+		Tileset *tileset = new Tileset(image, tileSize, textureLength);
 
 		_drawables.push_back(tileset);
 
@@ -304,7 +367,7 @@ namespace renderer::vulkan
 
 	void Graphics::SetTilesetPalette(data::Palette&)
 	{
-		// TODO:
+
 	}
 
 	void Graphics::SetView(data::position pos)
@@ -433,8 +496,8 @@ namespace renderer::vulkan
 		array<uint32_t, swapchainCount> imageIndices = { _currentImageIndex };
 
 		presentInfo.swapchainCount = swapchains.size();
-		presentInfo.pSwapchains = swapchains.data();
-		presentInfo.pImageIndices = imageIndices.data();
+		presentInfo.pSwapchains    = swapchains.data();
+		presentInfo.pImageIndices  = imageIndices.data();
 
 		presentInfo.pResults = VK_NULL_HANDLE;
 
@@ -461,6 +524,15 @@ namespace renderer::vulkan
 	{
 		const VkAllocationCallbacks* const allocator = nullptr;
 
+		if (_descriptorPool != VK_NULL_HANDLE)
+		{
+			vkDestroyDescriptorPool(_device, _descriptorPool, allocator);
+		}
+
+		_descriptorPool = VK_NULL_HANDLE;
+
+		_standardLayout.Destroy();
+
 		for(auto drawable : _drawables)
 		{
 			switch(drawable->GetType())
@@ -474,6 +546,10 @@ namespace renderer::vulkan
 					break;
 			}
 		}
+
+		_textureSampler.Destroy();
+
+		_paletteSampler.Destroy();
 
 		_bufferAllocator.Release();
 

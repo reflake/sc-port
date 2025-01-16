@@ -8,6 +8,7 @@
 #include "device/Device.hpp"
 
 #include "Config.hpp"
+#include "DescriptorSetLayout.hpp"
 
 namespace renderer::vulkan
 {
@@ -64,7 +65,7 @@ namespace renderer::vulkan
 
 		void Destroy();
 
-		const uint32_t CreateShader(const uint32_t* moduleIndices, int count, VkFormat swapchainImageFormat); // actually creates a whole pipeline for vulkan api
+		const uint32_t CreateShader(const uint32_t* moduleIndices, int count, VkFormat swapchainImageFormat, DescriptorSetLayout* setLayout = nullptr); // actually creates a whole pipeline for vulkan api
 		const uint32_t CreateShaderModule(ShaderModule::Stage, const ShaderCode& );
 
 		VkPipeline GetShaderPipeline(uint32_t shaderIndex) { return _shaders[shaderIndex].GetPipeline(); };

@@ -7,6 +7,7 @@
 #include "../A_Graphics.hpp"
 
 #include "Vertex.hpp"
+#include "memory/Image.hpp"
 
 namespace renderer::vulkan
 {
@@ -43,7 +44,7 @@ namespace renderer::vulkan
 	{
 	public:
 
-		Tileset(int cellSize, int textureLength);
+		Tileset(const Image*, int cellSize, int textureLength);
 
 		std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const override;
 
@@ -51,5 +52,9 @@ namespace renderer::vulkan
 
 		const int CellSize;
 		const int TextureLength;
+
+	private:
+
+		const Image* _image;
 	};
 }

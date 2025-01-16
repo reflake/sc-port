@@ -9,8 +9,10 @@
 #include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
+#include "DescriptorSetLayout.hpp"
 #include "Drawable.hpp"
 #include "RenderPass.hpp"
+#include "Sampler.hpp"
 #include "Shader.hpp"
 #include "Window.hpp"
 #include "data/Assets.hpp"
@@ -21,12 +23,16 @@
 #include "memory/BufferAllocator.hpp"
 #include "Vertex.hpp"
 #include "memory/MemoryManager.hpp"
+#include "Sampler.hpp"
+#include "DescriptorSetLayout.hpp"
 
 namespace renderer::vulkan
 {
 	extern int DeviceEvaluation(VkPhysicalDevice&);
 
 	extern const std::vector<const char*> validationLayers;
+
+	const uint32_t POOL_MAX_SETS = 200;
 
 	class Graphics : public A_Graphics
 	{
@@ -57,6 +63,8 @@ namespace renderer::vulkan
 		void CreateInstance(std::vector<const char*>& enabledLayers);
 		void EnableValidationLayers(std::vector<const char*>& layerList);
 		void CreateSyncObjects();
+		void CreateDescriptorPools();
+		void CreateDescriptorSet();
 		void DrawStreamVertexBuffer();
 		void Submit();
 		void Present();
@@ -68,18 +76,21 @@ namespace renderer::vulkan
 		// TODO: hide these members in implementation
 		const data::Assets*  _assets;
 
-		Config          _config;
-		VkInstance      _instance;
-		VkSurfaceKHR    _surface;
-		VkCommandPool   _commandPool;
-		VkCommandBuffer _commandBuffer;
-		Swapchain       _swapchain;
-		Device          _device;
-		Window          _window;
-		RenderPass      _renderPass;
-		ShaderManager   _shaders;
-		BufferAllocator _bufferAllocator;
-		MemoryManager   _memoryManager;
+		Config              _config;
+		VkInstance          _instance;
+		VkSurfaceKHR        _surface;
+		VkCommandPool       _commandPool;
+		VkCommandBuffer     _commandBuffer;
+		Swapchain           _swapchain;
+		Device              _device;
+		Window              _window;
+		RenderPass          _renderPass;
+		ShaderManager       _shaders;
+		BufferAllocator     _bufferAllocator;
+		MemoryManager       _memoryManager;
+		DescriptorSetLayout _standardLayout;
+		VkDescriptorPool    _descriptorPool;
+		VkDescriptorSet     _descriptorSet[POOL_MAX_SETS];
 
 		VkSemaphore _imageAvailableSemaphore, _renderFinishedSemaphore;
 		VkFence     _fence;
@@ -90,6 +101,8 @@ namespace renderer::vulkan
 		uint32_t   _mainShaderIndex;
 
 		A_VulkanDrawable* _currentDrawable;
+
+		Sampler _textureSampler, _paletteSampler;
 
 		std::vector<Vertex>            _vertexBuffer;
 		std::vector<A_VulkanDrawable*> _drawables;

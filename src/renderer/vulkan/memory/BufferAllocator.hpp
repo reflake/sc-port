@@ -5,6 +5,7 @@
 #include "../device/Device.hpp"
 
 #include "Buffer.hpp"
+#include "Image.hpp"
 #include "MemoryManager.hpp"
 
 #include <vector>
@@ -26,11 +27,13 @@ namespace renderer::vulkan
 	public:
 
 		BufferAllocator();
-		BufferAllocator(Device* device, MemoryManager*, const VkAllocationCallbacks*);
+		BufferAllocator(Device* device, VkQueue graphicsQueue, VkCommandPool, MemoryManager*, const VkAllocationCallbacks*);
 
 		void Initialize();
 
 		const StreamData WriteToStreamBuffer(uint64_t size, const void* data);
+
+		const Image* CreateTextureImage(uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize);
 
 		// Needs to be reset every frame
 		void OnBeginRendering();
@@ -57,5 +60,14 @@ namespace renderer::vulkan
 		Buffer   _dynamicBuffer;
 		uint64_t _dynamicBufferOffset = 0;
 		void*    _dynamicBufferMappedMemory = nullptr;
+
+		Buffer   _stagingBuffer;
+
+		VkQueue  _graphicsQueue = nullptr;
+
+		VkCommandPool   _commandPool = nullptr;
+		VkCommandBuffer _stagingCommandBuffer = nullptr;
+
+		std::vector<Image*> _images;
 	};
 }

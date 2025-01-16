@@ -99,7 +99,7 @@ namespace data
 	};
 
 	template<typename T>
-	T Aligned(T&& offset, T alignment)
+	T Aligned(T offset, T alignment)
 	{
 		return (offset + alignment - 1) / alignment * alignment;
 	}

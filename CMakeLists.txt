@@ -50,12 +50,15 @@ add_library(Renderer STATIC
   src/renderer/vulkan/device/SwapChain.cpp
   src/renderer/vulkan/memory/Buffer.cpp
   src/renderer/vulkan/memory/BufferAllocator.cpp
+  src/renderer/vulkan/memory/Image.cpp
   src/renderer/vulkan/memory/MemoryManager.cpp
   src/renderer/vulkan/Api.cpp
   src/renderer/vulkan/Command.cpp
+  src/renderer/vulkan/DescriptorSetLayout.cpp
   src/renderer/vulkan/Config.cpp
   src/renderer/vulkan/Drawable.cpp
   src/renderer/vulkan/RenderPass.cpp
+  src/renderer/vulkan/Sampler.cpp
   src/renderer/vulkan/Shader.cpp
   src/renderer/vulkan/Vertex.cpp
   src/renderer/vulkan/VulkanGraphics.cpp

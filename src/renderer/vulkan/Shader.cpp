@@ -1,4 +1,5 @@
 #include "Shader.hpp"
+#include "DescriptorSetLayout.hpp"
 #include "device/Device.hpp"
 
 #include <array>
@@ -38,7 +39,7 @@ namespace renderer::vulkan
 		throw runtime_error("Unexpected exception");
 	}
 
-	const uint32_t ShaderManager::CreateShader(const uint32_t* moduleIndices, int count, VkFormat swapchainImageFormat)
+	const uint32_t ShaderManager::CreateShader(const uint32_t* moduleIndices, int count, VkFormat swapchainImageFormat, DescriptorSetLayout* setLayout)
 	{
 		vector<VkPipelineShaderStageCreateInfo> stageCreateInfoList(count);
 
@@ -131,6 +132,12 @@ namespace renderer::vulkan
 			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, nullptr, 0, 
 			0, nullptr, 
 			0, nullptr };
+
+		if (setLayout != nullptr)
+		{
+			pipelineLayoutInfo.setLayoutCount = 1;
+			pipelineLayoutInfo.pSetLayouts = &setLayout->GetHandle();
+		}
 
 		VkPipelineLayout pipelineLayout;
 

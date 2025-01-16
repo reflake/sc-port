@@ -5,10 +5,11 @@
 
 #include "../device/Device.hpp"
 #include "Buffer.hpp"
+#include "Image.hpp"
 
 namespace renderer::vulkan
 {
-	const VkDeviceSize MinimalMemorySize = 1024 * 1000;
+	const VkDeviceSize MinimalMemorySize = 1024 * 20000;
 
 	typedef std::pair<VkDeviceSize, VkDeviceSize> MemoryRegion;
 
@@ -20,9 +21,9 @@ namespace renderer::vulkan
 
 		std::vector<MemoryRegion> freeRegions;
 
-		MemoryRegion GetLockedMemory(VkDeviceSize size);
+		MemoryRegion GetLockedMemory(VkDeviceSize alignment, VkDeviceSize size);
 
-		bool CanAllocateMemory(VkDeviceSize size);
+		bool CanAllocateMemory(VkDeviceSize alignment, VkDeviceSize size);
 	};
 
 	class MemoryManager
@@ -32,13 +33,14 @@ namespace renderer::vulkan
 		MemoryManager();
 		MemoryManager(Device*, const VkAllocationCallbacks*);
 
-		void BindMemoryToBuffer(Buffer& buffer, uint32_t typeBits, VkMemoryPropertyFlagBits, VkDeviceSize size);
+		void BindMemoryToBuffer(Buffer& buffer, VkMemoryRequirements& requirements, VkMemoryPropertyFlagBits);
+		void BindMemoryToImage(Image& image, VkMemoryRequirements& requirements, VkMemoryPropertyFlagBits);
 		
 		void Release();
 
 	private:
 	
-		Memory&  UseMemory(uint32_t typeBits, VkMemoryPropertyFlagBits, VkDeviceSize size);
+		Memory&  UseMemory(VkDeviceSize alignment, uint32_t typeBits, VkMemoryPropertyFlagBits, VkDeviceSize size);
 		uint32_t FindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags);
 
 	private:
