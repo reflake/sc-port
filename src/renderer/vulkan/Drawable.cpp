@@ -1,6 +1,7 @@
 #include "Drawable.hpp"
 
 #include <cstring>
+#include <iostream>
 
 namespace renderer::vulkan {
 

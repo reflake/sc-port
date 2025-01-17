@@ -24,7 +24,7 @@ namespace data
 	{
 		auto val = terrain[x + y * dimensions.x];
 
-		return { val >> 4, val & 0xF };
+		return { (val >> 4) & 0xFFF, val & 0xF };
 	}
 
 	struct ChunkEntry

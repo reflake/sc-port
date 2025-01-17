@@ -70,8 +70,8 @@ namespace data
 		GroupTypeFlags 		type;
 		TerrainGroupFlags flags;
 
-		Edges 		 edgeTypes;
-		Edges 		 terrainPieceType;
+		Edges  edgeTypes;
+		Edges  terrainPieceType;
 		tileID variations[16];
 	};
 
@@ -114,7 +114,9 @@ namespace data
 		int tileGroupCount;
 		std::shared_ptr<TileGroup[]> tileGroups;
 
-		int GetTileCount() const override { return tileGroupCount; }
+		bool IsDoodad(const tileGroupID id) { return id >= 1024 || tileGroups[id].doodad.remasteredDoodad;}
+
+		int GetTileCount() const override { return tilesCount; }
 
 		int GetTileSize() const override { return TILE_SIZE; };
 

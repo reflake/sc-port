@@ -123,6 +123,8 @@ struct App {
 	data::Assets assets;
 
 	unordered_map<data::grpID, DrawableHandle> loadedSprites;
+
+	tileID tiles[256][256];
 };
 
 void freeWindow(App&);
@@ -200,6 +202,27 @@ void loadMap(App& app, const string& mapPath, Storage& storage, MapInfo& mapInfo
 
 	data::ReadMap(mapFile, mapInfo);
 	data::LoadTilesetData(storage, mapInfo.tileset, app.tilesetData);
+
+	memset(app.tiles, 0, sizeof(app.tiles));
+
+	for(int i = 0; i < mapInfo.dimensions.x; i++)
+	for(int j = 0; j < mapInfo.dimensions.y; j++)
+	{
+		if (app.tiles[i][j] != 0)
+			continue;
+
+		auto [tileGroupID, variation] = mapInfo.GetTile(i, j);
+		auto tileGroup = app.tilesetData.tileGroups[tileGroupID];
+
+		if (app.tilesetData.IsDoodad(tileGroupID))
+		{
+			app.tiles[i][j] = tileGroup.terrain.variations[variation];
+		}
+		else
+		{
+			app.tiles[i][j] = tileGroup.doodad.tiles[variation];
+		}
+	}
 }
 
 enum Move : int { Up = 0x01, Down = 0x02, Left = 0x04, Right = 0x08 };
@@ -245,20 +268,9 @@ void drawMap(MapInfo &mapInfo, App &app,
 	int downBorderIndex  = std::min<int>(mapInfo.dimensions.y, (pos.y + SCREEN_HEIGHT) / TILE_SIZE + 1);
 
 	for (int x = leftBorderIndex; x < rightBorderIndex; x++)
-	for (int y = upBorderIndex; y < downBorderIndex; y++) {
-
-		auto [tileGroupID, variation] = mapInfo.GetTile(x, y);
-		auto tileGroup = app.tilesetData.tileGroups[tileGroupID];
-
-		tileID tileId;
-
-		if ((tileGroup.type & data::Terrain) > 0) {
-
-			tileId = tileGroup.terrain.variations[variation];
-		} else {
-
-			tileId = tileGroup.doodad.tiles[variation];
-		}
+	for (int y = upBorderIndex; y < downBorderIndex; y++)
+	{
+		tileID tileId = app.tiles[x][y];
 
 		app.graphics->Draw(app.tilesetView, tileId, { x * TILE_SIZE, y * TILE_SIZE });
 	};

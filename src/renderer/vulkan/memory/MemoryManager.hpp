@@ -9,7 +9,7 @@
 
 namespace renderer::vulkan
 {
-	const VkDeviceSize MinimalMemorySize = 1024 * 20000;
+	const VkDeviceSize MinimalMemorySize = 1024 * 200000;
 
 	typedef std::pair<VkDeviceSize, VkDeviceSize> MemoryRegion;
 
