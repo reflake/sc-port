@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <glm/vec2.hpp>
+#include <vector>
 
 namespace renderer
 {
@@ -19,7 +20,7 @@ namespace renderer
 	public:
 
 		virtual DrawableHandle LoadSpriteSheet(data::A_SpriteSheetData&) = 0;
-		virtual DrawableHandle LoadTileset(data::A_TilesetData&) = 0;
+		virtual DrawableHandle LoadTileset(data::A_TilesetData&, std::vector<bool>& usedTiles) = 0;
 
 		virtual void Draw(DrawableHandle, frameIndex, data::position) = 0;
 		virtual void FreeDrawable(DrawableHandle) = 0;

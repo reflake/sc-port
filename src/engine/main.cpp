@@ -213,15 +213,18 @@ void loadMap(App& app, const string& mapPath, Storage& storage, MapInfo& mapInfo
 
 		auto [tileGroupID, variation] = mapInfo.GetTile(i, j);
 		auto tileGroup = app.tilesetData.tileGroups[tileGroupID];
+		tileID tileID;
 
 		if (app.tilesetData.IsDoodad(tileGroupID))
 		{
-			app.tiles[i][j] = tileGroup.terrain.variations[variation];
+			tileID = tileGroup.terrain.variations[variation];
 		}
 		else
 		{
-			app.tiles[i][j] = tileGroup.doodad.tiles[variation];
+			tileID = tileGroup.doodad.tiles[variation];
 		}
+
+		app.tiles[i][j] = tileID;
 	}
 }
 
@@ -340,7 +343,7 @@ void placeScriptedDoodads(
 	}
 }
 
-void loadTileset(App& app, Storage& storage, data::Tileset tileset)
+void loadTileset(App& app, MapInfo& mapInfo, Storage& storage, data::Tileset tileset)
 {
 	if (app.tilesetView != nullptr)
 	{
@@ -348,9 +351,17 @@ void loadTileset(App& app, Storage& storage, data::Tileset tileset)
 		app.tilesetView = nullptr;
 	}
 
-	data::LoadTilesetData(storage, tileset, app.tilesetData);
+	vector<bool> usedTiles(app.tilesetData.GetTileCount(), false);
 
-	app.tilesetView = app.graphics->LoadTileset(app.tilesetData);
+	for(int i = 0; i < mapInfo.dimensions.x; i++)
+	for(int j = 0; j < mapInfo.dimensions.y; j++)
+	{
+		tileID tileID = app.tilesetData.GetMappedIndex(app.tiles[i][j]);
+
+		usedTiles[tileID] = true;
+	};
+
+	app.tilesetView = app.graphics->LoadTileset(app.tilesetData, usedTiles);
 }
 
 void loadDoodadGrps(App& app, Storage& storage)
@@ -385,7 +396,7 @@ bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInf
 
 		app.loadedSprites.clear();
 
-		loadTileset(app, storage, mapInfo.tileset);
+		loadTileset(app, mapInfo, storage, mapInfo.tileset);
 		placeScriptedDoodads(app, storage, mapInfo);
 		loadDoodadGrps(app, storage);
 

@@ -48,7 +48,7 @@ namespace renderer::vulkan
 		Graphics(SDL_Window* window, const data::Assets* assets);
 
 		DrawableHandle LoadSpriteSheet(data::A_SpriteSheetData&) override;
-		DrawableHandle LoadTileset(data::A_TilesetData&) override;
+		DrawableHandle LoadTileset(data::A_TilesetData&, std::vector<bool>& usedTiles) override;
 
 		void Draw(DrawableHandle, frameIndex, data::position) override;
 		void FreeDrawable(DrawableHandle) override;
@@ -98,7 +98,8 @@ namespace renderer::vulkan
 		VkDescriptorPool    _descriptorPool;
 		VkDescriptorSet     _descriptorSets[POOL_MAX_SETS];
 
-		const Image*        _tilesetImage;
+		const Image*          _tilesetImage;
+		std::vector<uint32_t> _tileMap;
 
 		VkSemaphore _imageAvailableSemaphore, _renderFinishedSemaphore;
 		VkFence     _fence;

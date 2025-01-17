@@ -56,7 +56,7 @@ namespace data
 		ChipPixels palPixels;
 	};
 
-	// extended (sc:r) mega tile
+	// extended tiles (sc:r)
 	struct Tile
 	{
 		uint32_t chips[CHIP_ARRAY_SIZE][CHIP_ARRAY_SIZE];
@@ -87,7 +87,7 @@ namespace data
 		uint16_t doodadID;
 		uint16_t width, height;
 		uint16_t unused2;
-		tileID tiles[16];
+		tileID   tiles[16];
 
 		bool HasFlag(DoodadGroupFlags flag);
 	};
@@ -108,17 +108,25 @@ namespace data
 		int chipCount;
 		std::shared_ptr<Chip[]> chips;
 
-		int tilesCount;
-		std::shared_ptr<Tile[]> tiles;
-
 		int tileGroupCount;
 		std::shared_ptr<TileGroup[]> tileGroups;
 
+		int tileCount;
+		std::shared_ptr<Tile[]> tiles;
+
+		int uniqueTilesCount;
+		std::shared_ptr<uint32_t[]> uniqueTiles;
+
+		std::shared_ptr<uint32_t[]> uniqueTileMap;
+
 		bool IsDoodad(const tileGroupID id) { return id >= 1024 || tileGroups[id].doodad.remasteredDoodad;}
 
-		int GetTileCount() const override { return tilesCount; }
+		int GetTileCount() const override { return uniqueTilesCount; }
 
 		int GetTileSize() const override { return TILE_SIZE; };
+
+		FlipFlags GetFlipFlags(const tileID) const override;
+		tileID    GetMappedIndex(const tileID) const override;
 
 		void GetPixelData(const tileID tileID, uint8_t* dstArray, uint32_t dstOffset, uint32_t dstStride) const override;
 	};

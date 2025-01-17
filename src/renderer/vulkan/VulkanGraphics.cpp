@@ -266,27 +266,28 @@ namespace renderer::vulkan
 		return nullptr; // TODO:
 	}
 
-	DrawableHandle Graphics::LoadTileset(data::A_TilesetData& tilesetData)
+	DrawableHandle Graphics::LoadTileset(data::A_TilesetData& tilesetData, std::vector<bool>& usedTiles)
 	{
-		const int tilesCount    = tilesetData.GetTileCount();
-		const int tileSize      = tilesetData.GetTileSize();
-		const int tilesetSquare = tilesCount * (tileSize * tileSize);
-		const int textureHeight = pow(2, ceil(log2(tilesetSquare) * 0.5));
+		int usedTilesCount = std::count(usedTiles.begin(), usedTiles.end(), true);
+		int tileSize       = tilesetData.GetTileSize();
+		int tilesetSquare  = usedTilesCount * (tileSize * tileSize);
+		int textureHeight  = pow(2, ceil(log2(tilesetSquare) * 0.5));
 
-		const bool halfWidth     = tilesetSquare <= textureHeight * textureHeight / 2;
-		const int  textureWidth   = halfWidth ? textureHeight / 2 : textureHeight;
-
-		if (halfWidth)
-		{
-			std::cout << "can be broken\n";
-		}
+		bool halfWidth     = tilesetSquare <= textureHeight * textureHeight / 2;
+		int  textureWidth   = halfWidth ? textureHeight / 2 : textureHeight;
 
 		auto texturePixelData = std::make_shared<uint8_t[]>(textureWidth * textureHeight);
 
 		int offsetX = 0, offsetY = 0;
+		int index = 0;
 
-		for (int i = 0; i < tilesCount; i++)
+		_tileMap.resize(tilesetData.GetTileCount(), 0);
+
+		for (int i = 0; i < tilesetData.GetTileCount(); i++)
 		{
+			if (!usedTiles[i])
+				continue;
+
 			tilesetData.GetPixelData(i, texturePixelData.get(), offsetX + offsetY, textureWidth);
 
 			offsetX += tileSize;
@@ -296,12 +297,14 @@ namespace renderer::vulkan
 				offsetX = 0;
 				offsetY += textureWidth * tileSize;
 			}
+
+			_tileMap[i] = index++;
 		}
 
 		const int pixelSize = 1;
 
 		auto image = _bufferAllocator.CreateTextureImage(texturePixelData.get(), textureWidth, textureHeight, pixelSize);
-		Tileset *tileset = new Tileset(image, tileSize, textureWidth, textureHeight);
+		Tileset *tileset = new Tileset(tilesetData, _tileMap, image, tileSize, textureWidth, textureHeight);
 
 		_drawables.push_back(tileset);
 
