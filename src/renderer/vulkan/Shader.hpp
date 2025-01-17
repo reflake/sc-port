@@ -27,11 +27,12 @@ namespace renderer::vulkan
 
 		void Destroy(const VkDevice device, const VkAllocationCallbacks* allocator);
 
-		const VkPipeline GetPipeline() const;
+		const VkPipeline       GetPipeline() const;
+		const VkPipelineLayout GetPipelineLayout() const;
 
 	private:
 
-		const VkPipeline _pipeline;
+		const VkPipeline       _pipeline;
 		const VkPipelineLayout _pipelineLayout;
 	};
 
@@ -68,7 +69,8 @@ namespace renderer::vulkan
 		const uint32_t CreateShader(const uint32_t* moduleIndices, int count, VkFormat swapchainImageFormat, DescriptorSetLayout* setLayout = nullptr); // actually creates a whole pipeline for vulkan api
 		const uint32_t CreateShaderModule(ShaderModule::Stage, const ShaderCode& );
 
-		VkPipeline GetShaderPipeline(uint32_t shaderIndex) { return _shaders[shaderIndex].GetPipeline(); };
+		VkPipeline       GetShaderPipeline(uint32_t shaderIndex) { return _shaders[shaderIndex].GetPipeline(); };
+		VkPipelineLayout GetShaderPipelineLayout(uint32_t shaderIndex) { return _shaders[shaderIndex].GetPipelineLayout(); };
 
 	private:
 

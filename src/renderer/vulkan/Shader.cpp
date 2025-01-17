@@ -115,10 +115,10 @@ namespace renderer::vulkan
 			VK_SAMPLE_COUNT_1_BIT, sampleShadingEnable, 1.0f, nullptr, VK_FALSE, VK_FALSE,
 		};
 
-		VkPipelineColorBlendAttachmentState colorBlendAttachmentState { VK_FALSE };
+		VkPipelineColorBlendAttachmentState colorBlendAttachmentState { VK_TRUE };
 		colorBlendAttachmentState.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
-		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
+		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA; // Optional
+		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // Optional
 		colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD; // Optional
 		colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE; // Optional
 		colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO; // Optional
@@ -178,6 +178,11 @@ namespace renderer::vulkan
 	const VkPipeline Shader::GetPipeline() const
 	{
 		return _pipeline;
+	}
+	
+	const VkPipelineLayout Shader::GetPipelineLayout() const
+	{
+		return _pipelineLayout;
 	}
 
 	const uint32_t ShaderManager::CreateShaderModule(ShaderModule::Stage type, const ShaderCode& shader)

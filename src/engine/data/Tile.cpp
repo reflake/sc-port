@@ -41,7 +41,7 @@ namespace data
 	{
 		auto tile = tiles[tileID];
 		
-		for(int j = 0; j < TILE_SIZE; j += TILE_SIZE)
+		for(int j = 0; j < TILE_SIZE; j += CHIP_SIZE)
 		for(int k = 0; k < TILE_SIZE; k++)
 		{
 			uint32_t chipId = tile.GetChipId(k / CHIP_SIZE, j / CHIP_SIZE);

@@ -97,7 +97,7 @@ namespace renderer::vulkan
 		assert(streamData.offsetInMemory + streamData.size == _dynamicBufferOffset);
 	}
 
-	const Image* BufferAllocator::CreateTextureImage(uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize)
+	const Image* BufferAllocator::CreateTextureImage(const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize)
 	{
 		// Creating image
 		auto format = pixelSize == 1 ? VK_FORMAT_R8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;

@@ -96,7 +96,9 @@ namespace renderer::vulkan
 		MemoryManager       _memoryManager;
 		DescriptorSetLayout _standardLayout;
 		VkDescriptorPool    _descriptorPool;
-		VkDescriptorSet     _descriptorSet[POOL_MAX_SETS];
+		VkDescriptorSet     _descriptorSets[POOL_MAX_SETS];
+
+		const Image*        _tilesetImage;
 
 		VkSemaphore _imageAvailableSemaphore, _renderFinishedSemaphore;
 		VkFence     _fence;
@@ -107,7 +109,7 @@ namespace renderer::vulkan
 
 		DrawCall* _currentDrawCall;
 
-		Sampler _textureSampler, _paletteSampler;
+		Sampler _textureSampler;
 
 		std::vector<A_VulkanDrawable*> _drawables;
 		std::vector<DrawCall>          _drawCalls;

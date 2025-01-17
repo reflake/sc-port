@@ -36,5 +36,10 @@ namespace renderer::vulkan {
 		return quad.size();
 	}
 
+	VkImageView Tileset::GetImageView() const
+	{
+		return _image->GetViewHandle();
+	}
+
 	DrawableType Tileset::GetType() const { return TilesetType; }
 }

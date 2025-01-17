@@ -3,6 +3,7 @@
 #include <array>
 #include <cstddef>
 #include <stdexcept>
+#include <vulkan/vulkan_core.h>
 
 #include "../A_Graphics.hpp"
 
@@ -29,6 +30,8 @@ namespace renderer::vulkan
 		virtual std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const = 0;
 
 		virtual DrawableType GetType() const = 0;
+
+		virtual VkImageView GetImageView() const = 0;
 	};
 
 	class SpriteSheet : public A_VulkanDrawable
@@ -38,6 +41,8 @@ namespace renderer::vulkan
 		std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const override { throw std::runtime_error("not implemented"); };
 
 		DrawableType GetType() const override;
+
+		VkImageView GetImageView() const override { return 0; }
 	};
 
 	class Tileset : public A_VulkanDrawable
@@ -49,6 +54,8 @@ namespace renderer::vulkan
 		std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const override;
 
 		DrawableType GetType() const override;
+
+		VkImageView GetImageView() const override;
 
 		const int CellSize;
 		const int TextureLength;

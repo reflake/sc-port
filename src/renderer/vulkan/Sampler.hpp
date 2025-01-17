@@ -14,6 +14,8 @@ namespace renderer::vulkan
 		Sampler();
 		Sampler(Device*, VkSampler, const VkAllocationCallbacks* = nullptr);
 
+		operator VkSampler() { return _hwSampler; }
+
 		void Destroy();
 
 	private:

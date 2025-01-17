@@ -89,7 +89,7 @@ namespace renderer::vulkan
 		CreateDescriptorPools();
 		CreateDescriptorSet();
 
-		_mainShaderIndex = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat(), nullptr);
+		_mainShaderIndex = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat(), &_standardLayout);
 
 		QueueFamilyIndices familyIndices = FindQueueFamilies(_device, _surface);
 		_commandPool = CreateCommandPool(_device, familyIndices.graphicsFamily.value());
@@ -104,16 +104,10 @@ namespace renderer::vulkan
 		_bufferAllocator.Initialize();
 
 		_textureSampler = Sampler::Builder(_device)
-			.Filtering(VK_FILTER_NEAREST)
-			.RepeatMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-			.Create(allocator);
-
-		_paletteSampler = Sampler::Builder(_device)
-			.MipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
 			.AnisotropyEnabled(VK_FALSE)
+			.MipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
 			.Filtering(VK_FILTER_NEAREST)
 			.RepeatMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
-			.UnnormalizedCoordinates(true)
 			.Create(allocator);
 	}
 
@@ -211,7 +205,7 @@ namespace renderer::vulkan
 		allocInfo.pSetLayouts        = layouts.data();
 		allocInfo.descriptorSetCount = layouts.size();
 
-		if (vkAllocateDescriptorSets(_device, &allocInfo, _descriptorSet) != VK_SUCCESS)
+		if (vkAllocateDescriptorSets(_device, &allocInfo, _descriptorSets) != VK_SUCCESS)
 		{
 			throw runtime_error("Failed to create descriptor pool");
 		}
@@ -351,9 +345,11 @@ namespace renderer::vulkan
 		// TODO:
 	}
 
-	void Graphics::SetTilesetPalette(data::Palette&)
+	void Graphics::SetTilesetPalette(data::Palette& palette)
 	{
+		auto data = reinterpret_cast<const uint8_t*>(palette.GetColors());
 
+		_tilesetImage = _bufferAllocator.CreateTextureImage(data, 256, 1, 4);
 	}
 
 	void Graphics::SetView(data::position pos)
@@ -378,6 +374,43 @@ namespace renderer::vulkan
 	void Graphics::PresentToScreen()
 	{
 		_bufferAllocator.OnPrepareForPresentation();
+
+		for(int i = 0; i < _drawCalls.size(); i++)
+		{
+			auto& drawCall = _drawCalls[i];
+
+			array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+			VkDescriptorImageInfo textureInfo {
+				.sampler = _textureSampler,
+				.imageView = drawCall.drawable->GetImageView(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+
+			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[0].dstSet = _descriptorSets[i];
+			descriptorWrites[0].dstBinding = 0;
+			descriptorWrites[0].dstArrayElement = 0;
+			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[0].descriptorCount = 1;
+			descriptorWrites[0].pImageInfo = &textureInfo;
+
+			VkDescriptorImageInfo paletteInfo {
+				.sampler = _textureSampler,
+				.imageView = _tilesetImage->GetViewHandle(),
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+
+			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			descriptorWrites[1].dstSet = _descriptorSets[i];
+			descriptorWrites[1].dstBinding = 1;
+			descriptorWrites[1].dstArrayElement = 0;
+			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			descriptorWrites[1].descriptorCount = 1;
+			descriptorWrites[1].pImageInfo = &paletteInfo;
+
+			vkUpdateDescriptorSets(_device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+		}
 
 		// ==============================================
 		VkCommandBufferBeginInfo beginInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -429,9 +462,15 @@ namespace renderer::vulkan
 		// ==============================================
 		//   Draw
 
-		for(auto& drawCall : _drawCalls)
+		auto pipelineLayout = _shaders.GetShaderPipelineLayout(_mainShaderIndex);
+
+		for(int i = 0; i < _drawCalls.size(); i++)
 		{
+			auto& drawCall = _drawCalls[i];
+
 			drawCall.streamData.BindToCommandBuffer(_commandBuffer);
+			vkCmdBindDescriptorSets(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
+															pipelineLayout, 0, 1, &_descriptorSets[i], 0, VK_NULL_HANDLE);
 			vkCmdDraw(_commandBuffer, drawCall.vertexCount, 1, 0, 0);
 		}
 
@@ -538,8 +577,6 @@ namespace renderer::vulkan
 		}
 
 		_textureSampler.Destroy();
-
-		_paletteSampler.Destroy();
 
 		_bufferAllocator.Release();
 
