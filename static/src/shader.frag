@@ -9,7 +9,8 @@ layout(binding = 1) uniform sampler2D paletteSampler;
 
 void main()
 {
-	float index = (texture(textureSampler, inTexCoord.xy).x * 255.0 + 0.5) / 256.0;
+  float kEpsilon = 0.0000046039;
+	float index = texture(textureSampler, inTexCoord.xy).x - kEpsilon;
 
-	outColor = texture(paletteSampler, vec2(index, 0.5));
+	outColor = texture(paletteSampler, vec2(index, 0.0f));
 }

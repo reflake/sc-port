@@ -49,7 +49,7 @@ namespace renderer::vulkan
 	{
 	public:
 
-		Tileset(const Image*, int cellSize, int textureLength);
+		Tileset(const Image*, int cellSize, int textureWidth, int textureHeight);
 
 		std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const override;
 
@@ -58,7 +58,7 @@ namespace renderer::vulkan
 		VkImageView GetImageView() const override;
 
 		const int CellSize;
-		const int TextureLength;
+		const int TextureWidth, TextureHeight;
 
 	private:
 

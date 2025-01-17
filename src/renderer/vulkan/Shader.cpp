@@ -115,7 +115,7 @@ namespace renderer::vulkan
 			VK_SAMPLE_COUNT_1_BIT, sampleShadingEnable, 1.0f, nullptr, VK_FALSE, VK_FALSE,
 		};
 
-		VkPipelineColorBlendAttachmentState colorBlendAttachmentState { VK_FALSE };
+		VkPipelineColorBlendAttachmentState colorBlendAttachmentState { VK_TRUE };
 		colorBlendAttachmentState.colorWriteMask      = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA; // Optional
 		colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA; // Optional

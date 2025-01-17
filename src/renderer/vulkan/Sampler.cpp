@@ -81,4 +81,10 @@ namespace renderer::vulkan
 		info.addressModeW = mode;
 		return *this;
 	}
+
+	Sampler::Builder& Builder::MipLodBias(float value)
+	{
+		info.mipLodBias = value;
+		return *this;
+	}
 }

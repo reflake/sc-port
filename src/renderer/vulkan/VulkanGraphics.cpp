@@ -21,6 +21,7 @@
 #include <cmath>
 #include <cstdint>
 #include <glm/ext/matrix_transform.hpp>
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -105,6 +106,7 @@ namespace renderer::vulkan
 
 		_textureSampler = Sampler::Builder(_device)
 			.AnisotropyEnabled(VK_FALSE)
+			.MipLodBias(0.0f)
 			.MipmapMode(VK_SAMPLER_MIPMAP_MODE_NEAREST)
 			.Filtering(VK_FILTER_NEAREST)
 			.RepeatMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
@@ -269,28 +271,37 @@ namespace renderer::vulkan
 		const int tilesCount    = tilesetData.GetTileCount();
 		const int tileSize      = tilesetData.GetTileSize();
 		const int tilesetSquare = tilesCount * (tileSize * tileSize);
-		const int textureLength = pow(2, ceil(log2(tilesetSquare) * 0.5));
-		auto   texturePixelData = std::make_shared<uint8_t[]>(textureLength * textureLength);
+		const int textureHeight = pow(2, ceil(log2(tilesetSquare) * 0.5));
+
+		const bool halfWidth     = tilesetSquare <= textureHeight * textureHeight / 2;
+		const int  textureWidth   = halfWidth ? textureHeight / 2 : textureHeight;
+
+		if (halfWidth)
+		{
+			std::cout << "can be broken\n";
+		}
+
+		auto texturePixelData = std::make_shared<uint8_t[]>(textureWidth * textureHeight);
 
 		int offsetX = 0, offsetY = 0;
 
 		for (int i = 0; i < tilesCount; i++)
 		{
-			tilesetData.GetPixelData(i, texturePixelData.get(), offsetX + offsetY, textureLength);
+			tilesetData.GetPixelData(i, texturePixelData.get(), offsetX + offsetY, textureWidth);
 
 			offsetX += tileSize;
 
-			if (offsetX >= textureLength)
+			if (offsetX >= textureWidth)
 			{
 				offsetX = 0;
-				offsetY += textureLength * tileSize;
+				offsetY += textureWidth * tileSize;
 			}
 		}
 
 		const int pixelSize = 1;
 
-		auto image = _bufferAllocator.CreateTextureImage(texturePixelData.get(), textureLength, textureLength, pixelSize);
-		Tileset *tileset = new Tileset(image, tileSize, textureLength);
+		auto image = _bufferAllocator.CreateTextureImage(texturePixelData.get(), textureWidth, textureHeight, pixelSize);
+		Tileset *tileset = new Tileset(image, tileSize, textureWidth, textureHeight);
 
 		_drawables.push_back(tileset);
 
@@ -433,7 +444,7 @@ namespace renderer::vulkan
 		renderBeginInfo.renderArea.offset = {0, 0};
 		renderBeginInfo.renderArea.extent = _config.GetExtents();
 
-		VkClearValue clearColor = {{{0.66, 0.66, 0.66, 1}}};
+		VkClearValue clearColor = {{{0, 0, 0, 1}}};
 		renderBeginInfo.clearValueCount = 1;
 		renderBeginInfo.pClearValues = &clearColor;
 
