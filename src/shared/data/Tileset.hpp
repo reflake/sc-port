@@ -14,12 +14,6 @@ namespace data
 
 	extern bool HasTileSetWater(Tileset tileset);
 
-	enum FlipFlags
-	{
-		FlipNone = 0x0,
-		FlipHorizontally = 0x1, FlipVertically = 0x2
-	};
-
 	struct A_TilesetData
 	{
 

@@ -109,4 +109,10 @@ namespace data
 	{
 		offset = (offset + alignment - 1) / alignment * alignment;
 	}
+	
+	enum FlipFlags
+	{
+		FlipNone = 0x0,
+		FlipHorizontally = 0x1, FlipVertically = 0x2
+	};
 }
