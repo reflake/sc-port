@@ -37,12 +37,15 @@ namespace renderer::vulkan
 
 		void WriteToStreamBuffer(StreamData& streamData, uint64_t size, const void* data);
 
-		const Image* CreateTextureImage(const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize);
+		Image* CreateTextureImage(const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize);
+		void   UpdateImageData(Image*, const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize);
 
 		// Needs to be reset every frame
 		void OnBeginRendering();
 
 		void OnPrepareForPresentation();
+
+		void FreeImage(Image*);
 
 		void Release();
 

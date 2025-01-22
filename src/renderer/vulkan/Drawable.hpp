@@ -33,6 +33,8 @@ namespace renderer::vulkan
 		virtual DrawableType GetType() const = 0;
 
 		virtual VkImageView GetImageView() const = 0;
+
+		virtual Image* GetImage() const = 0;
 	};
 
 	class SpriteSheet : public A_VulkanDrawable
@@ -44,19 +46,23 @@ namespace renderer::vulkan
 		DrawableType GetType() const override;
 
 		VkImageView GetImageView() const override { return 0; }
+
+		Image* GetImage() const override { return nullptr; }
 	};
 
 	class Tileset : public A_VulkanDrawable
 	{
 	public:
 
-		Tileset(data::A_TilesetData&, std::vector<uint32_t>& tileMap, const Image*, int cellSize, int textureWidth, int textureHeight);
+		Tileset(data::A_TilesetData&, std::vector<uint32_t>& tileMap, Image*, int cellSize, int textureWidth, int textureHeight);
 
 		std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const override;
 
 		DrawableType GetType() const override;
 
 		VkImageView GetImageView() const override;
+
+		Image* GetImage() const override;
 
 		const int CellSize;
 		const int TextureWidth, TextureHeight;
@@ -66,6 +72,6 @@ namespace renderer::vulkan
 		data::A_TilesetData&   _tilesetData;
 		std::vector<uint32_t>& _tileMap;
 
-		const Image* _image;
+		Image* _image;
 	};
 }

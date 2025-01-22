@@ -11,7 +11,7 @@ namespace renderer::vulkan {
 
 	DrawableType SpriteSheet::GetType() const { return SpriteSheetType; }
 
-	Tileset::Tileset(data::A_TilesetData& tilesetData, std::vector<uint32_t>& tileMap, const Image* image, int cellSize, int textureWidth, int textureHeight)
+	Tileset::Tileset(data::A_TilesetData& tilesetData, std::vector<uint32_t>& tileMap, Image* image, int cellSize, int textureWidth, int textureHeight)
 		: _tilesetData(tilesetData), _tileMap(tileMap), _image(image),
 			 CellSize(cellSize), TextureWidth(textureWidth), TextureHeight(textureHeight)
 	{
@@ -42,6 +42,11 @@ namespace renderer::vulkan {
 	VkImageView Tileset::GetImageView() const
 	{
 		return _image->GetViewHandle();
+	}
+
+	Image* Tileset::GetImage() const
+	{
+		return _image;
 	}
 
 	DrawableType Tileset::GetType() const { return TilesetType; }

@@ -9,6 +9,7 @@
 namespace renderer::vulkan
 {
 	using std::runtime_error;
+	using Region = MemoryRegion;
 
 	MemoryManager::MemoryManager() {}
 
@@ -42,6 +43,19 @@ namespace renderer::vulkan
 		assert(size == requiredSize);
 
 		image.BindMemory(memory.hwMemory, offset);
+	}
+
+	void MemoryManager::Free(Image* image)
+	{
+		auto memoryHandle = image->GetMemoryHandle();
+		auto memoryOffset = image->GetMemoryOffset();
+		auto memorySize   = image->GetSize();
+
+		auto& memory = *std::find_if(_memories.begin(), _memories.end(), [memoryHandle] (auto mem) {
+			return mem.hwMemory == memoryHandle;
+		});
+
+		memory.UnlockMemory(memoryOffset, memorySize);
 	}
 
 	Memory& MemoryManager::UseMemory(VkDeviceSize alignment, uint32_t typeBits, VkMemoryPropertyFlagBits properties, VkDeviceSize requiredSize)
@@ -100,14 +114,6 @@ namespace renderer::vulkan
 		throw runtime_error("Failed to find suitable memory type");
 	}
 
-	void MemoryManager::Release()
-	{
-		for(auto memory : _memories)
-		{
-			vkFreeMemory(*_device, memory.hwMemory, _allocator);
-		}
-	}
-
 	bool Memory::CanAllocateMemory(VkDeviceSize alignment, VkDeviceSize requiredSize)
 	{
 		return std::any_of(freeRegions.begin(), freeRegions.end(), [alignment, requiredSize] (auto region) {
@@ -153,5 +159,39 @@ namespace renderer::vulkan
 
 		// Offset must be aligned
 		return { alignedOffset, allocatedSize };
+	}
+
+	void Memory::UnlockMemory(VkDeviceSize offset, VkDeviceSize size)
+	{
+		freeRegions.emplace_back(offset, size);
+
+    // Merge connecting regions
+    std::sort(freeRegions.begin(), freeRegions.end(), [](auto a, auto b) {
+        return a.offset < b.offset || (a.offset == b.offset && a.size < b.size);
+    });
+
+    std::vector<Region> merged;
+    Region current = freeRegions[0];
+
+    for (size_t i = 1; i < freeRegions.size(); ++i) {
+        if (freeRegions[i].offset <= current.end()) {
+            current.size = std::max(current.end(), freeRegions[i].end()) - current.offset;
+        } else {
+            merged.push_back(current);
+            current = freeRegions[i];
+        }
+    }
+
+    merged.push_back(current);
+
+		freeRegions = std::move(merged);
+	}
+
+	void MemoryManager::Release()
+	{
+		for(auto memory : _memories)
+		{
+			vkFreeMemory(*_device, memory.hwMemory, _allocator);
+		}
 	}
 };

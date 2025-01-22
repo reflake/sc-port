@@ -13,12 +13,13 @@ namespace renderer::vulkan
 	public:
 
 		Image();
-		Image(Device*, uint32_t width, uint32_t height, VkImage, 
+		Image(Device*, uint32_t width, uint32_t height, VkDeviceSize size, VkImage, 
 					VkFormat, VkImageLayout, VkDeviceSize alignment, 
 					VkMemoryPropertyFlagBits, const VkAllocationCallbacks*);
 
 		static Image Create(VkFormat format, VkImageTiling tiling, 
-												uint32_t width, uint32_t height, Device*, const VkAllocationCallbacks*);
+												uint32_t width, uint32_t height,
+												Device*, const VkAllocationCallbacks*);
 
 		void BindMemory(VkDeviceMemory memory, VkDeviceSize offsetInMemory);
 		void TransitionImageLayout(VkImageLayout nextLayout, VkCommandBuffer, VkQueue);
@@ -27,6 +28,9 @@ namespace renderer::vulkan
 		VkDeviceSize GetSize() const;
 		VkMemoryPropertyFlagBits GetMemoryPropertyFlags() const;
 		VkExtent3D   GetExtents();
+
+		VkDeviceMemory GetMemoryHandle() const;
+		VkDeviceSize   GetMemoryOffset() const;
 
 		// Slow operation
 		void GetMemoryRequirements(VkMemoryRequirements&) const;
@@ -42,11 +46,14 @@ namespace renderer::vulkan
 		void EndSingleTimeCommandAndSubmit(VkCommandBuffer, VkQueue);
 
 		VkFormat       _format;
-		uint32_t       _width, _height;
+		uint32_t       _width, _height, _pixelSize;
 		Device*        _device = VK_NULL_HANDLE;
 		VkDeviceSize   _size = 0, _alignment = 0, _offsetInMemory = 0;
 		VkImage        _hwImage = VK_NULL_HANDLE;
 		VkImageView    _hwImageView = VK_NULL_HANDLE;
+
+		VkDeviceMemory _memory;
+		VkDeviceSize   _memoryOffset;
 
 		VkImageLayout            _currentLayout;
 		VkMemoryPropertyFlagBits _propertyFlags;

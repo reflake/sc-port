@@ -11,7 +11,12 @@ namespace renderer::vulkan
 {
 	const VkDeviceSize MinimalMemorySize = 1024 * 200000;
 
-	typedef std::pair<VkDeviceSize, VkDeviceSize> MemoryRegion;
+	struct MemoryRegion
+	{
+		VkDeviceSize offset, size;
+
+		inline VkDeviceSize end() const { return offset + size; }
+	};
 
 	struct Memory
 	{
@@ -24,6 +29,8 @@ namespace renderer::vulkan
 		MemoryRegion GetLockedMemory(VkDeviceSize alignment, VkDeviceSize size);
 
 		bool CanAllocateMemory(VkDeviceSize alignment, VkDeviceSize size);
+
+		void UnlockMemory(VkDeviceSize offset, VkDeviceSize size);
 	};
 
 	class MemoryManager
@@ -36,6 +43,8 @@ namespace renderer::vulkan
 		void BindMemoryToBuffer(Buffer& buffer, VkMemoryRequirements& requirements, VkMemoryPropertyFlagBits);
 		void BindMemoryToImage(Image& image, VkMemoryRequirements& requirements, VkMemoryPropertyFlagBits);
 		
+		void Free(Image*);
+
 		void Release();
 
 	private:

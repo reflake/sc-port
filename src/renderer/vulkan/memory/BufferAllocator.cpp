@@ -2,6 +2,7 @@
 #include "Buffer.hpp"
 #include "Image.hpp"
 #include "MemoryManager.hpp"
+#include <algorithm>
 #include <array>
 #include <cstring>
 #include <stdexcept>
@@ -97,7 +98,7 @@ namespace renderer::vulkan
 		assert(streamData.offsetInMemory + streamData.size == _dynamicBufferOffset);
 	}
 
-	const Image* BufferAllocator::CreateTextureImage(const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize)
+	Image* BufferAllocator::CreateTextureImage(const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize)
 	{
 		// Creating image
 		auto format = pixelSize == 1 ? VK_FORMAT_R8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
@@ -112,6 +113,27 @@ namespace renderer::vulkan
 
 		_images.push_back(image);
 
+		if (data != nullptr)
+		{
+			// Copy pixel data to staging buffer
+			image->TransitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, _stagingCommandBuffer, _graphicsQueue);
+
+			void* stagingBufferDst;
+			_stagingBuffer.MapMemory(&stagingBufferDst, width * height * pixelSize);
+
+			memcpy(stagingBufferDst, data, width * height * pixelSize);
+
+			_stagingBuffer.UnmapMemory();
+			_stagingBuffer.CopyTo(*image, _stagingCommandBuffer, _graphicsQueue);
+
+			image->TransitionImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, _stagingCommandBuffer, _graphicsQueue);
+		}
+
+		return image;
+	}
+
+	void BufferAllocator::UpdateImageData(Image* image, const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize)
+	{
 		// Copy pixel data to staging buffer
 		image->TransitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, _stagingCommandBuffer, _graphicsQueue);
 
@@ -124,8 +146,6 @@ namespace renderer::vulkan
 		_stagingBuffer.CopyTo(*image, _stagingCommandBuffer, _graphicsQueue);
 
 		image->TransitionImageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, _stagingCommandBuffer, _graphicsQueue);
-
-		return image;
 	}
 
 	// Looks for memory to bind for buffer
@@ -151,6 +171,22 @@ namespace renderer::vulkan
 	void BufferAllocator::OnPrepareForPresentation()
 	{
 		_dynamicBuffer.UnmapMemory();
+	}
+
+	void BufferAllocator::FreeImage(Image* image)
+	{
+		_memoryManager->Free(image);
+
+		image->Destroy();
+
+		auto it = std::find(_images.begin(), _images.end(), image);
+
+		if (it == _images.end())
+		{
+			throw runtime_error("Failed to remove image from the list");
+		}
+
+		_images.erase(it);
 	}
 
 	void BufferAllocator::Release()

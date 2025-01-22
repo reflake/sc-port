@@ -8,10 +8,10 @@ namespace renderer::vulkan
 
 	Image::Image() {}
 
-	Image::Image(Device* device, uint32_t width, uint32_t height, 
+	Image::Image(Device* device, uint32_t width, uint32_t height, VkDeviceSize size,
 								VkImage image, VkFormat format, VkImageLayout imageLayout,
 							 VkDeviceSize alignment, VkMemoryPropertyFlagBits memoryPropertyFlags, const VkAllocationCallbacks* allocator)
-		: _device(device), _width(width), _height(height), _hwImage(image),
+		: _device(device), _width(width), _height(height), _size(size), _hwImage(image),
 			_format(format), _currentLayout(imageLayout), _alignment(alignment), 
 			_propertyFlags(memoryPropertyFlags), _allocator(allocator)
 		{}
@@ -45,7 +45,7 @@ namespace renderer::vulkan
 		VkMemoryRequirements requirements;
 		vkGetImageMemoryRequirements(*device, hwImage, &requirements);
 
-		return Image(device, width, height, hwImage, format, initialLayout,
+		return Image(device, width, height, requirements.size, hwImage, format, initialLayout,
 								 requirements.alignment, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocator);
 	}
 
@@ -66,9 +66,13 @@ namespace renderer::vulkan
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = 1;
 
-		if (vkCreateImageView(*_device, &viewInfo, _allocator, &_hwImageView) != VK_SUCCESS) {
-        throw runtime_error("Failed to create image view");
+		if (vkCreateImageView(*_device, &viewInfo, _allocator, &_hwImageView) != VK_SUCCESS)
+		{
+      throw runtime_error("Failed to create image view");
     }
+
+		_memory = memory;
+		_memoryOffset = offsetInMemory;
 	}
 
 	void Image::TransitionImageLayout(VkImageLayout nextLayout, VkCommandBuffer commandBuffer, VkQueue queue)
@@ -107,6 +111,14 @@ namespace renderer::vulkan
 
 				sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 				destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			}
+			else if (_currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL && nextLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+			{
+				barrier.srcAccessMask = 0;
+				barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+				sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+				destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			}
 			else
 			{
@@ -160,6 +172,16 @@ namespace renderer::vulkan
 	VkExtent3D Image::GetExtents()
 	{
 		return { _width, _height, 1 };
+	}
+
+	VkDeviceMemory Image::GetMemoryHandle() const
+	{
+		return _memory;
+	}
+
+	VkDeviceSize Image::GetMemoryOffset() const
+	{
+		return _memoryOffset;
 	}
 
 	VkImage Image::GetHandle() const { return _hwImage; }

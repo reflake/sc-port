@@ -75,6 +75,9 @@ namespace renderer::vulkan
 		void Submit();
 		void Present();
 
+		A_VulkanDrawable* ConvertToDrawable(DrawableHandle);
+		std::vector<A_VulkanDrawable*>::iterator FindDrawable(DrawableHandle);
+
 		ShaderCode ReadShaderCode(const char* path);
 
 	private:
@@ -98,7 +101,7 @@ namespace renderer::vulkan
 		VkDescriptorPool    _descriptorPool;
 		VkDescriptorSet     _descriptorSets[POOL_MAX_SETS];
 
-		const Image*          _tilesetImage;
+		Image*                _tilesetImage;
 		std::vector<uint32_t> _tileMap;
 
 		VkSemaphore _imageAvailableSemaphore, _renderFinishedSemaphore;

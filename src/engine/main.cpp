@@ -385,8 +385,11 @@ void loadDoodadGrps(App& app, Storage& storage)
 
 bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInfo)
 {
+	app.graphics->WaitIdle();
+	
 	try
 	{
+
 		loadMap(app, mapPath, storage, mapInfo);
 
 		for(auto& [_, spriteSheet] : app.loadedSprites)

@@ -111,6 +111,8 @@ namespace renderer::vulkan
 			.Filtering(VK_FILTER_NEAREST)
 			.RepeatMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			.Create(allocator);
+
+		_tilesetImage = _bufferAllocator.CreateTextureImage(nullptr, 256, 1, 4);
 	}
 
 	void Graphics::CreateInstance(vector<const char*>& enabledLayers)
@@ -311,21 +313,15 @@ namespace renderer::vulkan
 		return tileset;
 	}
 
-	void Graphics::Draw(DrawableHandle drawable, frameIndex frame, data::position position)
+	void Graphics::Draw(DrawableHandle drawableHandle, frameIndex frame, data::position position)
 	{
 		// Break into another draw call
-		if (_currentDrawCall == nullptr || drawable != _currentDrawCall->drawable)
+		if (_currentDrawCall == nullptr || drawableHandle != _currentDrawCall->drawable)
 		{
 			// Validate new drawable
-			auto vulkanDrawable = reinterpret_cast<A_VulkanDrawable*>(drawable);
+			auto drawable = ConvertToDrawable(drawableHandle);
 
-			// TODO: search drawables from cache
-			if (std::find(_drawables.begin(), _drawables.end(), vulkanDrawable) == _drawables.end())
-			{
-				throw runtime_error("Incompatible drawable object");
-			}
-
-			_drawCalls.emplace_back(vulkanDrawable);
+			_drawCalls.emplace_back(drawable);
 			_currentDrawCall = &_drawCalls.back();
 		}
 
@@ -354,16 +350,27 @@ namespace renderer::vulkan
 		_bufferAllocator.WriteToStreamBuffer(_currentDrawCall->streamData, sizeof(Vertex) * count, polygonVertices.data());
 	}
 
-	void Graphics::FreeDrawable(DrawableHandle)
+	void Graphics::FreeDrawable(DrawableHandle drawableHandle)
 	{
-		// TODO:
+		// TODO: remove
+		if (drawableHandle == nullptr)
+		{
+			return;
+		}
+
+		auto iterator = FindDrawable(drawableHandle);
+		auto drawable = *iterator;
+
+		_bufferAllocator.FreeImage(drawable->GetImage());
+
+		_drawables.erase(iterator);
 	}
 
 	void Graphics::SetTilesetPalette(data::Palette& palette)
 	{
 		auto data = reinterpret_cast<const uint8_t*>(palette.GetColors());
 
-		_tilesetImage = _bufferAllocator.CreateTextureImage(data, 256, 1, 4);
+		_bufferAllocator.UpdateImageData(_tilesetImage, data, 256, 1, 4);
 	}
 
 	void Graphics::SetView(data::position pos)
@@ -561,6 +568,26 @@ namespace renderer::vulkan
 	void Graphics::WaitIdle()
 	{
 		vkDeviceWaitIdle(_device);
+	}
+
+	A_VulkanDrawable* Graphics::ConvertToDrawable(DrawableHandle handle)
+	{
+		return *FindDrawable(handle);
+	}
+
+	std::vector<A_VulkanDrawable*>::iterator Graphics::FindDrawable(DrawableHandle handle)
+	{
+		// Validate new drawable
+		auto vulkanDrawable = reinterpret_cast<A_VulkanDrawable*>(handle);
+
+		// TODO: search drawables from cache
+		auto it = std::find(_drawables.begin(), _drawables.end(), vulkanDrawable);
+		if (it == _drawables.end())
+		{
+			throw runtime_error("Incompatible drawable object");
+		}
+
+		return it;
 	}
 
 	void Graphics::Release()
