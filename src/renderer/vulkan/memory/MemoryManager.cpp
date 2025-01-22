@@ -21,7 +21,7 @@ namespace renderer::vulkan
 		auto [requiredSize, alignment, typeBits] = requirements;
 
 		auto& memory        = UseMemory(alignment, typeBits, properties, requiredSize);
-		auto [offset, size] = memory.GetLockedMemory(alignment, requiredSize);
+		auto [offset, size] = memory.GetNewLockedRegion(alignment, requiredSize);
 
 		assert(size == requiredSize);
 
@@ -38,7 +38,7 @@ namespace renderer::vulkan
 		}
 
 		auto& memory        = UseMemory(alignment, typeBits, properties, requiredSize);
-		auto [offset, size] = memory.GetLockedMemory(alignment, requiredSize);
+		auto [offset, size] = memory.GetNewLockedRegion(alignment, requiredSize);
 
 		assert(size == requiredSize);
 
@@ -126,7 +126,7 @@ namespace renderer::vulkan
 		});
 	}
 
-	MemoryRegion Memory::GetLockedMemory(VkDeviceSize alignment, VkDeviceSize allocatedSize)
+	MemoryRegion Memory::GetNewLockedRegion(VkDeviceSize alignment, VkDeviceSize allocatedSize)
 	{
 		auto it = std::find_if(freeRegions.begin(), freeRegions.end(), [alignment, allocatedSize] (auto region) {
 

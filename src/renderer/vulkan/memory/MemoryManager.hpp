@@ -9,7 +9,7 @@
 
 namespace renderer::vulkan
 {
-	const VkDeviceSize MinimalMemorySize = 1024 * 200000;
+	const VkDeviceSize MinimalMemorySize = 1024 * 10000;
 
 	struct MemoryRegion
 	{
@@ -26,7 +26,7 @@ namespace renderer::vulkan
 
 		std::vector<MemoryRegion> freeRegions;
 
-		MemoryRegion GetLockedMemory(VkDeviceSize alignment, VkDeviceSize size);
+		MemoryRegion GetNewLockedRegion(VkDeviceSize alignment, VkDeviceSize size);
 
 		bool CanAllocateMemory(VkDeviceSize alignment, VkDeviceSize size);
 

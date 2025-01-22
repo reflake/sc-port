@@ -127,9 +127,12 @@ struct App {
 
 	tileID tiles[256][256];
 
-	double realTime       = 0.0;
-	double deltaTime      = 0.0;
-	double lastWaterCycle = 0.0;
+	double realTime         = 0.0;
+	double deltaTime        = 0.0;
+	double lastWaterCycle   = 0.0;
+	double averageDeltaTime = 0.0;
+	double nextFpsMeasure   = 0.0;
+	double fps;
 };
 
 void freeWindow(App&);
@@ -265,7 +268,6 @@ void drawMap(MapInfo &mapInfo, App &app,
 		return;
 
 	{
-
 		Clock clock("BeginRendering()");
 
 		app.graphics->BeginRendering();
@@ -498,6 +500,9 @@ int main(int argc, char *argv[]) {
 	uint64_t counterCurrent, counterLast = SDL_GetPerformanceCounter();
 
 	while (running) {
+
+		Clock clock("Loop()");
+
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
 			case SDL_KEYDOWN:
@@ -576,16 +581,23 @@ int main(int argc, char *argv[]) {
 
 		app.scriptEngine.PlayNextFrame();
 
-		usleep(1000);
+		usleep(10000);
 		
 		counterCurrent = SDL_GetPerformanceCounter();
 		app.deltaTime = static_cast<double>(counterCurrent - counterLast) / SDL_GetPerformanceFrequency();
 		app.realTime += app.deltaTime;
+		app.averageDeltaTime = (app.averageDeltaTime + app.deltaTime) * 0.5;
 
 		counterLast = counterCurrent;
 
-		boost::format time("Gauss Engine: %.2f (+%.5f)");
-		time % app.realTime % app.deltaTime;
+		if (app.nextFpsMeasure < app.realTime)
+		{
+			app.fps            = (app.fps + 1.0 / app.averageDeltaTime) * 0.5;
+			app.nextFpsMeasure = app.realTime + 1.0;
+		}
+
+		boost::format time("Gauss Engine: %.2f (+%.5f) FPS: %.2f");
+		time % app.realTime % app.averageDeltaTime % app.fps;
 
 		SDL_SetWindowTitle(app.window, time.str().c_str());
 	};
