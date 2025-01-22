@@ -20,6 +20,8 @@
 
 #include <intrin.h>
 
+#include <sstream>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
@@ -35,6 +37,7 @@
 #include <SDL_video.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL.h>
+#include <SDL_timer.h>
 
 #include <data/Assets.hpp>
 #include <data/Common.hpp>
@@ -125,6 +128,9 @@ struct App {
 	unordered_map<data::grpID, DrawableHandle> loadedSprites;
 
 	tileID tiles[256][256];
+
+	double realTime;
+	double deltaTime;
 };
 
 void freeWindow(App&);
@@ -474,6 +480,8 @@ int main(int argc, char *argv[]) {
 	int      moveInput = 0;
 	position viewPos = { 0, 0 };
 
+	uint64_t counterCurrent, counterLast = SDL_GetPerformanceCounter();
+
 	while (running) {
 		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
@@ -493,6 +501,8 @@ int main(int argc, char *argv[]) {
 					break;
 				case SDLK_o: {
 
+					uint64_t diff = SDL_GetPerformanceCounter();
+
 					if (showOpenDialog(mapPath, sizeof(mapPath), hwnd)) {
 
 						openedMapSuccessfully = tryOpenMap(app, mapPath, storage, mapInfo);
@@ -501,8 +511,16 @@ int main(int argc, char *argv[]) {
 
 							showLoadErrorMessage(hwnd, mapPath);
 
+						else
+
+							app.realTime = 0.0;
+
 						viewPos = { 0, 0 };
 					}
+
+					diff = SDL_GetPerformanceCounter() - diff;
+
+					counterLast += diff;
 				} break;
 				}
 				break;
@@ -539,6 +557,17 @@ int main(int argc, char *argv[]) {
 		app.scriptEngine.PlayNextFrame();
 
 		usleep(1000);
+		
+		counterCurrent = SDL_GetPerformanceCounter();
+		app.deltaTime = static_cast<double>(counterCurrent - counterLast) / SDL_GetPerformanceFrequency();
+		app.realTime += app.deltaTime;
+
+		counterLast = counterCurrent;
+
+		boost::format time("%.2f (+%.5f)");
+		time % app.realTime % app.deltaTime;
+
+		SDL_SetWindowTitle(app.window, time.str().c_str());
 	};
 
 	app.graphics->WaitIdle();
