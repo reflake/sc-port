@@ -261,7 +261,7 @@ struct SpriteAtlas
 };
 
 void drawMap(MapInfo &mapInfo, App &app,
-							 int &waterCycle, position& pos) {
+							 int &waterCycle, const position pos) {
 
 	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
 		return;
@@ -308,9 +308,9 @@ void drawMap(MapInfo &mapInfo, App &app,
 	}
 }
 
-void processInput(position& pos, int &move)
+void processInput(glm::vec<2, double>& pos, int &move, double deltaTime)
 {
-	const float speed = 12.0f;
+	const float speed = 1000.0f;
 	float x = 0, y = 0;
 
 	if ((move & Up) > 0)
@@ -322,8 +322,8 @@ void processInput(position& pos, int &move)
 	if ((move & Right) > 0)
 		x += 1;
 
-	pos.x += x * speed;
-	pos.y += y * speed;
+	pos.x += x * speed * deltaTime;
+	pos.y += y * speed * deltaTime;
 }
 
 void placeScriptedDoodads(
@@ -483,9 +483,9 @@ int main(int argc, char *argv[]) {
 
 	bool running = true;
 
-	int      waterCycle = 0;
-	int      moveInput = 0;
-	position viewPos = { 0, 0 };
+	int                 waterCycle = 0;
+	int                 moveInput = 0;
+	glm::vec<2, double> viewPos = { 0, 0 };
 
 	uint64_t counterCurrent, counterLast = SDL_GetPerformanceCounter();
 
@@ -561,11 +561,11 @@ int main(int argc, char *argv[]) {
 		};
 
 		drawMap(mapInfo, app, waterCycle, viewPos);
-		processInput(viewPos, moveInput);
+		processInput(viewPos, moveInput, app.deltaTime);
 
 		app.scriptEngine.PlayNextFrame();
 
-		usleep(10000);
+		usleep(1000);
 		
 		counterCurrent = SDL_GetPerformanceCounter();
 		app.deltaTime = static_cast<double>(counterCurrent - counterLast) / SDL_GetPerformanceFrequency();
