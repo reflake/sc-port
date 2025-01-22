@@ -129,8 +129,9 @@ struct App {
 
 	tileID tiles[256][256];
 
-	double realTime;
-	double deltaTime;
+	double realTime       = 0.0;
+	double deltaTime      = 0.0;
+	double lastWaterCycle = 0.0;
 };
 
 void freeWindow(App&);
@@ -295,10 +296,16 @@ void drawMap(MapInfo &mapInfo, App &app,
 
 	app.graphics->PresentToScreen();
 
-	/*if (data::HasTileSetWater(mapInfo.tileset) && (waterCycle++ % 10) == 0) {
+	const double waterCycleSpeed = 4.0;
 
-		app.graphics->CycleWaterPalette();
-	}*/
+	if (data::HasTileSetWater(mapInfo.tileset)) {
+
+		for(; app.lastWaterCycle < app.realTime; app.lastWaterCycle += 1.0 / waterCycleSpeed)
+		{
+			app.tilesetData.palette.cyclePaletteColor<1, 6>();
+			app.tilesetData.palette.cyclePaletteColor<7, 7>();
+		}
+	}
 }
 
 void processInput(position& pos, int &move)
@@ -512,8 +519,10 @@ int main(int argc, char *argv[]) {
 							showLoadErrorMessage(hwnd, mapPath);
 
 						else
-
+						{
 							app.realTime = 0.0;
+							app.lastWaterCycle = 0.0;
+						}
 
 						viewPos = { 0, 0 };
 					}
@@ -556,7 +565,7 @@ int main(int argc, char *argv[]) {
 
 		app.scriptEngine.PlayNextFrame();
 
-		usleep(1000);
+		usleep(10000);
 		
 		counterCurrent = SDL_GetPerformanceCounter();
 		app.deltaTime = static_cast<double>(counterCurrent - counterLast) / SDL_GetPerformanceFrequency();
@@ -564,7 +573,7 @@ int main(int argc, char *argv[]) {
 
 		counterLast = counterCurrent;
 
-		boost::format time("%.2f (+%.5f)");
+		boost::format time("Gauss Engine: %.2f (+%.5f)");
 		time % app.realTime % app.deltaTime;
 
 		SDL_SetWindowTitle(app.window, time.str().c_str());

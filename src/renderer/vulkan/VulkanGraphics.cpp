@@ -660,13 +660,4 @@ namespace renderer::vulkan
 
 		_instance = nullptr;
 	}
-
-	/*void Graphics::CycleWaterPalette()
-	{
-		 примерный алгоритм действий
-		
-		cyclePaletteColor<1, 6>(app.tilesetAtlas);
-		cyclePaletteColor<7, 7>(app.tilesetAtlas);
-		
-	}*/
 }
