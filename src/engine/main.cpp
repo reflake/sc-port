@@ -56,10 +56,8 @@
 #include "script/IScriptEngine.hpp"
 #include "entity/ScriptedDoodad.hpp"
 
-#include "TilesetData.hpp"
 #include "vulkan/VulkanGraphics.hpp"
-
-
+#include <diagnostic/Clock.hpp>
 
 using boost::format;
 
@@ -266,32 +264,42 @@ void drawMap(MapInfo &mapInfo, App &app,
 	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
 		return;
 
-	app.graphics->BeginRendering();
-	
-	app.graphics->SetTilesetPalette(app.tilesetData.palette);
+	{
 
-	app.graphics->SetView(pos);
+		Clock clock("BeginRendering()");
+
+		app.graphics->BeginRendering();
+		app.graphics->SetTilesetPalette(app.tilesetData.palette);
+		app.graphics->SetView(pos);
+	}
 
 	int leftBorderIndex  = std::max<int>(0, pos.x / TILE_SIZE);
 	int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (pos.x + SCREEN_WIDTH) / TILE_SIZE + 1);
 	int upBorderIndex    = std::max<int>(0, pos.y / TILE_SIZE);
 	int downBorderIndex  = std::min<int>(mapInfo.dimensions.y, (pos.y + SCREEN_HEIGHT) / TILE_SIZE + 1);
 
-	for (int x = leftBorderIndex; x < rightBorderIndex; x++)
-	for (int y = upBorderIndex; y < downBorderIndex; y++)
 	{
-		tileID tileId = app.tiles[x][y];
+		Clock clock("RenderTiles()");
 
-		app.graphics->Draw(app.tilesetView, tileId, { x * TILE_SIZE, y * TILE_SIZE });
-	};
+		for (int x = leftBorderIndex; x < rightBorderIndex; x++)
+		for (int y = upBorderIndex; y < downBorderIndex; y++)
+		{
+			tileID tileId = app.tiles[x][y];
 
-	for(auto& doodad : app.scriptedDoodads)
+			app.graphics->Draw(app.tilesetView, tileId, { x * TILE_SIZE, y * TILE_SIZE });
+		};
+	}
+
 	{
-		auto grpID = doodad->grpID;
-		auto frame = doodad->GetCurrentFrame();
-		auto spriteSheet = app.loadedSprites[grpID];
+		Clock clock("RenderSprites()");
+		for(auto& doodad : app.scriptedDoodads)
+		{
+			auto grpID = doodad->grpID;
+			auto frame = doodad->GetCurrentFrame();
+			auto spriteSheet = app.loadedSprites[grpID];
 
-		// app.graphics->Draw(spriteSheet, frame, doodad->pos);
+			// app.graphics->Draw(spriteSheet, frame, doodad->pos);
+		}
 	}
 
 	app.graphics->PresentToScreen();
@@ -505,6 +513,9 @@ int main(int argc, char *argv[]) {
 					break;
 				case SDLK_RIGHT:
 					moveInput |= Right;
+					break;
+				case SDLK_p:
+					ShowClockReports();
 					break;
 				case SDLK_o: {
 

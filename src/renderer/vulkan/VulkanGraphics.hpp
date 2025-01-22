@@ -3,6 +3,7 @@
 #include <SDL2/SDL_video.h>
 #include <SDL_surface.h>
 
+#include <array>
 #include <filesystem/Storage.hpp>
 #include <memory>
 #include <vector>
@@ -115,7 +116,10 @@ namespace renderer::vulkan
 
 		Sampler _textureSampler;
 
-		std::vector<A_VulkanDrawable*> _drawables;
+		std::vector<A_VulkanDrawable*>    _drawables;
+		std::array<A_VulkanDrawable*, 4>  _drawablesCache;
+		uint32_t                          _drawablesCacheIndex = 0;
+
 		std::vector<DrawCall>          _drawCalls;
 	};
 }

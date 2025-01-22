@@ -72,6 +72,8 @@ add_library(Renderer STATIC
   src/shared/data/TextStrings.cpp
   src/shared/data/Tileset.cpp
 
+  src/shared/diagnostic/Clock.cpp
+
   src/shared/filesystem/MpqArchive.cpp
   src/shared/filesystem/MpqFile.cpp
   src/shared/filesystem/StorageFile.cpp

@@ -336,18 +336,24 @@ namespace renderer::vulkan
 			throw runtime_error("Too much polygons");
 		}
 
+		double reverseWidth  = 1.0 / _config.GetExtents().width;
+		double reverseHeight = 1.0 / _config.GetExtents().height;
+
 		for(int i = 0; i < count; i++)
 		{
 			auto& vertex = polygonVertices[i];
 
 			vertex.pos   += position - _currentPosition;
-			vertex.pos.x /= _config.GetExtents().width;
-			vertex.pos.y /= _config.GetExtents().height;
+			vertex.pos.x *= reverseWidth;
+			vertex.pos.y *= reverseHeight;
 
 			vertex.pos = vertex.pos * 2.0f - 1.0f;
 		}
 
 		_bufferAllocator.WriteToStreamBuffer(_currentDrawCall->streamData, sizeof(Vertex) * count, polygonVertices.data());
+
+		_drawablesCache[_drawablesCacheIndex] = _currentDrawCall->drawable;
+		_drawablesCacheIndex = (_drawablesCacheIndex + 1) % _drawablesCache.size();
 	}
 
 	void Graphics::FreeDrawable(DrawableHandle drawableHandle)
@@ -364,6 +370,16 @@ namespace renderer::vulkan
 		_bufferAllocator.FreeImage(drawable->GetImage());
 
 		_drawables.erase(iterator);
+
+		// Remove drawable from cache
+		for(int i = 0; i < _drawablesCache.size(); i++)
+		{
+			if (_drawablesCache[i] == drawable)
+			{
+				_drawablesCache[i] = nullptr;
+				break;
+			}
+		}
 	}
 
 	void Graphics::SetTilesetPalette(data::Palette& palette)
@@ -572,6 +588,16 @@ namespace renderer::vulkan
 
 	A_VulkanDrawable* Graphics::ConvertToDrawable(DrawableHandle handle)
 	{
+		// Validate new drawable
+		auto vulkanDrawable = reinterpret_cast<A_VulkanDrawable*>(handle);
+		bool isCached = std::find(_drawablesCache.begin(), _drawablesCache.end(), vulkanDrawable) != _drawablesCache.end();
+
+		if (isCached)
+		{
+			return vulkanDrawable;
+		}
+
+		// If it's not in the cache check in the list
 		return *FindDrawable(handle);
 	}
 
@@ -580,7 +606,7 @@ namespace renderer::vulkan
 		// Validate new drawable
 		auto vulkanDrawable = reinterpret_cast<A_VulkanDrawable*>(handle);
 
-		// TODO: search drawables from cache
+		// Check if drawable in cache
 		auto it = std::find(_drawables.begin(), _drawables.end(), vulkanDrawable);
 		if (it == _drawables.end())
 		{
