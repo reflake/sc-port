@@ -37,11 +37,12 @@ target_sources(Engine
     src/shared/filesystem/MpqFile.cpp
     src/shared/filesystem/StorageFile.cpp
     src/shared/filesystem/Storage.cpp
+
+    src/shared/diagnostic/Clock.cpp
+    src/shared/diagnostic/Image.cpp
   )
 
 add_library(Renderer STATIC 
-
-  src/renderer/SpriteFrameData.cpp
 
   src/renderer/vulkan/device/Device.cpp
   src/renderer/vulkan/device/Format.cpp
@@ -53,6 +54,7 @@ add_library(Renderer STATIC
   src/renderer/vulkan/memory/Image.cpp
   src/renderer/vulkan/memory/MemoryManager.cpp
   src/renderer/vulkan/Api.cpp
+  src/renderer/vulkan/Atlas.cpp
   src/renderer/vulkan/Command.cpp
   src/renderer/vulkan/DescriptorSetLayout.cpp
   src/renderer/vulkan/Config.cpp
@@ -60,6 +62,7 @@ add_library(Renderer STATIC
   src/renderer/vulkan/RenderPass.cpp
   src/renderer/vulkan/Sampler.cpp
   src/renderer/vulkan/Shader.cpp
+  src/renderer/vulkan/SpritePacker.cpp
   src/renderer/vulkan/Vertex.cpp
   src/renderer/vulkan/VulkanGraphics.cpp
   src/renderer/vulkan/Window.cpp
@@ -73,6 +76,7 @@ add_library(Renderer STATIC
   src/shared/data/Tileset.cpp
 
   src/shared/diagnostic/Clock.cpp
+  src/shared/diagnostic/Image.cpp
 
   src/shared/filesystem/MpqArchive.cpp
   src/shared/filesystem/MpqFile.cpp
@@ -83,6 +87,7 @@ add_library(Renderer STATIC
 target_include_directories(Renderer 
   PUBLIC
     src/shared/
+    src/renderer/
   )
 
 # Find Winsock library
@@ -136,7 +141,8 @@ target_link_libraries(Engine
   PRIVATE Renderer
   PRIVATE casc_static
   PRIVATE storm
-  PRIVATE SDL2::SDL2-static)
+  PRIVATE SDL2::SDL2-static
+  PRIVATE libpng)
 
 
 target_link_libraries(Renderer 

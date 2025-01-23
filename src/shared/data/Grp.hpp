@@ -35,7 +35,9 @@ namespace data
 
 		// Overridden members
 		const SpriteData GetSpriteData(int frame) const override;
-		const int        ReadPixelData(int frame, uint8_t* out) const override;
+		const int        GetSpriteCount() const override;
+		const int        ReadPixelData(int frame, uint8_t* out, int stride) const override;
+		const int        GetPixelSize() const override;
 
 		glm::vec<2, int> GetDimensionsLimit() const override;
 

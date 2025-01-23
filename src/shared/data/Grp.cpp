@@ -14,10 +14,26 @@ namespace data
 
 		auto frame = _frames[frameIndex];
 
-		return { numOfChannels, frame.posOffset, frame.dimensions };
+		glm::vec<2, int> offset = frame.posOffset;
+		offset.x -= _header.dimensions.x / 2;
+		offset.y -= _header.dimensions.y / 2;
+
+		return { 
+			offset, 
+			frame.dimensions };
 	}
 
-	const int Grp::ReadPixelData(int frameIndex, uint8_t* out) const
+	const int Grp::GetSpriteCount() const
+	{
+		return _frames.size();
+	}
+
+	const int Grp::GetPixelSize() const
+	{
+		return 1;
+	}
+
+	const int Grp::ReadPixelData(int frameIndex, uint8_t* out, int stride) const
 	{
 		const int TRANSPARENT_FLAG = 0x80;
 		const int REPEAT_FLAG = 0x40;
@@ -27,12 +43,10 @@ namespace data
 
 		int size = frame.dimensions.x * frame.dimensions.y;
 
-		memset(out, 0, size);
-
 		for(int y = 0; y < frame.dimensions.y; y++)
 		{
 			auto rleLines = reinterpret_cast<uint8_t*>(rleLinesOffsets) + rleLinesOffsets[y];
-			auto pixelsRow = &out[y * frame.dimensions.x];
+			auto pixelsRow = &out[y * stride];
 
 			for(int x = 0; x < frame.dimensions.x; )
 			{

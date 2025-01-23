@@ -3,8 +3,7 @@
 #include <vector>
 
 #include "Atlas.hpp"
-
-#include "../SpriteFrameData.hpp"
+#include "data/Sprite.hpp"
 
 namespace renderer::vulkan
 {
@@ -12,12 +11,12 @@ namespace renderer::vulkan
 	{
 	public:
 
-		SpritePacker(const std::vector<SpriteFrameData>& frameDatas);
+		SpritePacker(const std::vector<data::SpriteData>& frameDatas);
 
 		Atlas CreateAtlas();
 
 	private:
 
-		const std::vector<SpriteFrameData>& _frameDatas;
+		const std::vector<data::SpriteData>& _frameDatas;
 	};
 }

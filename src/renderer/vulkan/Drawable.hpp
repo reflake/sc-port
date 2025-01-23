@@ -7,7 +7,9 @@
 
 #include "../A_Graphics.hpp"
 
+#include "Atlas.hpp"
 #include "Vertex.hpp"
+#include "data/Sprite.hpp"
 #include "data/Tileset.hpp"
 #include "memory/Image.hpp"
 
@@ -41,13 +43,21 @@ namespace renderer::vulkan
 	{
 	public:
 
-		std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const override { throw std::runtime_error("not implemented"); };
+		SpriteSheet(std::vector<data::SpriteData>&, Atlas&, Image*);
+
+		std::size_t GetPolygon(frameIndex, Vertex* output, std::size_t maxCount) const override;
 
 		DrawableType GetType() const override;
 
-		VkImageView GetImageView() const override { return 0; }
+		VkImageView GetImageView() const override;
 
-		Image* GetImage() const override { return nullptr; }
+		Image* GetImage() const override;
+
+	private:
+
+		Atlas  _atlas;
+		Image* _spriteAtlasImage;
+		std::vector<data::SpriteData> _spriteDataList;
 	};
 
 	class Tileset : public A_VulkanDrawable

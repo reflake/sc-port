@@ -5,9 +5,11 @@
 #include "Drawable.hpp"
 #include "Sampler.hpp"
 #include "Shader.hpp"
+#include "SpritePacker.hpp"
 #include "data/Assets.hpp"
 #include "data/Common.hpp"
 #include "data/Palette.hpp"
+#include "data/Sprite.hpp"
 #include "data/Tileset.hpp"
 #include "device/Device.hpp"
 #include "Window.hpp"
@@ -20,6 +22,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <cstring>
 #include <glm/ext/matrix_transform.hpp>
 #include <iostream>
 #include <memory>
@@ -32,6 +35,8 @@
 #include <glm/vec2.hpp>
 
 #include "DescriptorSetLayout.hpp"
+	
+	#include <diagnostic/Image.hpp>
 
 namespace renderer::vulkan
 {
@@ -232,40 +237,44 @@ namespace renderer::vulkan
 
 		return score;
 	}
-	
+
 	DrawableHandle Graphics::LoadSpriteSheet(data::A_SpriteSheetData& spriteSheetData)
 	{
-	/* Примерный алгоритм действий для чтения Grp спрайтов
+		vector<data::SpriteData> spriteDataList;
 
-		for(auto& frame : grp.GetFrames())
+		for(int i = 0; i < spriteSheetData.GetSpriteCount(); i++)
 		{
-			SDL_Surface* surface = SDL_CreateRGBSurface(0, frame.dimensions.x, frame.dimensions.y, 8, 0, 0, 0, 0);
-			SDL_SetSurfacePalette(surface, app.tilesetAtlas.palette);
+			auto frameData = spriteSheetData.GetSpriteData(i);
 
-			SDL_LockSurface(surface);
-
-			grp.GetFramePixels(frameIndex, pixels);
-
-			int width = frame.dimensions.x;
-			auto surfacePixels = reinterpret_cast<uint8_t*>(surface->pixels);
-
-			for(int i = 0; i < surface->h; i++)
-			{
-				memcpy(surfacePixels + i * surface->pitch, pixels + i * width, width);
-			}
-
-			SDL_UnlockSurface(surface);
-			SDL_SetColorKey(surface, SDL_TRUE, 0x00000000);
-
-			atlas.rects.push_back(SDL_Rect { 
-				.x = frame.posOffset.x - grp.GetHeader().dimensions.x / 2, .y = frame.posOffset.y - grp.GetHeader().dimensions.y / 2,
-				.w = frame.dimensions.x, .h = frame.dimensions.y });
-			atlas.surfaces[frameIndex++] = surface;
+			spriteDataList.push_back(frameData);
 		}
 
-		app.spriteAtlases[doodad->grpID] = atlas;*/
+		SpritePacker spritePacker(spriteDataList);
 
-		return nullptr; // TODO:
+		auto atlas = spritePacker.CreateAtlas();
+		auto atlasWidth = atlas.GetDimensions().x;
+		auto atlasHeight = atlas.GetDimensions().y;
+
+		int pixelSize = spriteSheetData.GetPixelSize();
+		auto texturePixelData = std::make_shared<uint8_t[]>(atlasWidth * atlasHeight * pixelSize);
+
+		for(int i = 0; i < spriteSheetData.GetSpriteCount(); i++)
+		{
+			data::SpriteRect frameRect = atlas.GetFrame(i);
+
+			int  rowOffset = frameRect.y * atlasWidth * pixelSize;
+			int  colOffset = frameRect.x * pixelSize;
+			auto destinationData = texturePixelData.get() + rowOffset + colOffset;
+
+			spriteSheetData.ReadPixelData(i, destinationData, atlasWidth * pixelSize);
+		}
+
+		auto image = _bufferAllocator.CreateTextureImage(texturePixelData.get(), atlasWidth, atlasHeight, pixelSize);
+		auto spriteSheet = new SpriteSheet(spriteDataList, atlas, image);
+
+		_drawables.push_back(spriteSheet);
+
+		return spriteSheet;
 	}
 
 	DrawableHandle Graphics::LoadTileset(data::A_TilesetData& tilesetData, std::vector<bool>& usedTiles)
@@ -379,6 +388,16 @@ namespace renderer::vulkan
 				_drawablesCache[i] = nullptr;
 				break;
 			}
+		}
+
+		switch (drawable->GetType()) {
+			case SpriteSheetType:
+				delete reinterpret_cast<SpriteSheet*>(drawable);
+				break;
+			
+			case TilesetType:
+				delete reinterpret_cast<Tileset*>(drawable);
+				break;
 		}
 	}
 

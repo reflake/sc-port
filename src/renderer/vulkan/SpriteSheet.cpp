@@ -3,17 +3,12 @@
 
 namespace renderer::vulkan
 {
-	SpriteSheet::SpriteSheet(std::vector<SpriteFrameData>& frameDatas, BufferAllocator& bufferAllocator)
+	SpriteSheet::SpriteSheet(std::vector<SpriteData>& frameDatas, BufferAllocator& bufferAllocator)
 	{
 		for(auto& frame : frameDatas)
 		{
 			_offsets.push_back(frame.GetOffset());
 		}
-
-		SpritePacker spritePacker(frameDatas);
-
-		_atlas   = spritePacker.CreateAtlas();
-		_texture = bufferAllocator.CreateTexture(_atlas);
 	}
 
 	const Frame SpriteSheet::GetFrame(int frameIndex) const

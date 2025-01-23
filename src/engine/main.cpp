@@ -127,6 +127,8 @@ struct App {
 
 	tileID tiles[256][256];
 
+	int    tickRate = 23;
+
 	double realTime         = 0.0;
 	double deltaTime        = 0.0;
 	double lastWaterCycle   = 0.0;
@@ -300,7 +302,7 @@ void drawMap(MapInfo &mapInfo, App &app,
 			auto frame = doodad->GetCurrentFrame();
 			auto spriteSheet = app.loadedSprites[grpID];
 
-			// app.graphics->Draw(spriteSheet, frame, doodad->pos);
+			app.graphics->Draw(spriteSheet, frame, doodad->pos);
 		}
 	}
 
@@ -580,6 +582,8 @@ int main(int argc, char *argv[]) {
 		processInput(viewPos, moveInput, app.deltaTime);
 
 		app.scriptEngine.PlayNextFrame();
+
+		clock.Stop();
 
 		usleep(10000);
 		
