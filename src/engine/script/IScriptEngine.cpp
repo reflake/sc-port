@@ -194,7 +194,7 @@ namespace script
 
 				case opcode::Wait:
 					reader.Read(waitTickCount);
-					_waitTimer = currentTick + waitTickCount + 1;
+					_waitTimer = currentTick + waitTickCount;
 					yield = true;
 					break;
 

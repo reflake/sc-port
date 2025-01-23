@@ -127,11 +127,12 @@ struct App {
 
 	tileID tiles[256][256];
 
-	int    tickRate = 23;
+	double   tickRate = 16.0 * 1.5;
+	uint64_t currentTick = 0;
 
+	double nextGameTick     = 0.0;
 	double realTime         = 0.0;
 	double deltaTime        = 0.0;
-	double lastWaterCycle   = 0.0;
 	double averageDeltaTime = 0.0;
 	double nextFpsMeasure   = 0.0;
 	double fps;
@@ -263,8 +264,7 @@ struct SpriteAtlas
 	}
 };
 
-void drawMap(MapInfo &mapInfo, App &app,
-							 int &waterCycle, const position pos) {
+void drawMap(MapInfo &mapInfo, App &app, const position pos) {
 
 	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
 		return;
@@ -307,17 +307,6 @@ void drawMap(MapInfo &mapInfo, App &app,
 	}
 
 	app.graphics->PresentToScreen();
-
-	const double waterCycleSpeed = 4.0;
-
-	if (data::HasTileSetWater(mapInfo.tileset)) {
-
-		for(; app.lastWaterCycle < app.realTime; app.lastWaterCycle += 1.0 / waterCycleSpeed)
-		{
-			app.tilesetData.palette.cyclePaletteColor<1, 6>();
-			app.tilesetData.palette.cyclePaletteColor<7, 7>();
-		}
-	}
 }
 
 void processInput(glm::vec<2, double>& pos, int &move, double deltaTime)
@@ -446,6 +435,26 @@ void showLoadErrorMessage(HWND hwnd, const char* mapName)
 	MessageBoxA(hwnd, msg.str().c_str(), "Map load", MB_ICONWARNING | MB_OK);
 }
 
+void gameTick(App& app, MapInfo& mapInfo)
+{
+	Clock clock("GameTick()");
+
+	for(; app.nextGameTick < app.realTime; app.nextGameTick += 1.0 / app.tickRate)
+	{
+		app.scriptEngine.PlayNextFrame();
+
+		const int waterCycleFrequence = 3;
+
+		if (data::HasTileSetWater(mapInfo.tileset) && (app.currentTick % waterCycleFrequence) == 0) {
+
+			app.tilesetData.palette.cyclePaletteColor<1, 6>();
+			app.tilesetData.palette.cyclePaletteColor<7, 7>();
+		}
+
+		app.currentTick++;
+	}
+}
+
 int main(int argc, char *argv[]) {
 
 	auto storagePath = argv[1];
@@ -495,7 +504,6 @@ int main(int argc, char *argv[]) {
 
 	bool running = true;
 
-	int                 waterCycle = 0;
 	int                 moveInput = 0;
 	glm::vec<2, double> viewPos = { 0, 0 };
 
@@ -538,8 +546,9 @@ int main(int argc, char *argv[]) {
 
 						else
 						{
-							app.realTime = 0.0;
-							app.lastWaterCycle = 0.0;
+							app.realTime     = 0.0;
+							app.currentTick  = 0;
+							app.nextGameTick = 0;
 						}
 
 						viewPos = { 0, 0 };
@@ -578,10 +587,9 @@ int main(int argc, char *argv[]) {
 			}
 		};
 
-		drawMap(mapInfo, app, waterCycle, viewPos);
+		drawMap(mapInfo, app, viewPos);
 		processInput(viewPos, moveInput, app.deltaTime);
-
-		app.scriptEngine.PlayNextFrame();
+		gameTick(app, mapInfo);
 
 		clock.Stop();
 
