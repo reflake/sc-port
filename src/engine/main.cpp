@@ -1,3 +1,5 @@
+#include <cstdlib>
+#include <ctime>
 #define SDL_MAIN_HANDLED
 
 #include <algorithm>
@@ -465,6 +467,8 @@ void gameTick(App& app, MapInfo& mapInfo)
 }
 
 int main(int argc, char *argv[]) {
+
+	std::srand(std::time(nullptr));
 
 	auto storagePath = argv[1];
 

@@ -43,7 +43,7 @@ namespace audio
 
 	void MusicPlayer::Play()
 	{
-		PlayTrack(rand() % tracks.size());
+		PlayTrack(std::rand() % tracks.size());
 	}
 
 	void MusicPlayer::Stop()
@@ -65,7 +65,7 @@ namespace audio
 			// Music ended
 			if (_musicChunk == nullptr)
 			{
-				int random = rand() % (tracks.size() - 1);
+				int random = std::rand() % (tracks.size() - 1);
 				random = (_currentTrackIndex + random) % tracks.size();
 
 				PlayTrack(random);
