@@ -1,8 +1,10 @@
 #include "Assets.hpp"
 #include "filesystem/StorageFile.hpp"
 
+#include <SDL_rwops.h>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 #include <stdexcept>
 
 namespace data
@@ -72,8 +74,6 @@ namespace data
 		return file->ReadBinary(output, size);
 	}
 
-	
-
 	int Assets::GetSize(AssetHandle asset) const
 	{
 		// This can cause memory exceptions, needs better handling
@@ -90,5 +90,51 @@ namespace data
 		file->Close();
 
 		delete file;
+	}
+
+	void Assets::AssetToSdlReadIO(SDL_RWops* ops, AssetHandle asset)
+	{
+		ops->hidden.unknown.data1 = asset;
+
+		ops->size = [](SDL_RWops* ctx) {
+			StorageFile* file = reinterpret_cast<StorageFile*>(ctx->hidden.unknown.data1);
+
+			int64_t size = file->GetFileSize();
+
+			return size;
+		};
+
+		ops->seek = [](SDL_RWops* ctx, Sint64 offset, int whence) {
+
+			StorageFile* file = reinterpret_cast<StorageFile*>(ctx->hidden.unknown.data1);
+
+			FileSeekDir method;
+
+			switch(whence)
+			{
+				case RW_SEEK_SET: method = FileSeekDir::Beg; break;
+				case RW_SEEK_CUR: method = FileSeekDir::Cur; break;
+				case RW_SEEK_END: method = FileSeekDir::End; break;
+			}
+
+			int64_t newpos = file->Seek(offset, method);
+
+			return newpos;
+		};
+
+		ops->read = [](SDL_RWops* ctx, void* ptr, size_t size, size_t maxnum) {
+
+			StorageFile* file = reinterpret_cast<StorageFile*>(ctx->hidden.unknown.data1);
+			size_t read = file->ReadBinary(ptr, size * maxnum);
+
+			return read / size;
+		};
+
+		ops->close = [](SDL_RWops* ctx) {
+
+			StorageFile* file = reinterpret_cast<StorageFile*>(ctx->hidden.unknown.data1);
+			file->Close();
+			return 0;
+		};
 	}
 }

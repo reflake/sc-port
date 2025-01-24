@@ -1,6 +1,7 @@
 #pragma once
 
 #include "filesystem/Storage.hpp"
+#include <SDL_rwops.h>
 #include <cstdint>
 
 namespace data
@@ -21,6 +22,8 @@ namespace data
 		int ReadBytes(AssetHandle, uint8_t* output, int size) const;
 		int GetSize(AssetHandle) const;
 		void Close(AssetHandle);
+
+		void AssetToSdlReadIO(SDL_RWops*, AssetHandle);
 
 	private:
 

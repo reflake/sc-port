@@ -1,9 +1,15 @@
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 namespace filesystem
 {
+	enum class FileSeekDir : int
+	{
+		Beg, End, Cur
+	};
+
 	class StorageFile
 	{
 	public:
@@ -28,6 +34,8 @@ namespace filesystem
 		{
 			ReadBinary(data, sizeof(T) * count);
 		}
+
+		uint64_t Seek(int64_t offset, FileSeekDir);
 
 		void Close();
 

@@ -3,6 +3,7 @@
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>
 #include <stdexcept>
+#include <windows.h>
 #include <winnt.h>
 
 #include "StorageFile.hpp"
@@ -59,6 +60,27 @@ namespace filesystem
 		}
 
 		return bytesRead;
+	}
+
+	uint64_t StorageFile::Seek(int64_t offset, FileSeekDir dir)
+	{
+		uint64_t output;
+		DWORD    method;
+
+		switch(dir)
+		{
+			case FileSeekDir::Beg: method = FILE_BEGIN; break;
+			case FileSeekDir::Cur: method = FILE_CURRENT; break;
+			case FileSeekDir::End: method = FILE_END; break;
+		}
+
+		if (!CascSetFilePointer64(_handle, offset, &output, method))
+		{
+			auto message = format("Couldn't seek file %1%") % _filePath;
+			throwErrorMessage(message.str());
+		}
+
+		return output;
 	}
 
 	void StorageFile::Open(void* storageHandle, const char* filePath)

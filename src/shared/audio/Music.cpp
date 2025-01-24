@@ -90,12 +90,9 @@ namespace audio
 	{
 		assert(_openedMusicAsset != nullptr);
 
-		int  assetSize = _assets->GetSize(_openedMusicAsset);
-		_musicData      = std::make_shared<uint8_t[]>(assetSize);
+		_readWriteOps = SDL_AllocRW();
+		_assets->AssetToSdlReadIO(_readWriteOps, _openedMusicAsset);
 
-		int bytesRead = _assets->ReadBytes(_openedMusicAsset, _musicData.get(), assetSize);
-
-		_readWriteOps = SDL_RWFromMem(_musicData.get(), assetSize);
 		_musicChunk = Mix_LoadMUSType_RW(_readWriteOps, MUS_OGG, 0);
 	}
 
