@@ -554,6 +554,8 @@ int main(int argc, char *argv[]) {
 
 					app.musicPlayer.Stop();
 
+					usleep(50000);
+
 					if (showOpenDialog(mapPath, sizeof(mapPath), hwnd)) {
 
 						openedMapSuccessfully = tryOpenMap(app, mapPath, storage, mapInfo);
@@ -635,6 +637,10 @@ int main(int argc, char *argv[]) {
 
 		app.musicPlayer.Process();
 	};
+
+	app.musicPlayer.Stop();
+
+	usleep(50000);
 
 	app.graphics->WaitIdle();
 	app.graphics->Release();

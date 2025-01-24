@@ -19,6 +19,7 @@ namespace audio
 
 		void Initialize();
 		void Play();
+		void Stop(int msFadeTime);
 		void Stop();
 		void Process();
 		void Release();
@@ -36,6 +37,5 @@ namespace audio
 		std::shared_ptr<uint8_t[]> _musicData = nullptr;
 		SDL_RWops* _readWriteOps = nullptr;
 		Mix_Music *_musicChunk = nullptr;
-		int _channelPlaying;
 	};
 }

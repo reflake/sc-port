@@ -43,15 +43,20 @@ namespace audio
 
 	void MusicPlayer::Play()
 	{
+		FreeChunk();
 		PlayTrack(std::rand() % tracks.size());
+	}
+
+	void MusicPlayer::Stop(int millisecondsFadeTime)
+	{
+		Mix_FadeOutMusic(millisecondsFadeTime);
 	}
 
 	void MusicPlayer::Stop()
 	{
 		Mix_HaltMusic();
-		FreeChunk();
 
-		_channelPlaying = -1;
+		FreeChunk();
 	}
 
 	void MusicPlayer::Process()
@@ -59,8 +64,6 @@ namespace audio
 		if (!Mix_PlayingMusic())
 		{
 			FreeChunk();
-
-			_channelPlaying = Mix_PlayMusic(_musicChunk, 0);
 
 			// Music ended
 			if (_musicChunk == nullptr)
@@ -88,7 +91,7 @@ namespace audio
 
 		assert(_musicChunk != nullptr);
 
-		_channelPlaying = Mix_PlayMusic(_musicChunk, 0);
+		Mix_PlayMusic(_musicChunk, 0);
 	}
 
 	void MusicPlayer::ReadChunk()
@@ -109,7 +112,8 @@ namespace audio
 		if (_readWriteOps != nullptr)
 			SDL_FreeRW(_readWriteOps);
 
-		_musicChunk = nullptr;
+		_musicChunk   = nullptr;
+		_readWriteOps = nullptr;
 	}
 
 	MusicPlayer::~MusicPlayer()
