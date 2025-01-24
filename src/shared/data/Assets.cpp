@@ -1,4 +1,5 @@
 #include "Assets.hpp"
+#include "filesystem/StorageFile.hpp"
 
 #include <filesystem>
 #include <fstream>
@@ -7,6 +8,14 @@
 namespace data
 {
 	using std::ifstream;
+	using namespace filesystem;
+
+	
+	Assets::Assets() {}
+
+	Assets::Assets(filesystem::Storage* storage)
+		: _storage(storage)
+		{}
 
 	int Assets::ReadBytes(const char* path, uint8_t* output) const
 	{
@@ -44,5 +53,42 @@ namespace data
 		input.close();
 
 		return size;
+	}
+
+	AssetHandle Assets::Open(const char* path)
+	{
+		StorageFile file;
+
+		_storage->Open(path, file);
+
+		return new StorageFile(std::move(file));
+	}
+
+	int Assets::ReadBytes(AssetHandle asset, uint8_t* output, int size) const
+	{
+		// This can cause memory exceptions, needs better handling
+		StorageFile* file = reinterpret_cast<StorageFile*>(asset);
+
+		return file->ReadBinary(output, size);
+	}
+
+	
+
+	int Assets::GetSize(AssetHandle asset) const
+	{
+		// This can cause memory exceptions, needs better handling
+		StorageFile* file = reinterpret_cast<StorageFile*>(asset);
+
+		return file->GetFileSize();
+	}
+
+	void Assets::Close(AssetHandle asset)
+	{
+		// This can cause memory exceptions, needs better handling
+		StorageFile* file = reinterpret_cast<StorageFile*>(asset);
+		
+		file->Close();
+
+		delete file;
 	}
 }

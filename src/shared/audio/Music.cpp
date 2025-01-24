@@ -1,0 +1,115 @@
+#include "Music.hpp"
+#include <SDL_mixer.h>
+#include <SDL_rwops.h>
+#include <array>
+#include <cassert>
+#include <cstdlib>
+#include <memory>
+#include <stdexcept>
+#include <utility>
+
+using std::runtime_error;
+
+namespace audio
+{
+	const int chunkSize = 10000;
+
+	std::array<const char*, 4> tracks = {
+		"music/terran1.ogg",
+		"music/terran2.ogg",
+		"music/terran3.ogg",
+		"music/terran4.ogg",
+	};
+
+	MusicPlayer::MusicPlayer()
+		{}
+		
+	MusicPlayer::MusicPlayer(data::Assets* assets)
+		: _assets(assets)
+		{}
+
+	void MusicPlayer::Initialize()
+	{
+		if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+		{
+			throw runtime_error("Failed to open audio mixer");
+		}
+	}
+
+	void MusicPlayer::Play()
+	{
+		PlayTrack(rand() % tracks.size());
+	}
+
+	void MusicPlayer::Stop()
+	{
+		Mix_HaltMusic();
+		FreeChunk();
+
+		_channelPlaying = -1;
+	}
+
+	void MusicPlayer::Process()
+	{
+		if (!Mix_PlayingMusic())
+		{
+			FreeChunk();
+
+			_channelPlaying = Mix_PlayMusic(_musicChunk, 0);
+
+			// Music ended
+			if (_musicChunk == nullptr)
+			{
+				int random = rand() % (tracks.size() - 1);
+				random = (_currentTrackIndex + random) % tracks.size();
+
+				PlayTrack(random);
+			}
+		}
+	}
+
+	void MusicPlayer::PlayTrack(int track)
+	{
+		_currentTrackIndex = track;
+
+		if (_openedMusicAsset != nullptr)
+		{
+			_assets->Close(_openedMusicAsset);
+		}
+
+		_openedMusicAsset = _assets->Open(tracks[track]);
+
+		ReadChunk();
+
+		assert(_musicChunk != nullptr);
+
+		_channelPlaying = Mix_PlayMusic(_musicChunk, 0);
+	}
+
+	void MusicPlayer::ReadChunk()
+	{
+		assert(_openedMusicAsset != nullptr);
+
+		int  assetSize = _assets->GetSize(_openedMusicAsset);
+		_musicData      = std::make_shared<uint8_t[]>(assetSize);
+
+		int bytesRead = _assets->ReadBytes(_openedMusicAsset, _musicData.get(), assetSize);
+
+		auto rw = SDL_RWFromMem(_musicData.get(), assetSize);
+
+		_musicChunk = Mix_LoadMUSType_RW(rw, MUS_OGG, 0);
+	}
+
+	void MusicPlayer::FreeChunk()
+	{
+		if (_musicChunk != nullptr)
+			Mix_FreeMusic(_musicChunk);
+
+		_musicChunk = nullptr;
+	}
+
+	MusicPlayer::~MusicPlayer()
+	{
+		FreeChunk();
+	}
+}

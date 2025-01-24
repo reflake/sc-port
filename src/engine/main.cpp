@@ -35,10 +35,11 @@
 #include <SDL_surface.h>
 #include <SDL_syswm.h>
 #include <SDL_video.h>
+#include <SDL_timer.h>
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL.h>
-#include <SDL_timer.h>
 
+#include <audio/Music.hpp>
 #include <data/Assets.hpp>
 #include <data/Common.hpp>
 #include <data/Grp.hpp>
@@ -102,7 +103,7 @@ void throwSdlError(const char* msg)
 
 void initSDL()
 {
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO) < 0)
 	{
 		throwSdlError("Couldn't initialize SDL library");
 	}
@@ -126,6 +127,8 @@ struct App {
 	unordered_map<data::grpID, DrawableHandle> loadedSprites;
 
 	tileID tiles[256][256];
+
+	audio::MusicPlayer musicPlayer;
 
 	double   tickRate = 16.0 * 1.5;
 	uint64_t currentTick = 0;
@@ -178,6 +181,12 @@ void freeWindow(App& app)
 void initializeGraphicsAPI(App& app)
 {
 	app.graphics = renderer::vulkan::CreateGraphics(app.window, &app.assets);
+}
+
+void initializeMusicPlayer(App& app)
+{
+	app.musicPlayer = audio::MusicPlayer(&app.assets);
+	app.musicPlayer.Initialize();
 }
 
 bool showOpenDialog(char* out, int size, HWND hwnd)
@@ -460,18 +469,19 @@ int main(int argc, char *argv[]) {
 	auto storagePath = argv[1];
 
 	Storage storage(storagePath);
-
 	App app;
+
+	app.assets = data::Assets(&storage);
 	
 	initSDL();
 	createWindow(app);
 	initializeGraphicsAPI(app);
+	initializeMusicPlayer(app);
 
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);
 	SDL_GetWindowWMInfo(app.window, &wmInfo);
 	HWND hwnd = wmInfo.info.win.window;
-
 
 	char     mapPath[260];
 	auto     ignoredMapEntries = vector<EntryName> { EntryName::Terrain_Editor };
@@ -509,6 +519,8 @@ int main(int argc, char *argv[]) {
 
 	uint64_t counterCurrent, counterLast = SDL_GetPerformanceCounter();
 
+	app.musicPlayer.Play();
+
 	while (running) {
 
 		Clock clock("Loop()");
@@ -536,6 +548,8 @@ int main(int argc, char *argv[]) {
 
 					uint64_t diff = SDL_GetPerformanceCounter();
 
+					app.musicPlayer.Stop();
+
 					if (showOpenDialog(mapPath, sizeof(mapPath), hwnd)) {
 
 						openedMapSuccessfully = tryOpenMap(app, mapPath, storage, mapInfo);
@@ -557,6 +571,8 @@ int main(int argc, char *argv[]) {
 					diff = SDL_GetPerformanceCounter() - diff;
 
 					counterLast += diff;
+
+					app.musicPlayer.Play();
 				} break;
 				}
 				break;
@@ -612,6 +628,8 @@ int main(int argc, char *argv[]) {
 		time % app.realTime % app.averageDeltaTime % app.fps;
 
 		SDL_SetWindowTitle(app.window, time.str().c_str());
+
+		app.musicPlayer.Process();
 	};
 
 	app.graphics->WaitIdle();

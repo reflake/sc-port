@@ -13,6 +13,13 @@ using boost::format;
 
 namespace filesystem
 {
+	StorageFile::StorageFile() {}
+	
+	StorageFile::StorageFile(StorageFile&& file)
+		: _handle(file._handle), _fileSize(file._fileSize)
+	{
+		file._handle = nullptr;
+	}
 	
 	static void throwErrorMessage(string msg)
 	{
@@ -40,12 +47,12 @@ namespace filesystem
 		_handle = nullptr;
 	}
 
-	void StorageFile::ReadBinary(void* data, int size)
+	int StorageFile::ReadBinary(void* data, int size)
 	{
 		// TODO: need better implementation of the buffer
 		char buffer[1024];
 		char* dataPtr = reinterpret_cast<char*>(data);
-		DWORD bytesRead;
+		DWORD bytesRead, totalBytesRead;
 
 		while(size > 0)
 		{
@@ -56,6 +63,8 @@ namespace filesystem
 				auto message = format("Couldn't read file %1%") % _filePath;
 				throwErrorMessage(message.str());
 			}
+
+			totalBytesRead += bytesRead;
 
 			if (bytesRead != count)
 			{
@@ -68,6 +77,8 @@ namespace filesystem
 			size -= sizeof(buffer);
 			dataPtr += sizeof(buffer);
 		}
+
+		return totalBytesRead;
 	}
 
 	void StorageFile::Open(void* storageHandle, const char* filePath)

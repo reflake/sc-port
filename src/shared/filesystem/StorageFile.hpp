@@ -8,11 +8,14 @@ namespace filesystem
 	{
 	public:
 
+		StorageFile();
+		StorageFile(StorageFile&& file);
+
 		~StorageFile();
 
 		void Open(void* storageHandle, const char* filePath);
 
-		void ReadBinary(void* data, int size);
+		int ReadBinary(void* data, int size);
 
 		template<typename T>
 		void Read(T& data)

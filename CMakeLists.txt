@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 23)
 
 # SDL2 Libraries
 find_package(SDL2 REQUIRED)
+find_package(SDL2_mixer REQUIRED)
 
 add_executable(Engine src/engine/main.cpp)
 
@@ -25,6 +26,8 @@ target_sources(Engine
     src/engine/meta/UnitTable.cpp
     
     src/engine/script/IScriptEngine.cpp
+    
+    src/shared/audio/Music.cpp
     
     src/shared/data/Common.cpp
     src/shared/data/Grp.cpp
@@ -142,6 +145,7 @@ target_link_libraries(Engine
   PRIVATE casc_static
   PRIVATE storm
   PRIVATE SDL2::SDL2-static
+  PRIVATE SDL2_mixer
   PRIVATE libpng)
 
 
