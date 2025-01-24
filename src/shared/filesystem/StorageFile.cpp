@@ -49,36 +49,16 @@ namespace filesystem
 
 	int StorageFile::ReadBinary(void* data, int size)
 	{
-		// TODO: need better implementation of the buffer
-		char buffer[1024];
 		char* dataPtr = reinterpret_cast<char*>(data);
-		DWORD bytesRead, totalBytesRead;
+		DWORD bytesRead;
 
-		while(size > 0)
+		if (!CascReadFile(_handle, data, size, &bytesRead))
 		{
-			int count = std::min<int>(size, sizeof(buffer));
-
-			if (!CascReadFile(_handle, buffer, count, &bytesRead))
-			{
-				auto message = format("Couldn't read file %1%") % _filePath;
-				throwErrorMessage(message.str());
-			}
-
-			totalBytesRead += bytesRead;
-
-			if (bytesRead != count)
-			{
-				auto message = format("Couldn't fully read all bytes of file %1%") % _filePath;
-				throwErrorMessage(message.str());
-			}
-
-			memcpy(dataPtr, buffer, count);
-
-			size -= sizeof(buffer);
-			dataPtr += sizeof(buffer);
+			auto message = format("Couldn't read file %1%") % _filePath;
+			throwErrorMessage(message.str());
 		}
 
-		return totalBytesRead;
+		return bytesRead;
 	}
 
 	void StorageFile::Open(void* storageHandle, const char* filePath)
