@@ -30,7 +30,12 @@ namespace audio
 
 	void MusicPlayer::Initialize()
 	{
-		if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+		if (Mix_Init(MIX_INIT_OGG) < 0)
+		{
+			throw runtime_error("Failed to initialize audio engine");
+		}
+
+		if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0)
 		{
 			throw runtime_error("Failed to open audio mixer");
 		}
