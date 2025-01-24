@@ -95,15 +95,17 @@ namespace audio
 
 		int bytesRead = _assets->ReadBytes(_openedMusicAsset, _musicData.get(), assetSize);
 
-		auto rw = SDL_RWFromMem(_musicData.get(), assetSize);
-
-		_musicChunk = Mix_LoadMUSType_RW(rw, MUS_OGG, 0);
+		_readWriteOps = SDL_RWFromMem(_musicData.get(), assetSize);
+		_musicChunk = Mix_LoadMUSType_RW(_readWriteOps, MUS_OGG, 0);
 	}
 
 	void MusicPlayer::FreeChunk()
 	{
 		if (_musicChunk != nullptr)
 			Mix_FreeMusic(_musicChunk);
+
+		if (_readWriteOps != nullptr)
+			SDL_FreeRW(_readWriteOps);
 
 		_musicChunk = nullptr;
 	}
