@@ -10,7 +10,7 @@ namespace renderer::vulkan
 	{
 	public:
 
-		Atlas(uint32_t width, uint32_t height, std::vector<data::SpriteRect>&&);
+		Atlas(uint32_t width, uint32_t height, std::vector<data::SpriteRect>&);
 	
 		glm::vec<2, uint32_t> GetDimensions() const;
 		data::SpriteRect      GetFrame(int frame) const;

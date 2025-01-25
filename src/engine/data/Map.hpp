@@ -28,8 +28,6 @@ namespace data
 
 	struct MapInfo
 	{
-		MapInfo(const std::vector<EntryName>& ignoredEntries);
-
 		std::pair<tileGroupID, tileVariation> GetTile(int x, int y) const;
 
 		char 		 mapType[4]; // equals either RAWS or RAWB
@@ -43,8 +41,7 @@ namespace data
 		int tileCount;
 
 		std::vector<MapSprite> sprites;
-
-		const std::vector<EntryName>& ignoredEntries;
+		std::vector<EntryName> ignoredEntries;
 	};
 
 	struct MapSprite

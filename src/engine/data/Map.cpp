@@ -18,8 +18,6 @@ namespace data
 
 	using enum EntryName;
 
-	MapInfo::MapInfo(const std::vector<EntryName>& ignoredEntries) : ignoredEntries(ignoredEntries) {}
-
 	std::pair<tileGroupID, tileVariation> MapInfo::GetTile(int x, int y) const
 	{
 		auto val = terrain[x + y * dimensions.x];

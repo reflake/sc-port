@@ -15,9 +15,11 @@ namespace renderer::vulkan {
 	//   Sprite sheet
 	//  TODO: description
 	// =========================================
-	SpriteSheet::SpriteSheet(std::vector<data::SpriteData>& spriteDataList, Atlas& atlas, Image* image)
-		: _spriteDataList(std::move(spriteDataList)), _atlas(std::move(atlas)), _spriteAtlasImage(image)
-		{}
+	SpriteSheet::SpriteSheet(std::vector<data::SpriteData>& spriteDataList, Atlas& atlas, Image* image) : 
+		_spriteDataList(std::move(spriteDataList)),
+		_atlas(std::move(atlas)),
+		_spriteAtlasImage(image)
+	{}
 
 	std::size_t SpriteSheet::GetPolygon(frameIndex frameIndex, Vertex* output, std::size_t maxCount) const
 	{
@@ -54,7 +56,6 @@ namespace renderer::vulkan {
 	}
 
 	DrawableType SpriteSheet::GetType() const { return SpriteSheetType; }
-
 
 	// =========================================
 	//   Tileset

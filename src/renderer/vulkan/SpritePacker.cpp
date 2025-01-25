@@ -49,6 +49,6 @@ namespace renderer::vulkan
 		width = pow(2, ceil(log2(width)));
 		height = pow(2, ceil(log2(height)));
 
-		return Atlas(width, height, std::move(outputRects));
+		return Atlas(width, height, outputRects);
 	}
 }
