@@ -37,9 +37,13 @@ namespace filesystem
 
 		uint64_t Seek(int64_t offset, FileSeekDir);
 
+		uint64_t GetPosition();
+
 		void Close();
 
 		const int GetFileSize();
+
+		bool IsOpened() const;
 
 	private:
 

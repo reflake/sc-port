@@ -83,14 +83,19 @@ namespace filesystem
 		return output;
 	}
 
+	uint64_t StorageFile::GetPosition()
+	{
+		// dirty hack!
+		return Seek(0, FileSeekDir::Cur);
+	}
+
 	void StorageFile::Open(void* storageHandle, const char* filePath)
 	{
 		if (_handle == nullptr)
 		{
 			if (!CascOpenFile(storageHandle, filePath, 0, 0, &_handle))
 			{
-				auto message = format("Couldn't read file %1%") % filePath;
-				throwErrorMessage(message.str());
+				_handle = nullptr;
 			}
 		}
 		else
@@ -114,5 +119,10 @@ namespace filesystem
 		{
 			return _fileSize = CascGetFileSize(_handle, nullptr);
 		}
+	}
+
+	bool StorageFile::IsOpened() const
+	{
+		return _handle != nullptr;
 	}
 }

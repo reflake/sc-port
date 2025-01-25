@@ -146,7 +146,9 @@ target_link_libraries(Engine
   PRIVATE storm
   PRIVATE SDL2::SDL2-static
   PRIVATE SDL2_mixer
-  PRIVATE libpng)
+  PRIVATE libpng
+  PRIVATE libvpx
+  PRIVATE libwebm)
 
 
 target_link_libraries(Renderer 

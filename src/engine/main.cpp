@@ -1,651 +1,324 @@
-#include <cstdlib>
-#include <ctime>
-#define SDL_MAIN_HANDLED
-
-#include <algorithm>
 #include <array>
-#include <CascLib.h>
-#include <cassert>
-#include <commdlg.h> // windows only
+#include <cstdio>
 #include <cstring>
-#include <fileapi.h>
-#include <handleapi.h>
+#include <ctime>
 #include <iostream>
 #include <memory>
-#include <minwindef.h>
-#include <stdexcept>
-#include <unistd.h>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-#include <windows.h>
-
-#include <intrin.h>
-
 #include <sstream>
+#include <stdexcept>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
-#include <boost/format/format_fwd.hpp>
+#include <string>
+#include <vector>
+#include <vpx/vpx_codec.h>
+#include <vpx/vpx_image.h>
+#include <webm/callback.h>
+#include <webm/element.h>
+#include <webm/id.h>
+#include <webm/reader.h>
+#include <webm/status.h>
+#include <webm/file_reader.h>
+#include <webm/webm_parser.h>
+#include <webm/dom_types.h>
 
-#include <SDL_events.h>
-#include <SDL_hints.h>
-#include <SDL_keycode.h>
-#include <SDL_pixels.h>
-#include <SDL_rect.h>
-#include <SDL_stdinc.h>
-#include <SDL_surface.h>
-#include <SDL_syswm.h>
-#include <SDL_video.h>
-#include <SDL_timer.h>
-#include <SDL2/SDL_render.h>
-#include <SDL2/SDL.h>
+#include "data/Assets.hpp"
+#include "diagnostic/Image.hpp"
+#include "filesystem/StorageFile.hpp"
+#include "vpx/vpx_decoder.h"
+#include <vpx/vp8dx.h>
 
-#include <audio/Music.hpp>
-#include <data/Assets.hpp>
-#include <data/Common.hpp>
-#include <data/Grp.hpp>
-#include <data/Images.hpp>
-#include <filesystem/MpqArchive.hpp>
 #include <filesystem/Storage.hpp>
 
-#include <vulkan/Api.hpp>
-
-#include "data/Tile.hpp"
-#include "data/Map.hpp"
-#include "data/Sprite.hpp"
-#include "data/TextStrings.hpp"
-#include "data/Tileset.hpp"
-#include "script/IScriptEngine.hpp"
-#include "entity/ScriptedDoodad.hpp"
-
-#include "vulkan/VulkanGraphics.hpp"
-#include <diagnostic/Clock.hpp>
-
-using boost::format;
-
-using data::Grp;
-using std::runtime_error;
-using std::string;
-using std::vector;
-using std::shared_ptr;
-using std::unordered_map;
-
-using data::TILE_SIZE;
-using data::tileID;
-using data::tileGroupID;
-using data::tileVariation;
-
-using data::MapInfo;
-using data::TilesetData;
-using data::position;
-using data::ImagesTable;
-using	data::SpriteTable;
-
-using data::EntryName;
-
-using entity::ScriptedDoodad;
-
-using filesystem::Storage;
-
-using script::IScriptEngine;
-
-using VulkanGraphics = renderer::vulkan::Graphics;
-
-using renderer::DrawableHandle;
- 
-struct SpriteAtlas;
-
-void throwSdlError(const char* msg)
+struct Video
 {
-	auto err = format("%1%: %2%") % msg % SDL_GetError();
+	int width, height;
+	int frameMaxSize = 0;
 
-	throw runtime_error( err.str() );
-}
-
-void initSDL()
-{
-	if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_VIDEO) < 0)
-	{
-		throwSdlError("Couldn't initialize SDL library");
-	}
-}
-
-struct App {
-	SDL_Renderer* renderer = nullptr;
-	SDL_Window*	  window = nullptr;
-	SDL_Surface*  screenSurface = nullptr;
-
-	TilesetData    tilesetData;
-
-	DrawableHandle tilesetView;
-
-	IScriptEngine                        scriptEngine;
-	vector<shared_ptr<ScriptedDoodad>>   scriptedDoodads;
-
-	shared_ptr<renderer::A_Graphics> graphics;
-	data::Assets assets;
-
-	unordered_map<data::grpID, DrawableHandle> loadedSprites;
-
-	tileID tiles[256][256];
-
-	audio::MusicPlayer musicPlayer;
-
-	double   tickRate = 16.0 * 1.5;
-	uint64_t currentTick = 0;
-
-	double nextGameTick     = 0.0;
-	double realTime         = 0.0;
-	double deltaTime        = 0.0;
-	double averageDeltaTime = 0.0;
-	double nextFpsMeasure   = 0.0;
-	double fps;
+	std::vector<webm::FrameMetadata> frameMetas;
 };
 
-void freeWindow(App&);
-
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 960;
-
-void createWindow(App& app)
+class VideoCallback : public webm::Callback
 {
-	const int windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
+public:
 
-	freeWindow(app);
+	VideoCallback(Video& video) :
+		_video(video)
+	{}
 
-	app.window = SDL_CreateWindow(
-		"Game", 
-		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
-		SCREEN_WIDTH, SCREEN_HEIGHT, 
-		windowFlags
-	);
-
-	if (!app.window)
+	template<typename T>
+	const T& GetEntry(const webm::Element<T>& track_entry)
 	{
-		throwSdlError("Failed to create the window");
-	}
-}
-
-void freeWindow(App& app)
-{
-	if (app.renderer)
-	{
-		SDL_DestroyRenderer(app.renderer);
-	}
-
-	if (app.window)
-	{
-		SDL_DestroyWindow(app.window);
-	}
-}
-
-void initializeGraphicsAPI(App& app)
-{
-	app.graphics = renderer::vulkan::CreateGraphics(app.window, &app.assets);
-}
-
-void initializeMusicPlayer(App& app)
-{
-	app.musicPlayer = audio::MusicPlayer(&app.assets);
-	app.musicPlayer.Initialize();
-}
-
-bool showOpenDialog(char* out, int size, HWND hwnd)
-{
-	OPENFILENAME ofn;
-
-	ZeroMemory(&ofn, sizeof(ofn));
-	ofn.lStructSize = sizeof(ofn);
-	ofn.hwndOwner = hwnd;
-	ofn.lpstrFile = out;
-	ofn.lpstrFile[0] = '\0';
-	ofn.nMaxFile = size;
-	ofn.lpstrFilter = "StarCraft maps (*.SCM; *.SCX)\0*.SCM;*.SCX\0All (*.*)\0*.*\0";
-	ofn.nFilterIndex = 1;
-	ofn.lpstrFileTitle = NULL;
-	ofn.nMaxFileTitle = 0;
-	ofn.lpstrInitialDir = NULL;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
-
-	if (GetOpenFileName(&ofn))
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-void loadMap(App& app, const string& mapPath, Storage& storage, MapInfo& mapInfo)
-{
-	filesystem::MpqArchive mapFile(mapPath.c_str());
-
-	data::ReadMap(mapFile, mapInfo);
-	data::LoadTilesetData(storage, mapInfo.tileset, app.tilesetData);
-
-	memset(app.tiles, 0, sizeof(app.tiles));
-
-	for(int i = 0; i < mapInfo.dimensions.x; i++)
-	for(int j = 0; j < mapInfo.dimensions.y; j++)
-	{
-		if (app.tiles[i][j] != 0)
-			continue;
-
-		auto [tileGroupID, variation] = mapInfo.GetTile(i, j);
-		auto tileGroup = app.tilesetData.tileGroups[tileGroupID];
-		tileID tileID;
-
-		if (app.tilesetData.IsDoodad(tileGroupID))
+		if (!track_entry.is_present())
 		{
-			tileID = tileGroup.terrain.variations[variation];
-		}
-		else
-		{
-			tileID = tileGroup.doodad.tiles[variation];
+			throw std::runtime_error("Invalid entry");
 		}
 
-		app.tiles[i][j] = tileID;
+		return track_entry.value();
 	}
-}
 
-enum Move : int { Up = 0x01, Down = 0x02, Left = 0x04, Right = 0x08 };
-
-struct SpriteAtlas
-{
-	SDL_Surface**    surfaces;
-	vector<SDL_Rect> rects;
-	int frames = 0;
-
-	void Free()
+	template<typename T>
+	const T GetValue(const webm::Element<T> value_element)
 	{
-		rects.clear();
-
-		if (surfaces == nullptr)
-			return;
-
-		for(int i = 0; i < frames; i++)
+		if (!value_element.is_present())
 		{
-			SDL_FreeSurface(surfaces[i]);
+			throw std::runtime_error("Invalid value element");
 		}
 
-		delete[] surfaces;
-		surfaces = nullptr;
+		return value_element.value();
 	}
+
+  webm::Status OnTrackEntry(const webm::ElementMetadata& metadata,
+                      const webm::TrackEntry& track_entry) override {
+    
+		if (track_entry.track_type.is_present())
+		{
+			std::string codec = GetValue(track_entry.codec_id);
+
+			if (codec != "V_VP9")
+			{
+				throw std::runtime_error("Unsupported codec");
+			}
+
+			switch(track_entry.track_type.value())
+			{
+				case webm::TrackType::kVideo:
+
+					ReadVideoEntry(GetEntry(track_entry.video));
+					break;
+				default:
+					throw std::runtime_error("Unsupported track entry");
+			}
+		}
+
+    return webm::Status(webm::Status::kOkCompleted);
+  }
+
+	webm::Status OnFrame(const webm::FrameMetadata& metadata, webm::Reader* reader, std::uint64_t* bytes_remaining) override
+	{
+		_video.frameMetas.push_back(metadata);
+
+		if (*bytes_remaining > _video.frameMaxSize)
+		{
+			_video.frameMaxSize = *bytes_remaining;
+		}
+
+		return webm::Callback::OnFrame(metadata, reader, bytes_remaining);
+	}
+
+	void ReadVideoEntry(const webm::Video& video)
+	{
+		if (video.interlaced.is_present() ||
+				video.projection.is_present() ||
+				video.alpha_mode.is_present() ||
+				video.frame_rate.is_present())
+		{
+			throw std::runtime_error("Unsupported video property");
+		}
+
+		_video.width = GetValue(video.pixel_width);
+		_video.height = GetValue(video.pixel_height);
+	}
+
+	Video& _video;
 };
 
-void drawMap(MapInfo &mapInfo, App &app, const position pos) {
+class Reader : public webm::Reader
+{
+public:
 
-	if (mapInfo.dimensions.x == 0 || mapInfo.dimensions.y == 0)
-		return;
-
+	Reader(data::Assets* assets, data::AssetHandle videoFileHandle) :
+		_assets(assets),
+		_videoFileHandle(videoFileHandle)
 	{
-		Clock clock("BeginRendering()");
-
-		app.graphics->BeginRendering();
-		app.graphics->SetTilesetPalette(app.tilesetData.palette);
-		app.graphics->SetView(pos);
 	}
 
-	int leftBorderIndex  = std::max<int>(0, pos.x / TILE_SIZE);
-	int rightBorderIndex = std::min<int>(mapInfo.dimensions.x, (pos.x + SCREEN_WIDTH) / TILE_SIZE + 1);
-	int upBorderIndex    = std::max<int>(0, pos.y / TILE_SIZE);
-	int downBorderIndex  = std::min<int>(mapInfo.dimensions.y, (pos.y + SCREEN_HEIGHT) / TILE_SIZE + 1);
-
+	webm::Status Read(std::size_t size, std::uint8_t* buffer, std::uint64_t* bytesRead) override
 	{
-		Clock clock("RenderTiles()");
+		*bytesRead = _assets->ReadBytes(_videoFileHandle, buffer, size);
 
-		for (int x = leftBorderIndex; x < rightBorderIndex; x++)
-		for (int y = upBorderIndex; y < downBorderIndex; y++)
+		if (*bytesRead == 0)
 		{
-			tileID tileId = app.tiles[x][y];
-
-			app.graphics->Draw(app.tilesetView, tileId, { x * TILE_SIZE, y * TILE_SIZE });
-		};
-	}
-
-	{
-		Clock clock("RenderSprites()");
-		for(auto& doodad : app.scriptedDoodads)
-		{
-			auto grpID = doodad->grpID;
-			auto frame = doodad->GetCurrentFrame();
-			auto spriteSheet = app.loadedSprites[grpID];
-
-			app.graphics->Draw(spriteSheet, frame, doodad->pos);
-		}
-	}
-
-	app.graphics->PresentToScreen();
-}
-
-void processInput(glm::vec<2, double>& pos, int &move, double deltaTime)
-{
-	const float speed = 1000.0f;
-	float x = 0, y = 0;
-
-	if ((move & Up) > 0)
-		y -= 1;
-	if ((move & Down) > 0)
-		y += 1;
-	if ((move & Left) > 0)
-		x -= 1;
-	if ((move & Right) > 0)
-		x += 1;
-
-	pos.x += x * speed * deltaTime;
-	pos.y += y * speed * deltaTime;
-}
-
-void placeScriptedDoodads(
-	App& app, Storage& storage, MapInfo& mapInfo)
-{
-	SpriteTable spriteTable;
-	data::ReadSpriteTable(storage, spriteTable);
-
-	ImagesTable imagesTable;
-	data::ReadImagesTable(storage, imagesTable);
-
-	script::ReadIScriptFile(storage, "scripts/iscript.bin", app.scriptEngine);
-
-	app.scriptEngine.Clear();
-	app.scriptEngine.Init();
-	
-	app.scriptedDoodads.clear();
-
-	for(auto& doodad : mapInfo.sprites)
-	{
-		auto& imageID  = spriteTable.imageID[doodad.spriteID];
-		auto  grpID    = imagesTable.grpID[imageID] - 1;
-		auto  scriptID = imagesTable.iScriptID[imageID];
-		auto  pos      = doodad.position;
-
-		auto instance = std::make_shared<ScriptedDoodad>(scriptID, grpID, pos);
-
-		app.scriptEngine.RunScriptableObject(instance);
-		app.scriptedDoodads.push_back(instance);
-	}
-}
-
-void loadTileset(App& app, MapInfo& mapInfo, Storage& storage, data::Tileset tileset)
-{
-	if (app.tilesetView != nullptr)
-	{
-		app.graphics->FreeDrawable(app.tilesetView);
-		app.tilesetView = nullptr;
-	}
-
-	vector<bool> usedTiles(app.tilesetData.GetTileCount(), false);
-
-	for(int i = 0; i < mapInfo.dimensions.x; i++)
-	for(int j = 0; j < mapInfo.dimensions.y; j++)
-	{
-		tileID tileID = app.tilesetData.GetMappedIndex(app.tiles[i][j]);
-
-		usedTiles[tileID] = true;
-	};
-
-	app.tilesetView = app.graphics->LoadTileset(app.tilesetData, usedTiles);
-}
-
-void loadDoodadGrps(App& app, Storage& storage)
-{
-	data::TextStringsTable imageStrings;
-	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
-
-	for(auto& doodad : app.scriptedDoodads)
-	{
-		uint8_t pixels[data::GRP_SPRITE_SQUARE_LIMIT];
-
-		if (app.loadedSprites.contains(doodad->grpID))
-			continue;
-
-		auto grpPath = imageStrings.entries[doodad->grpID];
-		auto grp = Grp::ReadGrpFile(storage, grpPath);
-
-		app.loadedSprites[doodad->grpID] = app.graphics->LoadSpriteSheet(grp);
-	}
-}
-
-bool tryOpenMap(App& app, const char* mapPath, Storage& storage, MapInfo& mapInfo)
-{
-	app.graphics->WaitIdle();
-	
-	try
-	{
-
-		loadMap(app, mapPath, storage, mapInfo);
-
-		for(auto& [_, spriteSheet] : app.loadedSprites)
-		{
-			app.graphics->FreeDrawable(spriteSheet);
+			return webm::Status(webm::Status::kEndOfFile);
 		}
 
-		app.loadedSprites.clear();
-
-		loadTileset(app, mapInfo, storage, mapInfo.tileset);
-		placeScriptedDoodads(app, storage, mapInfo);
-		loadDoodadGrps(app, storage);
-
-		app.scriptEngine.Process();
-
-		return true;
+		return webm::Status(*bytesRead < size ? webm::Status::kOkPartial : webm::Status::kOkCompleted);
 	}
-	catch (...)
+
+	webm::Status Skip(std::uint64_t bytesToSkip, std::uint64_t* actuallySkipped) override
 	{
-		std::cout << "Couldn't load file " << mapPath << std::endl;
-		return false;
-	}
-}
+		int lastPosition = _assets->GetPosition(_videoFileHandle);
 
-void showLoadErrorMessage(HWND hwnd, const char* mapName)
-{
-	auto msg = format("Couldn't load map %1%") % mapName;
+		_assets->Seek(_videoFileHandle, bytesToSkip, filesystem::FileSeekDir::Cur);
 
-	MessageBoxA(hwnd, msg.str().c_str(), "Map load", MB_ICONWARNING | MB_OK);
-}
+		*actuallySkipped = _assets->GetPosition(_videoFileHandle) - lastPosition;
 
-void gameTick(App& app, MapInfo& mapInfo)
-{
-	Clock clock("GameTick()");
-
-	for(; app.nextGameTick < app.realTime; app.nextGameTick += 1.0 / app.tickRate)
-	{
-		app.scriptEngine.PlayNextFrame();
-
-		const int waterCycleFrequence = 3;
-
-		if (data::HasTileSetWater(mapInfo.tileset) && (app.currentTick % waterCycleFrequence) == 0) {
-
-			app.tilesetData.palette.cyclePaletteColor<1, 6>();
-			app.tilesetData.palette.cyclePaletteColor<7, 7>();
+		if (*actuallySkipped == 0)
+		{
+			return webm::Status(webm::Status::kEndOfFile);
 		}
 
-		app.currentTick++;
+		return webm::Status(*actuallySkipped < bytesToSkip ? webm::Status::kOkPartial : webm::Status::kOkCompleted);
 	}
+
+  std::uint64_t Position() const override
+	{
+		return _assets->GetPosition(_videoFileHandle);
+	}
+
+private:
+
+	data::Assets* _assets;
+	data::AssetHandle _videoFileHandle;
+};
+
+int vpx_img_plane_width(const vpx_image_t *img, int plane) {
+  if (plane > 0 && img->x_chroma_shift > 0)
+    return (img->d_w + 1) >> img->x_chroma_shift;
+  else
+    return img->d_w;
 }
 
-int main(int argc, char *argv[]) {
+int vpx_img_plane_height(const vpx_image_t *img, int plane) {
+  if (plane > 0 && img->y_chroma_shift > 0)
+    return (img->d_h + 1) >> img->y_chroma_shift;
+  else
+    return img->d_h;
+}
+
+// Unit transmission test
+int main(int argc, char *argv[])
+{
+	using filesystem::Storage;
+	using data::Assets;
+
+	if (argc < 2)
+	{
+		std::cout << "Not enought arguments" << std::endl;
+		return 1;
+	}
 
 	std::srand(std::time(nullptr));
 
 	auto storagePath = argv[1];
-
 	Storage storage(storagePath);
-	App app;
+	Assets assets(&storage);
 
-	app.assets = data::Assets(&storage);
-	
-	initSDL();
-	createWindow(app);
-	initializeGraphicsAPI(app);
-	initializeMusicPlayer(app);
-
-	SDL_SysWMinfo wmInfo;
-	SDL_VERSION(&wmInfo.version);
-	SDL_GetWindowWMInfo(app.window, &wmInfo);
-	HWND hwnd = wmInfo.info.win.window;
-
-	char     mapPath[260];
-	auto     ignoredMapEntries = vector<EntryName> { EntryName::Terrain_Editor };
-	MapInfo  mapInfo(ignoredMapEntries);
-	bool     openedMapSuccessfully = false;
-
-	if (argc > 2) {
-		// Read map
-		auto mapPath = argv[2];
-
-		openedMapSuccessfully = tryOpenMap(app, mapPath, storage, mapInfo);
-		if (!openedMapSuccessfully)
-
-			showLoadErrorMessage(hwnd, mapPath);
-	}
-
-	while(!openedMapSuccessfully)
+	while(true)
 	{
-		if (showOpenDialog(mapPath, sizeof(mapPath), hwnd))
+		char filePath[260];
+		data::AssetHandle videoAsset = nullptr;
+
+		while(videoAsset == nullptr)
 		{
-			openedMapSuccessfully = tryOpenMap(app, mapPath, storage, mapInfo);
+			std::cout << "Write file path: " << std::endl;
+			std::cin >> filePath;
 
-			if (!openedMapSuccessfully)
-			
-				showLoadErrorMessage(hwnd, mapPath);
-		}
-	}
+			if (strcmp(filePath, "q") == 0)
+				return 0;
 
-	SDL_Event event;
+			videoAsset = assets.Open(filePath);
 
-	bool running = true;
-
-	int                 moveInput = 0;
-	glm::vec<2, double> viewPos = { 0, 0 };
-
-	uint64_t counterCurrent, counterLast = SDL_GetPerformanceCounter();
-
-	app.musicPlayer.Play();
-
-	while (running) {
-
-		Clock clock("Loop()");
-
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-			case SDL_KEYDOWN:
-				switch (event.key.keysym.sym) {
-				case SDLK_UP:
-					moveInput |= Up;
-					break;
-				case SDLK_DOWN:
-					moveInput |= Down;
-					break;
-				case SDLK_LEFT:
-					moveInput |= Left;
-					break;
-				case SDLK_RIGHT:
-					moveInput |= Right;
-					break;
-				case SDLK_p:
-					ShowClockReports();
-					break;
-				case SDLK_o: {
-
-					uint64_t diff = SDL_GetPerformanceCounter();
-
-					app.musicPlayer.Stop();
-
-					usleep(50000);
-
-					if (showOpenDialog(mapPath, sizeof(mapPath), hwnd)) {
-
-						openedMapSuccessfully = tryOpenMap(app, mapPath, storage, mapInfo);
-
-						if (!openedMapSuccessfully)
-
-							showLoadErrorMessage(hwnd, mapPath);
-
-						else
-						{
-							app.realTime     = 0.0;
-							app.currentTick  = 0;
-							app.nextGameTick = 0;
-						}
-
-						viewPos = { 0, 0 };
-					}
-
-					diff = SDL_GetPerformanceCounter() - diff;
-
-					counterLast += diff;
-
-					app.musicPlayer.Play();
-				} break;
-				}
-				break;
-
-			case SDL_KEYUP:
-				switch (event.key.keysym.sym) {
-				case SDLK_UP:
-					moveInput &= ~Up;
-					break;
-				case SDLK_DOWN:
-					moveInput &= ~Down;
-					break;
-				case SDLK_LEFT:
-					moveInput &= ~Left;
-					break;
-				case SDLK_RIGHT:
-					moveInput &= ~Right;
-					break;
-				}
-				break;
-
-			case SDL_QUIT:
-				running = false;
-				break;
-
-			default:
-				break;
+			if (videoAsset == nullptr)
+			{
+				std::cout << "Failed to open file " << filePath << std::endl;
 			}
-		};
-
-		drawMap(mapInfo, app, viewPos);
-		processInput(viewPos, moveInput, app.deltaTime);
-		gameTick(app, mapInfo);
-
-		clock.Stop();
-
-		usleep(10000);
-		
-		counterCurrent = SDL_GetPerformanceCounter();
-		app.deltaTime = static_cast<double>(counterCurrent - counterLast) / SDL_GetPerformanceFrequency();
-		app.realTime += app.deltaTime;
-		app.averageDeltaTime = (app.averageDeltaTime + app.deltaTime) * 0.5;
-
-		counterLast = counterCurrent;
-
-		if (app.nextFpsMeasure < app.realTime)
-		{
-			app.fps            = (app.fps + 1.0 / app.averageDeltaTime) * 0.5;
-			app.nextFpsMeasure = app.realTime + 1.0;
 		}
 
-		boost::format time("Gauss Engine: %.2f (+%.5f) FPS: %.2f");
-		time % app.realTime % app.averageDeltaTime % app.fps;
+		Video            video;
+		VideoCallback    callback(video);
+		Reader           reader(&assets, videoAsset);
+		webm::WebmParser parser;
+		webm::Status     status = parser.Feed(&callback, &reader);
 
-		SDL_SetWindowTitle(app.window, time.str().c_str());
+		if (status.completed_ok()) {
+			std::cout << "Parsing successfully completed\n";
+		} else {
+			std::cout << "Parsing failed with status code: " << status.code << '\n';
+		}
 
-		app.musicPlayer.Process();
-	};
+		vpx_codec_ctx_t codec;
 
-	app.musicPlayer.Stop();
+		if (vpx_codec_dec_init(&codec, vpx_codec_vp9_dx(), nullptr, 0))
+		{
+			throw std::runtime_error("Failed to initialize VP9 decoder");
+		}
 
-	usleep(50000);
+		const int pixelSize = 3;
 
-	app.graphics->WaitIdle();
-	app.graphics->Release();
+		auto byteCache = std::make_shared<uint8_t[]>(video.frameMaxSize);
+		auto pixels    = std::make_shared<uint8_t[]>(video.width * video.height * pixelSize);
 
-	freeWindow(app);
+		int index = 0;
+
+		for(auto frameMeta : video.frameMetas)
+		{
+			assets.Seek(videoAsset, frameMeta.position, filesystem::FileSeekDir::Beg);
+			assets.ReadBytes(videoAsset, byteCache.get(), frameMeta.size);
+
+			if (vpx_codec_decode(&codec, byteCache.get(), frameMeta.size, nullptr, 0))
+			{
+				throw std::runtime_error("Failed to decode frame");
+			}
+
+			vpx_codec_iter_t iter = nullptr;
+			vpx_image_t      *img = nullptr;
+
+			memset(pixels.get(), 0, video.width * video.height * pixelSize);
+
+			while ((img = vpx_codec_get_frame(&codec, &iter)) != nullptr)
+			{
+				if (img->cs != VPX_CS_SRGB)
+				{
+					throw std::runtime_error("Unsupported color space");
+				}
+
+				if (img->fmt & VPX_IMG_FMT_HIGHBITDEPTH)
+				{
+					throw std::runtime_error("Unsupported depth format");
+				}
+
+				// Color order (G B R)
+				const std::array<int, 3> channelMap = { 1, 2, 0 };
+
+				for(int i = 0; i < 3; i++)
+				{
+					const uint8_t* buf = img->planes[i];
+					const int stride = img->stride[i];
+
+					int w = vpx_img_plane_width(img, i);
+					int h = vpx_img_plane_height(img, i);
+
+					// Assuming that for nv12 we write all chroma data at once
+					if (img->fmt == VPX_IMG_FMT_NV12 && i > 1) break;
+					// Fixing NV12 chroma width if it is odd
+					if (img->fmt == VPX_IMG_FMT_NV12 && i == 1) w = (w + 1) & ~1;
+
+					for (int y = 0; y < h; y++)
+					{
+						for (int x = 0; x < w; x++)
+						{
+							int pixelIndex = x + y * w;
+
+							pixels[pixelIndex * pixelSize + channelMap[i]] = buf[x];
+						};
+
+						buf += stride;
+					}
+				}
+			}
+
+			std::stringstream nameStream;
+			nameStream << "frames/" << index++ << ".png";
+
+			DumpImageRGB(nameStream.str().c_str(), pixels.get(), video.width, video.height);
+		}
+
+		if (vpx_codec_destroy(&codec))
+		{
+			throw std::runtime_error("Failed to destroy VP9 codec context");
+		}
+
+		assets.Close(videoAsset);
+	}
 
 	return 0;
 }

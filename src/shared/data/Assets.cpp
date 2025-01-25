@@ -63,6 +63,11 @@ namespace data
 
 		_storage->Open(path, file);
 
+		if (!file.IsOpened())
+		{
+			return nullptr;
+		}
+
 		return new StorageFile(std::move(file));
 	}
 
@@ -73,6 +78,14 @@ namespace data
 
 		return file->ReadBinary(output, size);
 	}
+		
+	void Assets::Seek(AssetHandle asset, int offset, filesystem::FileSeekDir dir)
+	{
+		// This can cause memory exceptions, needs better handling
+		StorageFile* file = reinterpret_cast<StorageFile*>(asset);
+
+		file->Seek(offset, dir);
+	}
 
 	int Assets::GetSize(AssetHandle asset) const
 	{
@@ -80,6 +93,14 @@ namespace data
 		StorageFile* file = reinterpret_cast<StorageFile*>(asset);
 
 		return file->GetFileSize();
+	}
+	
+	int Assets::GetPosition(AssetHandle asset) const
+	{
+		// This can cause memory exceptions, needs better handling
+		StorageFile* file = reinterpret_cast<StorageFile*>(asset);
+
+		return file->GetPosition();
 	}
 
 	void Assets::Close(AssetHandle asset)

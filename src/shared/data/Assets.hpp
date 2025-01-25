@@ -20,7 +20,9 @@ namespace data
 		
 		AssetHandle Open(const char* path);
 		int ReadBytes(AssetHandle, uint8_t* output, int size) const;
+		void Seek(AssetHandle, int offset, filesystem::FileSeekDir dir);
 		int GetSize(AssetHandle) const;
+		int GetPosition(AssetHandle) const;
 		void Close(AssetHandle);
 
 		void AssetToSdlReadIO(SDL_RWops*, AssetHandle);

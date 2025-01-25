@@ -93,6 +93,60 @@ void DumpImage(const char* path, uint8_t* data, uint32_t width, uint32_t height,
 	fclose(fp);
 }
 
+void DumpImageRGB(const char* path, uint8_t* data, uint32_t width, uint32_t height)
+{
+	FILE *fp = fopen(path, "wb");
+
+	if (!fp)
+	{
+		DumpImageError(path);
+		return;
+	}
+
+	png_structp pngPtr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr, nullptr, nullptr);
+
+	if (!pngPtr)
+	{
+		DumpImageError(path, fp);
+		return;
+	}
+
+	png_infop infoPtr = png_create_info_struct(pngPtr);
+
+	if (!infoPtr)
+	{
+		DumpImageError(path, fp, pngPtr);
+		return;
+	}
+
+	png_init_io(pngPtr, fp);
+
+	png_set_IHDR(pngPtr, infoPtr, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+
+	if (height > 640)
+	{
+		throw std::runtime_error("Too big!");
+	}
+
+	const int pixelSize = 3;
+	uint8_t* rows[640];
+
+	for(int i = 0; i < height; i++)
+	{
+		rows[i] = data + i * width * pixelSize;
+	}
+
+	png_set_rows(pngPtr, infoPtr, rows);
+
+	png_write_png(pngPtr, infoPtr, PNG_TRANSFORM_IDENTITY, nullptr);
+
+	png_write_end(pngPtr, infoPtr);
+
+	png_destroy_write_struct(&pngPtr, nullptr);
+
+	fclose(fp);
+}
+
 // automatically generated
 uint8_t defaultPalette[1024] = {
 	0,      0,      0,      0,      39,     39,     59,     0,      47,     47,     71,     0,      55,     59,     83,     0,
