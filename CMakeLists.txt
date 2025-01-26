@@ -13,6 +13,7 @@ add_executable(Engine src/engine/main.cpp)
 target_include_directories(Engine PUBLIC
     src/shared/
     src/renderer/
+    src/engine/
   )
 
 target_sources(Engine 
@@ -26,6 +27,12 @@ target_sources(Engine
     src/engine/meta/UnitTable.cpp
     
     src/engine/script/IScriptEngine.cpp
+
+    src/engine/video/codec/Vp9_Decoder.cpp
+    src/engine/video/webm/ParseCallback.cpp
+    src/engine/video/webm/WebmReader.cpp
+    src/engine/video/Decoder.cpp
+    src/engine/video/Video.cpp
     
     src/shared/audio/Music.cpp
     
