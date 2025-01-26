@@ -1,12 +1,22 @@
 #include "ParseCallback.hpp"
+#include "video/Video.hpp"
+#include <webm/dom_types.h>
 
 namespace video
 {
+	using webm::Info;
 	using webm::Status;
 	using webm::FrameMetadata;
 	using webm::ElementMetadata;
 	using webm::Reader;
 	using webm::TrackEntry;
+
+	Status ParseCallback::OnInfo(const ElementMetadata& metadata, const Info& info)
+	{
+		_video.duration = GetValue(info.duration) / 1000.0;
+
+		return Status(Status::Code::kOkCompleted);
+	}
 
 	Status ParseCallback::OnTrackEntry(const ElementMetadata& metadata,
 																		 const TrackEntry& track_entry)

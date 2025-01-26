@@ -6,6 +6,8 @@
 
 namespace video
 {
+	double VideoAsset::GetFPS() { return 1.0 * (frames.size() / duration); }
+
 	VideoManager::VideoManager(data::Assets* assets) :
 		_assets(assets)
 	{}

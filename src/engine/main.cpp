@@ -59,6 +59,7 @@ int main(int argc, char *argv[])
 			if (videoManager.OpenVideo(filePath, &video))
 			{
 				std::cout << "Parsing successfully completed\n";
+				std::cout << "Video fps: " << video.GetFPS() << "\n\n";
 			} 
 			else 
 			{

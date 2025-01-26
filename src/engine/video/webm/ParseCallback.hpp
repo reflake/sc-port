@@ -6,6 +6,7 @@
 #include <webm/dom_types.h>
 #include <webm/element.h>
 #include <webm/callback.h>
+#include <webm/status.h>
 
 namespace video
 {
@@ -38,6 +39,9 @@ namespace video
 
 			return value_element.value();
 		}
+
+		
+		webm::Status OnInfo(const webm::ElementMetadata& metadata, const webm::Info& info) override;
 
 		webm::Status OnTrackEntry(const webm::ElementMetadata& metadata,
 															const webm::TrackEntry& track_entry) override;

@@ -14,9 +14,12 @@ namespace video
 	struct VideoAsset
 	{
 		int width, height;
+		double duration;
 		data::AssetHandle assetHandle = nullptr;
 
 		std::vector<FrameMeta> frames;
+
+		double GetFPS();
 	};
 
 	class VideoManager
