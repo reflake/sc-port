@@ -5,15 +5,6 @@
 #include <memory>
 #include <sstream>
 
-#include <vpx/vpx_codec.h>
-#include <vpx/vpx_image.h>
-#include <webm/id.h>
-#include <webm/reader.h>
-#include <webm/status.h>
-#include <webm/file_reader.h>
-#include <webm/webm_parser.h>
-#include <webm/dom_types.h>
-
 #include "data/Assets.hpp"
 #include "diagnostic/Image.hpp"
 #include "video/Decoder.hpp"
