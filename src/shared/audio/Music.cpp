@@ -1,6 +1,4 @@
 #include "Music.hpp"
-#include <SDL_mixer.h>
-#include <SDL_rwops.h>
 #include <array>
 #include <cassert>
 #include <cstdlib>
@@ -24,100 +22,60 @@ namespace audio
 	MusicPlayer::MusicPlayer()
 		{}
 		
-	MusicPlayer::MusicPlayer(data::Assets* assets)
-		: _assets(assets)
-		{}
+	MusicPlayer::MusicPlayer(AudioManager* audioManager) :
+		_audioManager(audioManager)
+	{}
 
 	void MusicPlayer::Initialize()
 	{
-		if (Mix_Init(MIX_INIT_OGG) < 0)
-		{
-			throw runtime_error("Failed to initialize audio engine");
-		}
-
-		if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 4096) < 0)
-		{
-			throw runtime_error("Failed to open audio mixer");
-		}
 	}
 
 	void MusicPlayer::Play()
 	{
-		FreeChunk();
+		FreeMusic();
 		PlayTrack(std::rand() % tracks.size());
 	}
 
 	void MusicPlayer::Stop(int millisecondsFadeTime)
 	{
-		Mix_FadeOutMusic(millisecondsFadeTime);
+		_audioManager->FadeMusic(millisecondsFadeTime);
 	}
 
 	void MusicPlayer::Stop()
 	{
-		Mix_HaltMusic();
+		_audioManager->HaltMusic();
 
-		FreeChunk();
+		FreeMusic();
 	}
 
 	void MusicPlayer::Process()
 	{
-		if (!Mix_PlayingMusic())
+		if (!_audioManager->IsMusicPlaying())
 		{
-			FreeChunk();
+			FreeMusic();
 
 			// Music ended
-			if (_musicChunk == nullptr)
-			{
-				int random = std::rand() % (tracks.size() - 1);
-				random = (_currentTrackIndex + random) % tracks.size();
+			int random = std::rand() % (tracks.size() - 1);
+			random = (_currentTrackIndex + random) % tracks.size();
 
-				PlayTrack(random);
-			}
+			PlayTrack(random);
 		}
 	}
 
-	void MusicPlayer::PlayTrack(int track)
+	void MusicPlayer::PlayTrack(int trackIndex)
 	{
-		_currentTrackIndex = track;
+		_currentTrackIndex = trackIndex;
 
-		if (_openedMusicAsset != nullptr)
-		{
-			_assets->Close(_openedMusicAsset);
-		}
-
-		_openedMusicAsset = _assets->Open(tracks[track]);
-
-		ReadChunk();
-
-		assert(_musicChunk != nullptr);
-
-		Mix_PlayMusic(_musicChunk, 0);
+		_audioManager->PlayMusic(tracks[trackIndex]);
 	}
 
-	void MusicPlayer::ReadChunk()
+	void MusicPlayer::FreeMusic()
 	{
-		assert(_openedMusicAsset != nullptr);
-
-		_readWriteOps = SDL_AllocRW();
-		_assets->AssetToSdlReadIO(_readWriteOps, _openedMusicAsset);
-
-		_musicChunk = Mix_LoadMUSType_RW(_readWriteOps, MUS_OGG, 0);
-	}
-
-	void MusicPlayer::FreeChunk()
-	{
-		if (_musicChunk != nullptr)
-			Mix_FreeMusic(_musicChunk);
-
-		if (_readWriteOps != nullptr)
-			SDL_FreeRW(_readWriteOps);
-
-		_musicChunk   = nullptr;
-		_readWriteOps = nullptr;
+		_audioManager->FreeMusic();
 	}
 
 	MusicPlayer::~MusicPlayer()
 	{
-		FreeChunk();
+		_audioManager->FreeMusic();
 	}
 }

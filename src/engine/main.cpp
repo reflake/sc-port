@@ -1,28 +1,29 @@
+#include "audio/Music.hpp"
+#define SDL_MAIN_HANDLED
+
 #include "A_Graphics.hpp"
 #include "data/TextStrings.hpp"
 #include "diagnostic/Clock.hpp"
 #include "meta/PortraitTable.hpp"
+#include "meta/SfxTable.hpp"
 #include "meta/UnitTable.hpp"
 #include "view/UnitTransmission.hpp"
 #include "vulkan/Api.hpp"
-#include <SDL_keycode.h>
-#include <SDL_timer.h>
-#include <SDL_video.h>
 #include <stdexcept>
 #include <unistd.h>
-#define SDL_MAIN_HANDLED
-
-#include <SDL.h>
 #include <cstdio>
 #include <cstring>
 #include <ctime>
 #include <iostream>
 #include <memory>
-#include <sstream>
 
+#include <SDL.h>
+#include <SDL_keycode.h>
+#include <SDL_timer.h>
+#include <SDL_video.h>
+
+#include "audio/AudioManager.hpp"
 #include "data/Assets.hpp"
-#include "diagnostic/Image.hpp"
-#include "video/Decoder.hpp"
 #include "video/Video.hpp"
 
 #include <boost/foreach.hpp>
@@ -42,6 +43,8 @@ void throwSdlError(const char* msg)
 
 struct App
 {
+	audio::AudioManager audioManager;
+
 	std::shared_ptr<renderer::A_Graphics> graphics;
 	SDL_Window* window = nullptr;
 	data::Assets assets;
@@ -119,8 +122,10 @@ int main(int argc, char *argv[])
 	video::VideoManager videoManager(&app.assets);
 
 	app.assets.Preload<meta::UnitTable>("arr/units.dat");
+	app.assets.Preload<meta::SfxTable>("arr/sfxdata.dat");
+	app.assets.Preload<data::StringsTable>("arr/sfxdata.tbl");
 	app.assets.Preload<meta::PortraitTable>("arr/portdata.dat");
-	app.assets.Preload<data::TextStringsTable>("arr/portdata.tbl");
+	app.assets.Preload<data::StringsTable>("arr/portdata.tbl");
 
 	renderer::DrawableHandle currentFrame = nullptr;
 		
@@ -133,6 +138,9 @@ int main(int argc, char *argv[])
 	bool running = true;
 
 	int unitId = 0;
+
+	app.audioManager = audio::AudioManager(&app.assets);
+	app.audioManager.Initialize();
 
 	view::UnitTransmission unitTransmission(&app.assets, &videoManager, app.graphics.get(), 60 * 3, 56 * 3);
 

@@ -69,7 +69,7 @@ namespace data
 		}
 
 		template<typename T>
-		T* ReadPreloaded(const char* path) const
+		T* Get(const char* path) const
 		{
 			auto typeName = typeid(T).name();
 

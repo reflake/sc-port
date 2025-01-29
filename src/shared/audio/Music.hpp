@@ -1,9 +1,8 @@
 #pragma once
 
+#include "AudioManager.hpp"
 #include "data/Assets.hpp"
 
-#include <SDL2/SDL_mixer.h>
-#include <SDL_rwops.h>
 #include <memory>
 
 namespace audio
@@ -13,7 +12,7 @@ namespace audio
 	public:
 
 		MusicPlayer();
-		MusicPlayer(data::Assets*);
+		MusicPlayer(AudioManager*);
 
 		~MusicPlayer();
 
@@ -26,16 +25,13 @@ namespace audio
 
 	private:
 
-		void       PlayTrack(int index);
-		void       ReadChunk();
-		void       FreeChunk();
+		void PlayTrack(int index);
+		void FreeMusic();
 
-		int               _currentTrackIndex = 0;
-		data::Assets*     _assets = nullptr;
-		data::AssetHandle _openedMusicAsset = nullptr;
+	private:
 
+		AudioManager* _audioManager = nullptr;
+		int           _currentTrackIndex = 0;
 		std::shared_ptr<uint8_t[]> _musicData = nullptr;
-		SDL_RWops* _readWriteOps = nullptr;
-		Mix_Music *_musicChunk = nullptr;
 	};
 }

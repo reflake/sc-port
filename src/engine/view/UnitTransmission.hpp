@@ -4,11 +4,11 @@
 #include "data/Assets.hpp"
 #include "data/Common.hpp"
 #include "data/TextStrings.hpp"
+#include "meta/SfxTable.hpp"
 #include "meta/PortraitTable.hpp"
 #include "meta/UnitTable.hpp"
 #include "video/Decoder.hpp"
 #include "video/Video.hpp"
-#include <functional>
 
 namespace view
 {
@@ -50,9 +50,11 @@ namespace view
 		renderer::A_Graphics*   _graphics;
 
 		const data::Assets*           _assets;
-		const meta::UnitTable*        _unitTable;
 		const meta::PortraitTable*    _portraitTable;
-		const data::TextStringsTable* _portraitPathStrings;
+		const data::StringsTable*     _portraitPathStrings;
+		const meta::SfxTable*         _sfxTable;
+		const data::StringsTable*     _sfxPathStrings;
+		const meta::UnitTable*        _unitTable;
 
 		double   _talkTimer = 0.0;
 		bool     _isTalking = false;
@@ -61,7 +63,6 @@ namespace view
 		double   _nextFrameTimer = 0.0;
 		int      _portraitId;
 		uint32_t _width, _height;
-		uint32_t _fidgetExtraChance, _talkingExtraChance;
 
 		int                              _fidgetClipCount, _talkingClipCount;
 		PortraitClipArray                _fidgetClips, _talkingClips;
@@ -71,7 +72,6 @@ namespace view
 
 		video::VideoAsset* _currentClip  = nullptr;
 		video::Decoder*    _videoDecoder = nullptr;
-
 
 		std::vector<video::FrameMeta>::iterator _frameIterator;
 	};

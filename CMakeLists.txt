@@ -37,6 +37,7 @@ target_sources(Engine
 
     src/engine/view/UnitTransmission.cpp
     
+    src/shared/audio/AudioManager.cpp
     src/shared/audio/Music.cpp
     
     src/shared/data/Common.cpp

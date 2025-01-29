@@ -434,8 +434,7 @@ namespace renderer::vulkan
 
 	void Graphics::FreeDrawable(DrawableHandle drawableHandle)
 	{
-		// TODO: remove
-		if (drawableHandle == nullptr)
+		if (_instance == nullptr)
 		{
 			return;
 		}
@@ -457,19 +456,7 @@ namespace renderer::vulkan
 			}
 		}
 
-		switch (drawable->GetType()) {
-			case SpriteSheetType:
-				delete dynamic_cast<SpriteSheet*>(drawable);
-				break;
-			
-			case TilesetType:
-				delete dynamic_cast<Tileset*>(drawable);
-				break;
-
-			case PictureType:
-				delete dynamic_cast<Picture*>(drawable);
-				break;
-		}
+		delete drawable;
 	}
 
 	void Graphics::SetTilesetPalette(data::Palette& palette)
@@ -817,20 +804,7 @@ namespace renderer::vulkan
 
 		for(auto drawable : _drawables)
 		{
-			switch(drawable->GetType())
-			{
-				case SpriteSheetType:
-					delete dynamic_cast<SpriteSheet*>(drawable);
-					break;
-
-				case TilesetType:
-					delete dynamic_cast<Tileset*>(drawable);
-					break;
-
-				case PictureType:
-					delete dynamic_cast<Picture*>(drawable);
-					break;
-			}
+			delete drawable;
 		}
 
 		_textureSampler.Destroy();

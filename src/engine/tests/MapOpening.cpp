@@ -133,6 +133,7 @@ struct App {
 
 	tileID tiles[256][256];
 
+	audio::AudioManager audioManager;
 	audio::MusicPlayer musicPlayer;
 
 	double   tickRate = 16.0 * 1.5;
@@ -188,9 +189,12 @@ void initializeGraphicsAPI(App& app)
 	app.graphics = renderer::vulkan::CreateGraphics(app.window, &app.assets);
 }
 
-void initializeMusicPlayer(App& app)
+void initializeAudio(App& app)
 {
-	app.musicPlayer = audio::MusicPlayer(&app.assets);
+	app.audioManager = audio::AudioManager();
+	app.audioManager.Initialize();
+
+	app.musicPlayer = audio::MusicPlayer(&app.assets, &app.audioManager);
 	app.musicPlayer.Initialize();
 }
 
@@ -377,7 +381,7 @@ void loadTileset(App& app, Storage& storage)
 
 void loadDoodadGrps(App& app, Storage& storage)
 {
-	data::TextStringsTable imageStrings;
+	data::StringsTable imageStrings;
 	data::ReadTextStringsTable(storage, "arr/images.tbl", imageStrings);
 
 	for(auto& doodad : app.scriptedDoodads)
@@ -542,7 +546,7 @@ int main(int argc, char *argv[]) {
 	initSDL();
 	createWindow(app);
 	initializeGraphicsAPI(app);
-	initializeMusicPlayer(app);
+	initializeAudio(app);
 
 	SDL_SysWMinfo wmInfo;
 	SDL_VERSION(&wmInfo.version);

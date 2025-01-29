@@ -11,7 +11,7 @@ using std::vector;
 
 namespace data
 {
-	void TextStringsTable::Load(std::shared_ptr<uint8_t[]> data, uint32_t size)
+	void StringsTable::Load(std::shared_ptr<uint8_t[]> data, uint32_t size)
 	{
 		StreamReader reader(data, size);
 
@@ -31,7 +31,7 @@ namespace data
 		}
 	}
 
-	void ReadTextStringsTable(Storage& storage, const char* path, TextStringsTable& out)
+	void ReadTextStringsTable(Storage& storage, const char* path, StringsTable& out)
 	{
 		StorageFile file;
 		storage.Open(path, file);

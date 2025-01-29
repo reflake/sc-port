@@ -24,6 +24,8 @@ namespace renderer::vulkan
 	{
 	public:
 
+		virtual ~A_VulkanDrawable() {};
+
 		template<std::size_t L>
 		inline std::size_t GetPolygon(frameIndex frame, std::array<Vertex, L>& array, std::size_t maxCount, uint32_t width = 0, uint32_t height = 0) 
 		{
