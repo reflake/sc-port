@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.hpp"
+#include "data/Sprite.hpp"
 #include <array>
 #include <utility>
 
@@ -19,16 +20,16 @@ namespace data
 	template<typename V>
 	std::array<V, 4> FrameVertices(
 		int posLeft, int posTop, int width, int height,
-		int texLeft, int texTop, int texWidth, int texHeight,
+		SpriteRect srcRect, int texWidth, int texHeight,
 		FlipFlags flipFlags = FlipNone)
 	{
 		int posRight  = posLeft + width;
 		int posBottom = posTop + height;
 
-		float uvTop    = static_cast<float>(texTop) / texHeight;
-		float uvBottom = static_cast<float>(texTop + height) / texHeight;
-		float uvLeft   = static_cast<float>(texLeft) / texWidth;
-		float uvRight  = static_cast<float>(texLeft + width) / texWidth;
+		float uvTop    = static_cast<float>(srcRect.y) / texHeight;
+		float uvBottom = static_cast<float>(srcRect.y + srcRect.h) / texHeight;
+		float uvLeft   = static_cast<float>(srcRect.x) / texWidth;
+		float uvRight  = static_cast<float>(srcRect.x + srcRect.w) / texWidth;
 
 		if (flipFlags & FlipHorizontally)
 		{

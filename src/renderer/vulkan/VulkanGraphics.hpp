@@ -50,8 +50,10 @@ namespace renderer::vulkan
 
 		DrawableHandle LoadSpriteSheet(data::A_SpriteSheetData&) override;
 		DrawableHandle LoadTileset(data::A_TilesetData&, std::vector<bool>& usedTiles) override;
+		DrawableHandle LoadImage(uint32_t* pixels, uint32_t width, uint32_t height) override;
 
 		void Draw(DrawableHandle, frameIndex, data::position) override;
+		void Draw(DrawableHandle, data::position, uint32_t width, uint32_t height) override;
 		void FreeDrawable(DrawableHandle) override;
 
 		void SetTilesetPalette(data::Palette&) override;
@@ -72,7 +74,10 @@ namespace renderer::vulkan
 		void EnableValidationLayers(std::vector<const char*>& layerList);
 		void CreateSyncObjects();
 		void CreateDescriptorPools();
-		void CreateDescriptorSet();
+		DrawCall* UseDrawCall(DrawableHandle);
+		void ClearDescriptorPool();
+		void AllocateDescriptorSets();
+		void WriteDescriptorSets();
 		void Submit();
 		void Present();
 
@@ -98,9 +103,10 @@ namespace renderer::vulkan
 		ShaderManager       _shaders;
 		BufferAllocator     _bufferAllocator;
 		MemoryManager       _memoryManager;
-		DescriptorSetLayout _standardLayout;
+		DescriptorSetLayout _standardLayout, _samplerLayout;
 		VkDescriptorPool    _descriptorPool;
 		VkDescriptorSet     _descriptorSets[POOL_MAX_SETS];
+		int                 _descriptorSetCount = 0;
 
 		Image*                _tilesetImage;
 		std::vector<uint32_t> _tileMap;
@@ -110,11 +116,11 @@ namespace renderer::vulkan
 
 		data::position _currentPosition;
 		uint32_t       _currentImageIndex;
-		uint32_t       _mainShaderIndex;
+		uint32_t       _mainShaderIndex, _textureShaderIndex;
 
 		DrawCall* _currentDrawCall;
 
-		Sampler _textureSampler;
+		Sampler _textureSampler, _textureLinearInterpSampler;
 
 		std::vector<A_VulkanDrawable*>    _drawables;
 		std::array<A_VulkanDrawable*, 4>  _drawablesCache;

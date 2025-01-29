@@ -1,26 +1,42 @@
 #include "Assets.hpp"
+#include "filesystem/Storage.hpp"
 #include "filesystem/StorageFile.hpp"
 
 #include <SDL_rwops.h>
+#include <boost/any.hpp>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <memory>
 #include <stdexcept>
 
 namespace data
 {
+	using std::shared_ptr;
 	using std::ifstream;
 	using namespace filesystem;
 
-	
 	Assets::Assets() {}
 
 	Assets::Assets(filesystem::Storage* storage)
 		: _storage(storage)
 		{}
 
+	void Assets::Preload(const char* path, boost::any data, const char* typeName, bool binary)
+	{
+		_preloadedResources.emplace_back(path, typeName, data, binary);
+	}
+
 	int Assets::ReadBytes(const char* path, uint8_t* output) const
 	{
+		StorageFile storageFile;
+		_storage->Open(path, storageFile);
+
+		if (storageFile.IsOpened())
+		{
+			return storageFile.ReadBinary(output, storageFile.GetFileSize());
+		}
+
 		ifstream input(path, std::ios::binary | std::ios::in);
 
 		int size = GetSize(path);

@@ -73,17 +73,20 @@ namespace data
 	{
 	public:
 
-		inline T& Get(int index) const
+		template<typename Y>
+		inline const T& Get(Y index) const
 		{
-			return elements[index - StartIndex];
+			return elements[static_cast<int>(index) - StartIndex];
 		}
 
-		inline bool HasElement(int index) const
+		template<typename Y>
+		inline bool HasElement(Y index) const
 		{
-			return StartIndex <= index && index <= EndIndex;
+			return StartIndex <= static_cast<int>(index) && static_cast<int>(index) <= EndIndex;
 		}
 
-		inline T& operator[](int index) const 
+		template<typename Y>
+		inline const T& operator[](Y index) const 
 		{
 			return Get(index);
 		}

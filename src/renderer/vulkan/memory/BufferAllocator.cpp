@@ -98,10 +98,21 @@ namespace renderer::vulkan
 		assert(streamData.offsetInMemory + streamData.size == _dynamicBufferOffset);
 	}
 
-	Image* BufferAllocator::CreateTextureImage(const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize)
+	VkFormat BufferAllocator::TakeImageFormat(int pixelSize) const
+	{
+		switch(pixelSize)
+		{
+			case 1: return VK_FORMAT_R8_UNORM;
+			case 4: return VK_FORMAT_R8G8B8A8_UNORM;
+		}
+
+		throw runtime_error("Unsupported format");
+	}
+
+	Image* BufferAllocator::CreateTextureImage(const void* data, uint32_t width, uint32_t height, uint32_t pixelSize)
 	{
 		// Creating image
-		auto format = pixelSize == 1 ? VK_FORMAT_R8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
+		auto format = TakeImageFormat(pixelSize);
 		Image* image = new Image(Image::Create(format, VK_IMAGE_TILING_OPTIMAL, width, height, _device, _allocator));
 
 		VkMemoryRequirements requirements;
@@ -115,13 +126,15 @@ namespace renderer::vulkan
 
 		if (data != nullptr)
 		{
+			auto dataBytes = reinterpret_cast<const uint8_t*>(data);
+
 			// Copy pixel data to staging buffer
 			image->TransitionImageLayout(VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, _stagingCommandBuffer, _graphicsQueue);
 
 			void* stagingBufferDst;
 			_stagingBuffer.MapMemory(&stagingBufferDst, width * height * pixelSize);
 
-			memcpy(stagingBufferDst, data, width * height * pixelSize);
+			memcpy(stagingBufferDst, dataBytes, width * height * pixelSize);
 
 			_stagingBuffer.UnmapMemory();
 			_stagingBuffer.CopyTo(*image, _stagingCommandBuffer, _graphicsQueue);

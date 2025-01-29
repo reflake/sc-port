@@ -37,7 +37,7 @@ namespace renderer::vulkan
 
 		void WriteToStreamBuffer(StreamData& streamData, uint64_t size, const void* data);
 
-		Image* CreateTextureImage(const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize);
+		Image* CreateTextureImage(const void* data, uint32_t width, uint32_t height, uint32_t pixelSize);
 		void   UpdateImageData(Image*, const uint8_t* data, uint32_t width, uint32_t height, uint32_t pixelSize);
 
 		// Needs to be reset every frame
@@ -52,6 +52,7 @@ namespace renderer::vulkan
 	private:
 
 		VkBuffer CreateBuffer(VkDeviceSize);
+		VkFormat TakeImageFormat(int pixelSize) const;
 
 		// Binds buffer to some memory; might create one as well if needed
 		void BindMemoryToBuffer(Buffer& buffer);

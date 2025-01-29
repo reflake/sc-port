@@ -25,6 +25,7 @@ target_sources(Engine
     src/engine/entity/ScriptedDoodad.cpp
     
     src/engine/meta/UnitTable.cpp
+    src/engine/meta/PortraitTable.cpp
     
     src/engine/script/IScriptEngine.cpp
 
@@ -33,6 +34,8 @@ target_sources(Engine
     src/engine/video/webm/WebmReader.cpp
     src/engine/video/Decoder.cpp
     src/engine/video/Video.cpp
+
+    src/engine/view/UnitTransmission.cpp
     
     src/shared/audio/Music.cpp
     
@@ -164,5 +167,5 @@ target_link_libraries(Renderer
   PRIVATE SDL2::SDL2-static
   PRIVATE vulkan-1)
 
-file(COPY static/frag.spv static/vert.spv
+file(COPY static/pal_frag.spv static/pal_vert.spv static/tex_frag.spv static/tex_vert.spv
      DESTINATION shaders/)

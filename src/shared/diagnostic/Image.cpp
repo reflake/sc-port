@@ -121,14 +121,14 @@ void DumpImageRGB(const char* path, uint8_t* data, uint32_t width, uint32_t heig
 
 	png_init_io(pngPtr, fp);
 
-	png_set_IHDR(pngPtr, infoPtr, width, height, 8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+	png_set_IHDR(pngPtr, infoPtr, width, height, 8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
 	if (height > 640)
 	{
 		throw std::runtime_error("Too big!");
 	}
 
-	const int pixelSize = 3;
+	const int pixelSize = 4;
 	uint8_t* rows[640];
 
 	for(int i = 0; i < height; i++)

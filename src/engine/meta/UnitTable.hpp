@@ -75,7 +75,7 @@ namespace meta
 
 		unitDimensions unitDimensions[MAX_UNIT_AMOUNT]; // left-up-right-down
 
-		uint16_t portrait[MAX_UNIT_AMOUNT];
+		data::Array<uint16_t, 0, MAX_UNIT_AMOUNT - 1> portrait;
 
 		uint16_t mineralCost[MAX_UNIT_AMOUNT];
 		uint16_t vespeneCost[MAX_UNIT_AMOUNT];

@@ -2,6 +2,7 @@
 
 #include "webm/ParseCallback.hpp"
 #include "webm/WebmReader.hpp"
+#include <webm/status.h>
 #include <webm/webm_parser.h>
 
 namespace video
@@ -15,13 +16,19 @@ namespace video
 	bool VideoManager::OpenVideo(const char* path, VideoAsset* video)
 	{
 		video->assetHandle = _assets->Open(path);
+		video->frames.clear();
+
+		if (video->assetHandle == nullptr)
+		{
+			return false;
+		}
 
 		ParseCallback callback(*video);
 		WebmReader reader(_assets, video->assetHandle);
 		webm::WebmParser  parser;
 		webm::Status      status = parser.Feed(&callback, &reader);
 
-		return status.completed_ok();
+		return true;
 	}
 
 	void VideoManager::ReadFrameData(VideoAsset* video, FrameMeta& frame, uint8_t* output)
@@ -32,6 +39,10 @@ namespace video
 
 	void VideoManager::FreeVideo(VideoAsset* video)
 	{
-		_assets->Close(video->assetHandle);
+		if (video->assetHandle != nullptr)
+			_assets->Close(video->assetHandle);
+
+		video->assetHandle = nullptr;
+		video->frames.clear();
 	}
 }

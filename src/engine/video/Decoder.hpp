@@ -27,8 +27,6 @@ namespace video
 		A_HwDecoderInterface* _codec = nullptr;
 
 		CodecType     _codecType;
-		data::Assets* _assets;
-		VideoAsset*   _video;
 	};
 
 	class A_DecoderInterfaceFactory

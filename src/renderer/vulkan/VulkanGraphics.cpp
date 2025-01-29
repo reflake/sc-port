@@ -83,19 +83,32 @@ namespace renderer::vulkan
 		_swapchain  = Swapchain::Create(_device, &_renderPass, _surface, surfaceFormat, _config);
 		_shaders    = ShaderManager(&_device, &_config, &_renderPass);
 
-		auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shaders/frag.spv"));
-		auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shaders/vert.spv"));
-		array<uint32_t, 2> modules = { fragmentShaderModule, vertexShaderModule };
+		{
+			auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shaders/tex_frag.spv"));
+			auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shaders/tex_vert.spv"));
+			array<uint32_t, 2> modules = { fragmentShaderModule, vertexShaderModule };
 
-		_standardLayout = DescriptorSetLayout::Builder(&_device)
-			.AddBinding(BindSampler)
-			.AddBinding(BindSampler)
-			.Create(allocator);
+			_samplerLayout = DescriptorSetLayout::Builder(&_device)
+				.AddBinding(BindSampler)
+				.Create(allocator);
+
+			_textureShaderIndex = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat(), &_samplerLayout);
+		}
+
+		{
+			auto fragmentShaderModule = _shaders.CreateShaderModule(ShaderStage::Fragment, ReadShaderCode("shaders/pal_frag.spv"));
+			auto vertexShaderModule   = _shaders.CreateShaderModule(ShaderStage::Vertex, ReadShaderCode("shaders/pal_vert.spv"));
+			array<uint32_t, 2> modules = { fragmentShaderModule, vertexShaderModule };
+
+			_standardLayout = DescriptorSetLayout::Builder(&_device)
+				.AddBinding(BindSampler)
+				.AddBinding(BindSampler)
+				.Create(allocator);
+
+			_mainShaderIndex = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat(), &_standardLayout);
+		}
 
 		CreateDescriptorPools();
-		CreateDescriptorSet();
-
-		_mainShaderIndex = _shaders.CreateShader(modules.data(), modules.size(), _swapchain.GetFormat(), &_standardLayout);
 
 		QueueFamilyIndices familyIndices = FindQueueFamilies(_device, _surface);
 		_commandPool = CreateCommandPool(_device, familyIndices.graphicsFamily.value());
@@ -116,6 +129,12 @@ namespace renderer::vulkan
 			.Filtering(VK_FILTER_NEAREST)
 			.RepeatMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
 			.Create(allocator);
+
+		_textureLinearInterpSampler = Sampler::Builder(_device)
+			.AnisotropyEnabled(VK_TRUE)
+			.Filtering(VK_FILTER_LINEAR)
+			.RepeatMode(VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+			.Create(allocator);	
 
 		_tilesetImage = _bufferAllocator.CreateTextureImage(nullptr, 256, 1, 4);
 	}
@@ -199,22 +218,9 @@ namespace renderer::vulkan
 		poolInfo.poolSizeCount = poolSizes.size();
 		poolInfo.pPoolSizes    = poolSizes.data();
 		poolInfo.maxSets       = MAX_SETS;
+		poolInfo.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
 		if (vkCreateDescriptorPool(_device, &poolInfo, allocator, &_descriptorPool) != VK_SUCCESS)
-		{
-			throw runtime_error("Failed to create descriptor pool");
-		}
-	}
-
-	void Graphics::CreateDescriptorSet()
-	{
-		vector<VkDescriptorSetLayout> layouts(POOL_MAX_SETS, _standardLayout);
-		VkDescriptorSetAllocateInfo   allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
-		allocInfo.descriptorPool     = _descriptorPool;
-		allocInfo.pSetLayouts        = layouts.data();
-		allocInfo.descriptorSetCount = layouts.size();
-
-		if (vkAllocateDescriptorSets(_device, &allocInfo, _descriptorSets) != VK_SUCCESS)
 		{
 			throw runtime_error("Failed to create descriptor pool");
 		}
@@ -322,7 +328,26 @@ namespace renderer::vulkan
 		return tileset;
 	}
 
-	void Graphics::Draw(DrawableHandle drawableHandle, frameIndex frame, data::position position)
+	DrawableHandle Graphics::LoadImage(uint32_t* pixels, uint32_t width, uint32_t height)
+	{
+		int textureWidth  = pow(2, ceil(log2(width)));
+		int textureHeight = pow(2, ceil(log2(height)));
+
+		const int pixelSize = 4;
+
+		auto texturePixels = std::make_shared<uint32_t[]>(textureWidth * textureHeight);
+
+		data::CopyImage(pixels, width, texturePixels.get(), { 0, 0, width, height }, textureWidth);
+
+		auto image = _bufferAllocator.CreateTextureImage(texturePixels.get(), textureWidth, textureHeight, pixelSize);
+		Picture *picture = new Picture(width, height, textureWidth, textureHeight, image);
+
+		_drawables.push_back(picture);
+
+		return picture;
+	}
+
+	DrawCall* Graphics::UseDrawCall(DrawableHandle drawableHandle)
 	{
 		// Break into another draw call
 		if (_currentDrawCall == nullptr || drawableHandle != _currentDrawCall->drawable)
@@ -331,8 +356,15 @@ namespace renderer::vulkan
 			auto drawable = ConvertToDrawable(drawableHandle);
 
 			_drawCalls.emplace_back(drawable);
-			_currentDrawCall = &_drawCalls.back();
+			return &_drawCalls.back();
 		}
+
+		return _currentDrawCall;
+	}
+
+	void Graphics::Draw(DrawableHandle drawableHandle, frameIndex frame, data::position position)
+	{
+		_currentDrawCall = UseDrawCall(drawableHandle);
 
 		array<Vertex, 10> polygonVertices;
 
@@ -353,6 +385,41 @@ namespace renderer::vulkan
 			auto& vertex = polygonVertices[i];
 
 			vertex.pos   += position - _currentPosition;
+			vertex.pos.x *= reverseWidth;
+			vertex.pos.y *= reverseHeight;
+
+			vertex.pos = vertex.pos * 2.0f - 1.0f;
+		}
+
+		_bufferAllocator.WriteToStreamBuffer(_currentDrawCall->streamData, sizeof(Vertex) * count, polygonVertices.data());
+
+		_drawablesCache[_drawablesCacheIndex] = _currentDrawCall->drawable;
+		_drawablesCacheIndex = (_drawablesCacheIndex + 1) % _drawablesCache.size();
+	}
+
+	void Graphics::Draw(DrawableHandle drawableHandle, data::position pos, uint32_t width, uint32_t height)
+	{
+		_currentDrawCall = UseDrawCall(drawableHandle);
+
+		array<Vertex, 10> polygonVertices;
+
+		auto count = _currentDrawCall->drawable->GetPolygon(0, polygonVertices, polygonVertices.size(), width, height);
+
+		_currentDrawCall->vertexCount += count;
+
+		if (count > polygonVertices.size())
+		{
+			throw runtime_error("Too much polygons");
+		}
+
+		double reverseWidth  = 1.0 / _config.GetExtents().width;
+		double reverseHeight = 1.0 / _config.GetExtents().height;
+
+		for(int i = 0; i < count; i++)
+		{
+			auto& vertex = polygonVertices[i];
+
+			vertex.pos   += pos - _currentPosition;
 			vertex.pos.x *= reverseWidth;
 			vertex.pos.y *= reverseHeight;
 
@@ -392,11 +459,15 @@ namespace renderer::vulkan
 
 		switch (drawable->GetType()) {
 			case SpriteSheetType:
-				delete reinterpret_cast<SpriteSheet*>(drawable);
+				delete dynamic_cast<SpriteSheet*>(drawable);
 				break;
 			
 			case TilesetType:
-				delete reinterpret_cast<Tileset*>(drawable);
+				delete dynamic_cast<Tileset*>(drawable);
+				break;
+
+			case PictureType:
+				delete dynamic_cast<Picture*>(drawable);
 				break;
 		}
 	}
@@ -412,6 +483,19 @@ namespace renderer::vulkan
 	{
 		_currentPosition = pos;
 	}
+	
+	void Graphics::ClearDescriptorPool()
+	{
+		if (_descriptorSetCount == 0)
+			return;
+
+		if (vkFreeDescriptorSets(_device, _descriptorPool, _descriptorSetCount, _descriptorSets) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to free descriptor sets");
+		}
+
+		_descriptorSetCount = 0;
+	}
 
 	void Graphics::BeginRendering()
 	{
@@ -425,48 +509,118 @@ namespace renderer::vulkan
 
 		_drawCalls.clear();
 		_currentDrawCall = nullptr;
+
+		ClearDescriptorPool();
+	}
+
+	void Graphics::AllocateDescriptorSets()
+	{
+		if (_drawCalls.size() == 0)
+		{
+			return;
+		}
+
+		// for each drawable allocate descriptor set
+		vector<VkDescriptorSetLayout> layouts;
+
+		layouts.reserve(_drawCalls.size());
+
+		for(int i = 0; i < _drawCalls.size(); i++)
+		{
+			auto& drawCall = _drawCalls[i];
+			
+			if (drawCall.drawable->GetType() == PictureType)
+			{
+				layouts.push_back(_samplerLayout);
+			}
+			else
+			{
+				layouts.push_back(_standardLayout);
+			}
+		}
+
+		_descriptorSetCount = layouts.size();
+
+		VkDescriptorSetAllocateInfo   allocInfo = { VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+		allocInfo.descriptorPool     = _descriptorPool;
+		allocInfo.pSetLayouts        = layouts.data();
+		allocInfo.descriptorSetCount = layouts.size();
+
+		if (vkAllocateDescriptorSets(_device, &allocInfo, _descriptorSets) != VK_SUCCESS)
+		{
+			throw runtime_error("Failed to create descriptor pool");
+		}
+	}
+
+	void Graphics::WriteDescriptorSets()
+	{
+		for(int i = 0; i < _drawCalls.size(); i++)
+		{
+			auto& drawCall = _drawCalls[i];
+
+			if (drawCall.drawable->GetType() == PictureType)
+			{
+				array<VkWriteDescriptorSet, 1> descriptorWrites{};
+
+				VkDescriptorImageInfo textureInfo {
+					.sampler = _textureLinearInterpSampler,
+					.imageView = drawCall.drawable->GetImageView(),
+					.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				};
+
+				descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[0].dstSet = _descriptorSets[i];
+				descriptorWrites[0].dstBinding = 0;
+				descriptorWrites[0].dstArrayElement = 0;
+				descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[0].descriptorCount = 1;
+				descriptorWrites[0].pImageInfo = &textureInfo;
+
+				vkUpdateDescriptorSets(_device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+			}
+			else
+			{
+				array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+				VkDescriptorImageInfo textureInfo {
+					.sampler = _textureSampler,
+					.imageView = drawCall.drawable->GetImageView(),
+					.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				};
+
+				descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[0].dstSet = _descriptorSets[i];
+				descriptorWrites[0].dstBinding = 0;
+				descriptorWrites[0].dstArrayElement = 0;
+				descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[0].descriptorCount = 1;
+				descriptorWrites[0].pImageInfo = &textureInfo;
+
+				VkDescriptorImageInfo paletteInfo {
+					.sampler = _textureSampler,
+					.imageView = _tilesetImage->GetViewHandle(),
+					.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				};
+
+				descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				descriptorWrites[1].dstSet = _descriptorSets[i];
+				descriptorWrites[1].dstBinding = 1;
+				descriptorWrites[1].dstArrayElement = 0;
+				descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				descriptorWrites[1].descriptorCount = 1;
+				descriptorWrites[1].pImageInfo = &paletteInfo;
+
+				vkUpdateDescriptorSets(_device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
+			}
+		}
 	}
 
 	void Graphics::PresentToScreen()
 	{
 		_bufferAllocator.OnPrepareForPresentation();
 
-		for(int i = 0; i < _drawCalls.size(); i++)
-		{
-			auto& drawCall = _drawCalls[i];
-
-			array<VkWriteDescriptorSet, 2> descriptorWrites{};
-
-			VkDescriptorImageInfo textureInfo {
-				.sampler = _textureSampler,
-				.imageView = drawCall.drawable->GetImageView(),
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
-
-			descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[0].dstSet = _descriptorSets[i];
-			descriptorWrites[0].dstBinding = 0;
-			descriptorWrites[0].dstArrayElement = 0;
-			descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[0].descriptorCount = 1;
-			descriptorWrites[0].pImageInfo = &textureInfo;
-
-			VkDescriptorImageInfo paletteInfo {
-				.sampler = _textureSampler,
-				.imageView = _tilesetImage->GetViewHandle(),
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
-
-			descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			descriptorWrites[1].dstSet = _descriptorSets[i];
-			descriptorWrites[1].dstBinding = 1;
-			descriptorWrites[1].dstArrayElement = 0;
-			descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-			descriptorWrites[1].descriptorCount = 1;
-			descriptorWrites[1].pImageInfo = &paletteInfo;
-
-			vkUpdateDescriptorSets(_device, descriptorWrites.size(), descriptorWrites.data(), 0, nullptr);
-		}
+		AllocateDescriptorSets();
+		WriteDescriptorSets();
 
 		// ==============================================
 		VkCommandBufferBeginInfo beginInfo { VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
@@ -495,10 +649,7 @@ namespace renderer::vulkan
 
 		vkCmdBeginRenderPass(_commandBuffer, &renderBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-		// Bind main pipeline and prepare viewport
-		auto pipeline = _shaders.GetShaderPipeline(_mainShaderIndex);
-
-		vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		// Prepare viewport
 
 		auto [width, height] = _config.GetExtents();
 
@@ -518,13 +669,27 @@ namespace renderer::vulkan
 		// ==============================================
 		//   Draw
 
-		auto pipelineLayout = _shaders.GetShaderPipelineLayout(_mainShaderIndex);
-
 		for(int i = 0; i < _drawCalls.size(); i++)
 		{
 			auto& drawCall = _drawCalls[i];
 
+			VkPipeline pipeline;
+			VkPipelineLayout pipelineLayout;
+
+			if (drawCall.drawable->GetType() == PictureType)
+			{
+				pipeline = _shaders.GetShaderPipeline(_textureShaderIndex);
+				pipelineLayout = _shaders.GetShaderPipelineLayout(_textureShaderIndex);
+			}
+			else
+			{
+				pipeline = _shaders.GetShaderPipeline(_mainShaderIndex);
+				pipelineLayout = _shaders.GetShaderPipelineLayout(_mainShaderIndex);
+			}
+
 			drawCall.streamData.BindToCommandBuffer(_commandBuffer);
+
+			vkCmdBindPipeline(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 			vkCmdBindDescriptorSets(_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 
 															pipelineLayout, 0, 1, &_descriptorSets[i], 0, VK_NULL_HANDLE);
 			vkCmdDraw(_commandBuffer, drawCall.vertexCount, 1, 0, 0);
@@ -648,6 +813,8 @@ namespace renderer::vulkan
 
 		_standardLayout.Destroy();
 
+		_samplerLayout.Destroy();
+
 		for(auto drawable : _drawables)
 		{
 			switch(drawable->GetType())
@@ -659,10 +826,16 @@ namespace renderer::vulkan
 				case TilesetType:
 					delete dynamic_cast<Tileset*>(drawable);
 					break;
+
+				case PictureType:
+					delete dynamic_cast<Picture*>(drawable);
+					break;
 			}
 		}
 
 		_textureSampler.Destroy();
+
+		_textureLinearInterpSampler.Destroy();
 
 		_bufferAllocator.Release();
 

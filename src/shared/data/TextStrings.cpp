@@ -11,28 +11,36 @@ using std::vector;
 
 namespace data
 {
-
-	void ReadTextStringsTable(Storage& storage, const char* path, TextStringsTable& out)
+	void TextStringsTable::Load(std::shared_ptr<uint8_t[]> data, uint32_t size)
 	{
-		StorageFile file;
-		storage.Open(path, file);
+		StreamReader reader(data, size);
 
-		out.rawData = std::make_shared<uint8_t[]>(file.GetFileSize());
-		file.ReadBinary(out.rawData.get(), file.GetFileSize());
-
-		StreamReader reader(out.rawData, file.GetFileSize());
+		rawData = data;
 
 		uint16_t amount;
 		reader.Read(amount);
-
-		out.entries = vector<const char*>(amount);
+		
+		entries = vector<const char*>(amount);
 
 		for(int i = 0; i < amount; i++)
 		{
 			uint16_t fileOffset;
 			reader.Read(fileOffset);
 
-			out.entries[i] = reinterpret_cast<char*>(&out.rawData[fileOffset]);
+			entries[i] = reinterpret_cast<char*>(&rawData[fileOffset]);
 		}
+	}
+
+	void ReadTextStringsTable(Storage& storage, const char* path, TextStringsTable& out)
+	{
+		StorageFile file;
+		storage.Open(path, file);
+
+		int fileSize = file.GetFileSize();
+		auto rawData = std::make_shared<uint8_t[]>(fileSize);
+
+		file.ReadBinary(rawData.get(), fileSize);
+
+		out.Load(rawData,fileSize);
 	}
 }

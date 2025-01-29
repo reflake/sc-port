@@ -65,7 +65,7 @@ namespace video
 
 		// Color order (G B R)
 		const std::array<int, 3> channelMap = { 1, 2, 0 };
-		const int                pixelSize = 3;
+		const int                pixelSize = 4;
 
 		while ((img = vpx_codec_get_frame(&_codecContext, &iter)) != nullptr)
 		{
