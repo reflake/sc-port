@@ -63,8 +63,8 @@ namespace meta
 		data::Array<uint16_t, 0, 105> readySound;
 		uint16_t whatSoundStart[MAX_UNIT_AMOUNT];
 		uint16_t whatSoundEnd[MAX_UNIT_AMOUNT];
-		data::Array<uint16_t, 0, 105> pissSoundStart;
-		data::Array<uint16_t, 0, 105> pissSoundEnd;
+		data::Array<uint16_t, 0, 105> pissedSoundStart;
+		data::Array<uint16_t, 0, 105> pissedSoundEnd;
 		data::Array<uint16_t, 0, 105> yesSoundStart;
 		data::Array<uint16_t, 0, 105> yesSoundEnd;
 

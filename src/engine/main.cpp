@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 	app.audioManager = audio::AudioManager(&app.assets);
 	app.audioManager.Initialize();
 
-	view::UnitTransmission unitTransmission(&app.assets, &videoManager, app.graphics.get(), 60 * 3, 56 * 3);
+	view::UnitTransmission unitTransmission(&app.assets, &videoManager, app.graphics.get(), &app.audioManager, 60 * 3, 56 * 3);
 
 	unitTransmission.SetUnit(unitId);
 	unitTransmission.Fidget();
@@ -161,7 +161,9 @@ int main(int argc, char *argv[])
 				{
 					case SDLK_LEFT:  unitTransmission.SetUnit(--unitId); unitTransmission.Fidget(); break;
 					case SDLK_RIGHT: unitTransmission.SetUnit(++unitId); unitTransmission.Fidget(); break;
-					case SDLK_UP: unitTransmission.StartTalk(view::TalkWhat); break;
+					case SDLK_q: unitTransmission.StartTalk(view::TalkWhat); break;
+					case SDLK_w: unitTransmission.StartTalk(view::TalkYes); break;
+					case SDLK_e: unitTransmission.StartTalk(view::TalkPissed); break;
 					case SDLK_p:
 						ShowClockReports();
 						break;

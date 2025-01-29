@@ -1,6 +1,7 @@
 #pragma once
 
 #include "A_Graphics.hpp"
+#include "audio/AudioManager.hpp"
 #include "data/Assets.hpp"
 #include "data/Common.hpp"
 #include "data/TextStrings.hpp"
@@ -25,7 +26,8 @@ namespace view
 	{
 	public:
 
-		UnitTransmission(data::Assets* assets, video::VideoManager*, renderer::A_Graphics*, uint32_t width, uint32_t height);
+		UnitTransmission(data::Assets* assets, video::VideoManager*, renderer::A_Graphics*, 
+											audio::AudioManager*, uint32_t width, uint32_t height);
 		~UnitTransmission();
 
 		void Draw(data::position);
@@ -39,6 +41,8 @@ namespace view
 
 		void Process(double deltaTime);
 
+		bool IsSoundPlaying();
+
 	private:
 
 		void PickRandomClip(PortraitClipArray& clips, int clipCount);
@@ -46,21 +50,23 @@ namespace view
 
 		renderer::DrawableHandle _currentFrameHandle = nullptr;
 
-		video::VideoManager*    _videoManager;
-		renderer::A_Graphics*   _graphics;
+		audio::AudioManager*  _audioManager;
+		video::VideoManager*  _videoManager;
+		renderer::A_Graphics* _graphics;
 
 		const data::Assets*           _assets;
 		const meta::PortraitTable*    _portraitTable;
 		const data::StringsTable*     _portraitPathStrings;
-		const meta::SfxTable*         _sfxTable;
-		const data::StringsTable*     _sfxPathStrings;
 		const meta::UnitTable*        _unitTable;
 
-		double   _talkTimer = 0.0;
+		double   _talkingAnimationTimer = 0;
+		int      _soundChannel = -1;
 		bool     _isTalking = false;
 		bool     _hasTalkAnimation = false;
 
 		double   _nextFrameTimer = 0.0;
+		int      _unitId = -1;
+		int      _lastVoiceLinePlayed = -1;
 		int      _portraitId;
 		uint32_t _width, _height;
 

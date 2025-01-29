@@ -5,7 +5,7 @@
 
 namespace meta
 {
-	class SfxTable
+	struct SfxTable
 	{
 		data::Array<uint32_t, 0, 1143> sfx;
 		data::Array<uint8_t, 0, 1143>  unknown1;

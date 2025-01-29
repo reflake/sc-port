@@ -1,5 +1,6 @@
 #include "UnitTransmission.hpp"
 #include "A_Graphics.hpp"
+#include "audio/AudioManager.hpp"
 #include "data/TextStrings.hpp"
 #include "meta/PortraitTable.hpp"
 #include "video/Video.hpp"
@@ -14,16 +15,18 @@ namespace view
 	using namespace data;
 	using namespace meta;
 
-	UnitTransmission::UnitTransmission(Assets* assets, video::VideoManager* videoManager, renderer::A_Graphics* graphics, uint32_t width, uint32_t height) :
+	UnitTransmission::UnitTransmission(
+		Assets* assets, video::VideoManager* videoManager, renderer::A_Graphics* graphics, 
+		audio::AudioManager* audioManager, uint32_t width, uint32_t height) :
+
 		_assets(assets),
 		_graphics(graphics),
 		_videoManager(videoManager),
+		_audioManager(audioManager),
 		_width(width), _height(height)
 	{
 		_portraitTable       = _assets->Get<PortraitTable>("arr/portdata.dat");
 		_portraitPathStrings = _assets->Get<StringsTable>("arr/portdata.tbl");
-		_sfxTable            = _assets->Get<SfxTable>("arr/sfxdata.dat");
-		_sfxPathStrings      = _assets->Get<StringsTable>("arr/sfxdata.tbl");
 		_unitTable           = _assets->Get<UnitTable>("arr/units.dat");
 	}
 
@@ -43,6 +46,7 @@ namespace view
 			return;
 		}
 
+		_unitId = unitId;
 		_portraitId = _unitTable->portrait[unitId];
 
 		uint32_t fidgetPathIndex = _portraitTable->fidgetStringPtr[_portraitId] - 1;
@@ -54,6 +58,12 @@ namespace view
 		_hasTalkAnimation = fidgetPathIndex != talkingPathIndex;
 		_isTalking = false;
 		_currentClip = nullptr;
+
+		if (_soundChannel != -1)
+			_audioManager->StopSoundInChannel(_soundChannel);
+
+		_soundChannel = -1;
+		_lastVoiceLinePlayed = -1;
 	}
 
 	void UnitTransmission::Fidget()
@@ -68,11 +78,106 @@ namespace view
 
 	void UnitTransmission::StartTalk(TalkType talkType)
 	{
+		// if already is talking then ignore
 		if (!_hasTalkAnimation || _portraitId == -1)
 			return;
 
-		_talkTimer = 1.5;
+		if (_unitId == -1)
+			return;
+
+		if (_audioManager == nullptr)
+			return;
+
+		// If talking then skip
+		if (IsSoundPlaying())
+			return;
+
+		int soundStartIndex, soundEndIndex;
+
+		switch(talkType)
+		{
+			case TalkYes:
+
+				soundStartIndex = _unitTable->yesSoundStart[_unitId];
+				soundEndIndex = _unitTable->yesSoundEnd[_unitId];
+				break;
+
+			case TalkWhat:
+
+				soundStartIndex = _unitTable->whatSoundStart[_unitId];
+				soundEndIndex = _unitTable->whatSoundEnd[_unitId];
+				break;
+
+			case TalkPissed:
+
+				soundStartIndex = _unitTable->pissedSoundStart[_unitId];
+				soundEndIndex = _unitTable->pissedSoundEnd[_unitId];
+				break;
+		}
+
+		if (soundStartIndex == 0)
+			return;
+
+		int soundIndex;
+		int voiceLineCount = soundEndIndex - soundStartIndex + 1;
+
+		if (voiceLineCount > 1 && talkType != TalkPissed && (_lastVoiceLinePlayed < soundStartIndex || soundEndIndex < _lastVoiceLinePlayed || voiceLineCount == 2))
+		{
+			soundIndex = std::experimental::randint(soundStartIndex, soundEndIndex);
+		}
+		else if (voiceLineCount > 1 && talkType != TalkPissed)
+		{
+			// Do not play previous voice line
+			soundIndex = std::experimental::randint(0, voiceLineCount - 2) + 1;
+			soundIndex = _lastVoiceLinePlayed + soundIndex;
+
+			if (soundIndex > soundEndIndex)
+			{
+				soundIndex -= voiceLineCount;
+			}
+		}
+		else if (voiceLineCount > 1)
+		{
+			// When pissed cycle through voice lines
+			if (_lastVoiceLinePlayed < soundStartIndex || soundEndIndex < _lastVoiceLinePlayed)
+			{
+				soundIndex = soundStartIndex;
+			}
+			else
+			{
+				soundIndex = ++_lastVoiceLinePlayed;
+
+				if (soundIndex > soundEndIndex)
+				{
+					soundIndex -= voiceLineCount;
+				}
+			}
+		}
+		else 
+		{
+			soundIndex = soundStartIndex;
+		}
+		
+		_soundChannel = _audioManager->PlaySound(soundIndex - 1);
+		_lastVoiceLinePlayed = soundIndex;
+
 		_isTalking = true;
+
+		double soundDuration = _audioManager->GetSoundDuration(_soundChannel);
+		double durationFraction;
+		double durationIntegral;
+
+		durationFraction = std::modf(soundDuration, &durationIntegral);
+
+		if (durationFraction < 0.2 || 0.8 < durationFraction)
+		{
+			_talkingAnimationTimer = durationIntegral + std::round(durationFraction * 10.0) / 10.0;
+		}
+		else
+		{
+			_talkingAnimationTimer = std::round(soundDuration);
+			_talkingAnimationTimer = std::max(1.0, _talkingAnimationTimer);
+		}
 
 		PickRandomClip(_talkingClips, _talkingClipCount);
 	}
@@ -84,7 +189,7 @@ namespace view
 			return;
 
 		_nextFrameTimer -= deltaTime;
-		_talkTimer -= deltaTime;
+		_talkingAnimationTimer -= deltaTime;
 
 		if (_frameIterator == _currentClip->frames.begin())
 		{
@@ -119,16 +224,16 @@ namespace view
 
 			_frameIterator++;
 		}
+
+		if (_isTalking && _talkingAnimationTimer < 0)
+		{
+			Fidget();
+		}
 			
 		bool lastFrame = _frameIterator == _currentClip->frames.end();
 
 		if (lastFrame)
 		{
-			if (_isTalking && _talkTimer < 0.0)
-			{
-				Fidget();
-			}
-
 			// Loop the video and pick random clip
 			PickRandomClip(_isTalking ? _talkingClips : _fidgetClips, 
 										 _isTalking ? _talkingClipCount : _fidgetClipCount);
@@ -136,6 +241,11 @@ namespace view
 			_frameIterator = _currentClip->frames.begin();
 
 		}
+	}
+
+	bool UnitTransmission::IsSoundPlaying()
+	{
+		return _audioManager->IsSoundPlaying(_soundChannel);	
 	}
 
 	void UnitTransmission::PickRandomClip(PortraitClipArray& clips, int clipCount)

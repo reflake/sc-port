@@ -102,6 +102,14 @@ namespace data
 			ReadBytes(path, data);
 		}
 
+		template<typename T>
+		void ReadBytes(AssetHandle asset, T* output, int size) const
+		{
+			uint8_t* data = reinterpret_cast<uint8_t*>(output);
+
+			ReadBytes(asset, data, size);
+		}
+
 		void Preload(const char* path, boost::any data, const char* typeName, bool binary);
 
 		int ReadBytes(const char* path, uint8_t* output) const;
