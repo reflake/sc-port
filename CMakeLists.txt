@@ -39,6 +39,7 @@ target_sources(Engine
     
     src/shared/audio/AudioManager.cpp
     src/shared/audio/Music.cpp
+    src/shared/audio/SoundStream.cpp
     
     src/shared/data/Common.cpp
     src/shared/data/Grp.cpp
@@ -156,10 +157,10 @@ target_link_libraries(Engine
   PRIVATE casc_static
   PRIVATE storm
   PRIVATE SDL2::SDL2-static
-  PRIVATE SDL2_mixer
   PRIVATE libpng
   PRIVATE libvpx
-  PRIVATE libwebm)
+  PRIVATE libwebm
+  PRIVATE openal)
 
 
 target_link_libraries(Renderer 

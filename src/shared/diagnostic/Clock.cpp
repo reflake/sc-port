@@ -12,10 +12,17 @@ std::map<const char*, ClockReport> reportedClocks;
 
 void ClockReport::AddTime(double time)
 {
+	if (maxTime < time)
+	{
+		maxTime = time;
+	}
+
 	averageTime = (averageTime + time) / 2.0;
 }
 
 double ClockReport::GetAverageTime() { return averageTime; }
+
+double ClockReport::GetMaxTime() { return maxTime; }
 
 void Clock::Stop()
 {
@@ -54,9 +61,9 @@ void ShowClockReports()
 
 	for(auto [name, rep] : items)
 	{
-		boost::format fmt("\t'%s' \t average performance time: %.8f");
+		boost::format fmt("\t'%s' \t average performance time: %.8f (max %.8f)");
 
-		std::cout << fmt % name % rep.GetAverageTime() << std::endl;
+		std::cout << fmt % name % rep.GetAverageTime() % rep.GetMaxTime() << std::endl;
 	}
 
 	reportedClocks.clear();

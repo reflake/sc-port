@@ -121,6 +121,11 @@ namespace filesystem
 		}
 	}
 
+	bool StorageFile::IsEOF()
+	{
+		return GetPosition() >= GetFileSize();
+	}
+
 	bool StorageFile::IsOpened() const
 	{
 		return _handle != nullptr;

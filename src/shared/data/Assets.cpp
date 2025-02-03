@@ -119,6 +119,14 @@ namespace data
 		return file->GetPosition();
 	}
 
+	bool Assets::IsEOF(AssetHandle asset) const
+	{
+		// This can cause memory exceptions, needs better handling
+		StorageFile* file = reinterpret_cast<StorageFile*>(asset);
+
+		return file->IsEOF();
+	}
+
 	void Assets::Close(AssetHandle asset)
 	{
 		// This can cause memory exceptions, needs better handling

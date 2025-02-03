@@ -103,11 +103,11 @@ namespace data
 		}
 
 		template<typename T>
-		void ReadBytes(AssetHandle asset, T* output, int size) const
+		int ReadBytes(AssetHandle asset, T* output, int size) const
 		{
 			uint8_t* data = reinterpret_cast<uint8_t*>(output);
 
-			ReadBytes(asset, data, size);
+			return ReadBytes(asset, data, size);
 		}
 
 		void Preload(const char* path, boost::any data, const char* typeName, bool binary);
@@ -116,10 +116,11 @@ namespace data
 		int GetSize(const char* path) const;
 		
 		AssetHandle Open(const char* path);
-		int ReadBytes(AssetHandle, uint8_t* output, int size) const;
+		int  ReadBytes(AssetHandle, uint8_t* output, int size) const;
 		void Seek(AssetHandle, int offset, filesystem::FileSeekDir dir);
-		int GetSize(AssetHandle) const;
-		int GetPosition(AssetHandle) const;
+		int  GetSize(AssetHandle) const;
+		int  GetPosition(AssetHandle) const;
+		bool IsEOF(AssetHandle) const;
 		void Close(AssetHandle);
 
 		void AssetToSdlReadIO(SDL_RWops*, AssetHandle);

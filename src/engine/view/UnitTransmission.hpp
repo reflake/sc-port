@@ -60,7 +60,7 @@ namespace view
 		const meta::UnitTable*        _unitTable;
 
 		double   _talkingAnimationTimer = 0;
-		int      _soundChannel = -1;
+		int      _voiceSoundId = -1;
 		bool     _isTalking = false;
 		bool     _hasTalkAnimation = false;
 

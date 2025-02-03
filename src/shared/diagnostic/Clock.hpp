@@ -16,10 +16,12 @@ public:
 	void AddTime(double time);
 
 	double GetAverageTime();
+	double GetMaxTime();
 
 private:
 
 	double averageTime = 0.0;
+	double maxTime = 0.0;
 };
 
 class Clock

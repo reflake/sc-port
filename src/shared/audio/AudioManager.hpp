@@ -1,23 +1,22 @@
 #pragma once
 
+#include "SoundStream.hpp"
 #include "data/Assets.hpp"
 #include "data/TextStrings.hpp"
 #include "meta/SfxTable.hpp"
 
-#include <SDL2/SDL_mixer.h>
-#include <SDL_mixer.h>
-#include <SDL_rwops.h>
-#include <SDL_rwops.h>
+#include <AL/alc.h>
+#include <memory>
 #include <unordered_map>
 
 namespace audio
 {
-	struct Sound
+	struct PlaybackSound
 	{
-		Mix_Chunk* chunk;
-		SDL_RWops* fileRwOps;
-		data::AssetHandle assetHandle;
-		double duration;
+		uint32_t           source;
+		SoundStream        stream;
+		double             duration;
+		std::array<uint32_t, 2> queuedBufferIndices;
 	};
 
 	class AudioManager
@@ -35,27 +34,41 @@ namespace audio
 		void FadeMusic(int millisecondsFadeTime);
 		void HaltMusic();
 		void FreeMusic();
+		void Process();
 
 		// Returns channel in which sound is being played
-		int  PlaySound(uint32_t index);
-		bool IsSoundPlaying(int channel);
-		double GetSoundDuration(int channel);
-		void StopSoundInChannel(int channel);
+		int  PlaySound(uint32_t audioIndex);
+		bool IsSoundPlaying(int soundId);
+		double GetSoundDuration(int soundId);
+		void StopSoundInChannel(int soundId);
 
 		bool IsMusicPlaying();
 
 	private:
 
+		uint32_t ReadBufferData(SoundStream& stream);
+
+		void DestroySound(int soundId);
+
+		uint32_t _frequency = 44100;
+		uint32_t _bufferSize = 4096;
+
 		const meta::SfxTable*         _sfxTable;
 		const data::StringsTable*     _sfxPathStrings;
 
-		data::Assets* _assets = nullptr;
+		ALCdevice*  _device;
+		ALCcontext* _context;
 
-		SDL_RWops* _musicReadWriteOps = nullptr;
-		Mix_Music *_music = nullptr;
+		data::Assets* _assets = nullptr;
 
 		data::AssetHandle _openedMusicAsset = nullptr;
 
-		std::unordered_map<int, Sound> _channelSounds;
+		std::unordered_map<int, PlaybackSound> _playbackSounds;
+
+		int _soundIndex = 0;
+		
+		std::vector<uint32_t>      _bufferPool;
+		std::vector<uint32_t>      _sourcePool;
+		std::shared_ptr<uint8_t[]> _copyBuffer;
 	};
 }

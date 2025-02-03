@@ -5,7 +5,6 @@
 #include "meta/PortraitTable.hpp"
 #include "video/Video.hpp"
 #include <cstdlib>
-#include <type_traits>
 #include <experimental/random>
 
 namespace view
@@ -59,10 +58,10 @@ namespace view
 		_isTalking = false;
 		_currentClip = nullptr;
 
-		if (_soundChannel != -1)
-			_audioManager->StopSoundInChannel(_soundChannel);
+		if (_voiceSoundId != -1)
+			_audioManager->StopSoundInChannel(_voiceSoundId);
 
-		_soundChannel = -1;
+		_voiceSoundId = -1;
 		_lastVoiceLinePlayed = -1;
 	}
 
@@ -78,8 +77,7 @@ namespace view
 
 	void UnitTransmission::StartTalk(TalkType talkType)
 	{
-		// if already is talking then ignore
-		if (!_hasTalkAnimation || _portraitId == -1)
+		if (_portraitId == -1)
 			return;
 
 		if (_unitId == -1)
@@ -158,12 +156,12 @@ namespace view
 			soundIndex = soundStartIndex;
 		}
 		
-		_soundChannel = _audioManager->PlaySound(soundIndex - 1);
+		_voiceSoundId = _audioManager->PlaySound(soundIndex - 1);
 		_lastVoiceLinePlayed = soundIndex;
 
 		_isTalking = true;
 
-		double soundDuration = _audioManager->GetSoundDuration(_soundChannel);
+		double soundDuration = _audioManager->GetSoundDuration(_voiceSoundId);
 		double durationFraction;
 		double durationIntegral;
 
@@ -179,7 +177,10 @@ namespace view
 			_talkingAnimationTimer = std::max(1.0, _talkingAnimationTimer);
 		}
 
-		PickRandomClip(_talkingClips, _talkingClipCount);
+		if (_hasTalkAnimation)
+			PickRandomClip(_talkingClips, _talkingClipCount);
+		else
+			PickRandomClip(_fidgetClips, _fidgetClipCount);
 	}
 
 	// Call before Graphics.PresentToScreen()
@@ -245,7 +246,7 @@ namespace view
 
 	bool UnitTransmission::IsSoundPlaying()
 	{
-		return _audioManager->IsSoundPlaying(_soundChannel);	
+		return _audioManager->IsSoundPlaying(_voiceSoundId);	
 	}
 
 	void UnitTransmission::PickRandomClip(PortraitClipArray& clips, int clipCount)

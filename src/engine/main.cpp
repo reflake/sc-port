@@ -181,6 +181,8 @@ int main(int argc, char *argv[])
 
 		app.graphics->PresentToScreen();
 
+		app.audioManager.Process();
+
 		usleep(1000); // throttling
 
 		uint64_t currentCounter = SDL_GetPerformanceCounter();

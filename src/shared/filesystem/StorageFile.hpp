@@ -39,6 +39,8 @@ namespace filesystem
 
 		uint64_t GetPosition();
 
+		bool IsEOF();
+
 		void Close();
 
 		const int GetFileSize();
