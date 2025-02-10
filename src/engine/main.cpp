@@ -1,6 +1,6 @@
-#include "audio/Music.hpp"
 #define SDL_MAIN_HANDLED
 
+#include "audio/Music.hpp"
 #include "A_Graphics.hpp"
 #include "data/TextStrings.hpp"
 #include "diagnostic/Clock.hpp"
@@ -22,7 +22,7 @@
 #include <SDL_timer.h>
 #include <SDL_video.h>
 
-#include "audio/AudioManager.hpp"
+#include <audio/AudioManager.hpp>
 #include "data/Assets.hpp"
 #include "video/Video.hpp"
 
@@ -122,8 +122,10 @@ int main(int argc, char *argv[])
 	video::VideoManager videoManager(&app.assets);
 
 	app.assets.Preload<meta::UnitTable>("arr/units.dat");
+
 	app.assets.Preload<meta::SfxTable>("arr/sfxdata.dat");
 	app.assets.Preload<data::StringsTable>("arr/sfxdata.tbl");
+	
 	app.assets.Preload<meta::PortraitTable>("arr/portdata.dat");
 	app.assets.Preload<data::StringsTable>("arr/portdata.tbl");
 
@@ -142,59 +144,64 @@ int main(int argc, char *argv[])
 	app.audioManager = audio::AudioManager(&app.assets);
 	app.audioManager.Initialize();
 
-	view::UnitTransmission unitTransmission(&app.assets, &videoManager, app.graphics.get(), &app.audioManager, 60 * 3, 56 * 3);
-
-	unitTransmission.SetUnit(unitId);
-	unitTransmission.Fidget();
-
-	while(running)
 	{
-		Clock clock("Loop");
+		view::UnitTransmission unitTransmission(&app.assets, &videoManager, app.graphics.get(), &app.audioManager, 60 * 3, 56 * 3);
 
-		while (SDL_PollEvent(&event)) {
-			switch (event.type) {
-			case SDL_QUIT:
-				running = false;
-				break;
-			case SDL_KEYDOWN:
-				switch(event.key.keysym.sym)
-				{
-					case SDLK_LEFT:  unitTransmission.SetUnit(--unitId); unitTransmission.Fidget(); break;
-					case SDLK_RIGHT: unitTransmission.SetUnit(++unitId); unitTransmission.Fidget(); break;
-					case SDLK_q: unitTransmission.StartTalk(view::TalkWhat); break;
-					case SDLK_w: unitTransmission.StartTalk(view::TalkYes); break;
-					case SDLK_e: unitTransmission.StartTalk(view::TalkPissed); break;
-					case SDLK_p:
-						ShowClockReports();
-						break;
+		unitTransmission.SetUnit(unitId);
+		unitTransmission.Fidget();
+
+		while(running)
+		{
+			Clock clock("Loop");
+
+			while (SDL_PollEvent(&event)) {
+				switch (event.type) {
+				case SDL_QUIT:
+					running = false;
+					break;
+				case SDL_KEYDOWN:
+					switch(event.key.keysym.sym)
+					{
+						case SDLK_LEFT:  unitTransmission.SetUnit(--unitId); unitTransmission.Fidget(); break;
+						case SDLK_RIGHT: unitTransmission.SetUnit(++unitId); unitTransmission.Fidget(); break;
+						case SDLK_q: unitTransmission.StartTalk(view::TalkWhat); break;
+						case SDLK_w: unitTransmission.StartTalk(view::TalkYes); break;
+						case SDLK_e: unitTransmission.StartTalk(view::TalkPissed); break;
+						case SDLK_p:
+							ShowClockReports();
+							break;
+					}
+					break;
 				}
-				break;
-			}
-		};
+			};
 
-		app.graphics->SetView({0, 0});
-		app.graphics->BeginRendering(); // to be in sync with LoadImage()
+			app.graphics->SetView({0, 0});
+			app.graphics->BeginRendering(); // to be in sync with LoadImage()
 
-		unitTransmission.Process(deltaTime);
+			unitTransmission.Process(deltaTime);
 
-		unitTransmission.Draw({ 24, 24 });
+			unitTransmission.Draw({ 24, 24 });
 
-		app.graphics->PresentToScreen();
+			app.graphics->PresentToScreen();
 
-		app.audioManager.Process();
+			app.audioManager.Process();
 
-		usleep(1000); // throttling
+			usleep(1000); // throttling
 
-		uint64_t currentCounter = SDL_GetPerformanceCounter();
+			uint64_t currentCounter = SDL_GetPerformanceCounter();
 
-		deltaTime = static_cast<double>(currentCounter - lastCounter) / SDL_GetPerformanceFrequency();
-		realTime += deltaTime;
+			deltaTime = static_cast<double>(currentCounter - lastCounter) / SDL_GetPerformanceFrequency();
+			realTime += deltaTime;
 
-		lastCounter = currentCounter;
+			lastCounter = currentCounter;
+		}
+		
+		app.graphics->WaitIdle();
 	}
 
-	app.graphics->WaitIdle();
 	app.graphics->Release();
+
+	app.audioManager.Release();
 
 	freeWindow(app);
 

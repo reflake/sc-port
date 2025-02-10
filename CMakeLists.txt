@@ -28,6 +28,10 @@ target_sources(Engine
     src/engine/meta/PortraitTable.cpp
     
     src/engine/script/IScriptEngine.cpp
+    
+    src/engine/audio/AudioManager.cpp
+    src/engine/audio/Music.cpp
+    src/engine/audio/SoundStream.cpp
 
     src/engine/video/codec/Vp9_Decoder.cpp
     src/engine/video/webm/ParseCallback.cpp
@@ -36,10 +40,7 @@ target_sources(Engine
     src/engine/video/Video.cpp
 
     src/engine/view/UnitTransmission.cpp
-    
-    src/shared/audio/AudioManager.cpp
-    src/shared/audio/Music.cpp
-    src/shared/audio/SoundStream.cpp
+    src/engine/view/UnitSoundProfile.cpp
     
     src/shared/data/Common.cpp
     src/shared/data/Grp.cpp

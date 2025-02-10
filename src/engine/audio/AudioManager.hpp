@@ -44,6 +44,8 @@ namespace audio
 
 		bool IsMusicPlaying();
 
+		void Release();
+
 	private:
 
 		uint32_t ReadBufferData(SoundStream& stream);

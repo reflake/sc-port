@@ -32,6 +32,5 @@ namespace audio
 
 		AudioManager* _audioManager = nullptr;
 		int           _currentTrackIndex = 0;
-		std::shared_ptr<uint8_t[]> _musicData = nullptr;
 	};
 }

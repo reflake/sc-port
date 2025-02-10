@@ -1,14 +1,13 @@
 #pragma once
 
+#include "utility/Factory.hpp"
 #include <cstdint>
-#include <utility/Factory.hpp>
 
-
-namespace video
+namespace audio
 {
 	enum class CodecType
 	{
-		VP9
+		Vorbis
 	};
 
 	class A_HwDecoder;
@@ -21,25 +20,25 @@ namespace video
 		~Decoder();
 
 		void Initialize();
-		void DecodeFrame(int size, uint8_t* input, uint8_t* output);
+		void Decode(int size, uint8_t* input, uint8_t output);
 
 	private:
 
 		A_HwDecoder* _codec = nullptr;
 
-		CodecType    _codecType;
+		CodecType _type;
 	};
 
+	// Looks like shit
 	class DecoderFactoryDictionary : public FactoryDictionary<A_HwDecoder, CodecType>
 	{};
 
 	class A_HwDecoder
 	{
 	public:
-	
+
 		virtual ~A_HwDecoder() {};
 
-		virtual void DecodeFrame(int size, uint8_t* input, uint8_t* output) = 0;
-		virtual void Release() = 0;
+		virtual void Decode(int size, uint8_t* input, uint8_t output);
 	};
 }

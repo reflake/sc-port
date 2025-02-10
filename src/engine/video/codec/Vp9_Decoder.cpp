@@ -1,7 +1,8 @@
 
+#include <array>
+#include <stdexcept>
 #include <vpx/vpx_codec.h>
 #include <video/Decoder.hpp>
-#include <stdexcept>
 #include <vpx/vp8dx.h>
 #include <vpx/vpx_decoder.h>
 
@@ -9,7 +10,7 @@ namespace video
 {
 	using std::runtime_error;
 
-	class Vp9_Decoder : public A_HwDecoderInterface
+	class Vp9_Decoder : public A_HwDecoder
 	{
 	public:
 
@@ -24,7 +25,10 @@ namespace video
 		vpx_codec_ctx_t _codecContext;
 	};
 
-	static DecoderInterfaceFactory<Vp9_Decoder> factory(CodecType::VP9);
+	// This line register factory in global dictionary of factories
+	// Looks like shit, but I don't want to explicitly define
+	//  in header files every decoder
+	static DecoderFactoryDictionary::Factory<Vp9_Decoder> factory(CodecType::VP9);
 
 	Vp9_Decoder::Vp9_Decoder()
 	{

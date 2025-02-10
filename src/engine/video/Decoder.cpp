@@ -1,22 +1,14 @@
 #include "Decoder.hpp"
-#include <unordered_map>
 
 namespace video
 {
-	static std::unordered_map<CodecType, A_DecoderInterfaceFactory*> codecFactories;
-
-	void RegisterCodecFactory(CodecType type, A_DecoderInterfaceFactory* factory)
-	{
-		codecFactories[type] = factory;
-	}
-
 	Decoder::Decoder(CodecType type):
 		_codecType(type)
 	{}
 
 	void Decoder::Initialize()
 	{
-		auto factory = codecFactories[_codecType];
+		auto factory = DecoderFactoryDictionary::Instance.FindFactory(_codecType);
 
 		_codec = factory->Create();
 	}
@@ -29,5 +21,7 @@ namespace video
 	Decoder::~Decoder()
 	{
 		_codec->Release();
+
+		delete _codec;
 	}
 }

@@ -354,4 +354,17 @@ namespace audio
 
 		_playbackSounds.erase(soundId);
 	}
+
+	void AudioManager::Release()
+	{
+		for(; !_playbackSounds.empty();)
+		{
+			auto [k, snd] = *_playbackSounds.begin();
+
+			StopSoundInChannel(k);
+		}
+
+		alcDestroyContext(_context);
+		alcCloseDevice(_device);
+	}
 };

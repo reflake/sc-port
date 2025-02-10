@@ -1,11 +1,11 @@
 #pragma once
 
 #include "A_Graphics.hpp"
+#include "UnitSoundProfile.hpp"
 #include "audio/AudioManager.hpp"
 #include "data/Assets.hpp"
 #include "data/Common.hpp"
 #include "data/TextStrings.hpp"
-#include "meta/SfxTable.hpp"
 #include "meta/PortraitTable.hpp"
 #include "meta/UnitTable.hpp"
 #include "video/Decoder.hpp"
@@ -13,11 +13,6 @@
 
 namespace view
 {
-	enum TalkType
-	{
-		TalkWhat, TalkPissed, TalkYes, TalkReady
-	};
-
 	const int PORTRAIT_MAX_CLIPS = 4;
 
 	typedef std::array<video::VideoAsset, PORTRAIT_MAX_CLIPS> PortraitClipArray;
@@ -37,11 +32,9 @@ namespace view
 		void Fidget();
 
 		// Picks random quote of unit
-		void StartTalk(TalkType);
+		void StartTalk(SoundType);
 
 		void Process(double deltaTime);
-
-		bool IsSoundPlaying();
 
 	private:
 
@@ -67,7 +60,7 @@ namespace view
 		double   _nextFrameTimer = 0.0;
 		int      _unitId = -1;
 		int      _lastVoiceLinePlayed = -1;
-		int      _portraitId;
+		short    _portraitId;
 		uint32_t _width, _height;
 
 		int                              _fidgetClipCount, _talkingClipCount;
@@ -75,6 +68,7 @@ namespace view
 		std::shared_ptr<uint8_t[]>       _framePixels, _encodedPixels;
 		uint32_t                         _frameWidth = 0, _frameHeight = 0;
 		renderer::DrawableHandle         _frameGraphicsHandle = nullptr;
+		UnitSoundProfile                 _soundProfile;
 
 		video::VideoAsset* _currentClip  = nullptr;
 		video::Decoder*    _videoDecoder = nullptr;
