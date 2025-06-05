@@ -160,6 +160,7 @@ target_link_libraries(Engine
   PRIVATE SDL2::SDL2-static
   PRIVATE libpng
   PRIVATE libvpx
+  PRIVATE libvorbis
   PRIVATE libwebm
   PRIVATE openal)
 

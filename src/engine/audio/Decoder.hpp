@@ -20,7 +20,7 @@ namespace audio
 		~Decoder();
 
 		void Initialize();
-		void Decode(int size, uint8_t* input, uint8_t output);
+		void Decode(int size, uint8_t* output);
 
 	private:
 
@@ -39,6 +39,6 @@ namespace audio
 
 		virtual ~A_HwDecoder() {};
 
-		virtual void Decode(int size, uint8_t* input, uint8_t output);
+		virtual void Decode(int size, uint8_t* output);
 	};
 }
