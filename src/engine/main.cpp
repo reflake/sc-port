@@ -17,10 +17,10 @@
 #include <iostream>
 #include <memory>
 
-#include <SDL.h>
-#include <SDL_keycode.h>
-#include <SDL_timer.h>
-#include <SDL_video.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_keycode.h>
+#include <SDL3/SDL_timer.h>
+#include <SDL3/SDL_video.h>
 
 #include <audio/AudioManager.hpp>
 #include "data/Assets.hpp"
@@ -73,15 +73,14 @@ void initializeGraphicsAPI(App& app)
 
 void createWindow(App& app)
 {
-	const int windowFlags = SDL_WINDOW_SHOWN | SDL_WINDOW_VULKAN;
+	const SDL_WindowFlags windowFlags = SDL_WINDOW_VULKAN;
 	const int SCREEN_WIDTH = 1280;
 	const int SCREEN_HEIGHT = 960;
 
 	freeWindow(app);
 
 	app.window = SDL_CreateWindow(
-		"Game", 
-		SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 
+		"Game",
 		SCREEN_WIDTH, SCREEN_HEIGHT, 
 		windowFlags
 	);
@@ -156,22 +155,24 @@ int main(int argc, char *argv[])
 
 			while (SDL_PollEvent(&event)) {
 				switch (event.type) {
-				case SDL_QUIT:
-					running = false;
-					break;
-				case SDL_KEYDOWN:
-					switch(event.key.keysym.sym)
-					{
-						case SDLK_LEFT:  unitTransmission.SetUnit(--unitId); unitTransmission.Fidget(); break;
-						case SDLK_RIGHT: unitTransmission.SetUnit(++unitId); unitTransmission.Fidget(); break;
-						case SDLK_q: unitTransmission.StartTalk(view::TalkWhat); break;
-						case SDLK_w: unitTransmission.StartTalk(view::TalkYes); break;
-						case SDLK_e: unitTransmission.StartTalk(view::TalkPissed); break;
-						case SDLK_p:
-							ShowClockReports();
-							break;
-					}
-					break;
+
+					case SDL_EVENT_QUIT:
+						running = false;
+						break;
+
+					case SDL_EVENT_KEY_DOWN:
+						switch(event.key.key)
+						{
+							case SDLK_LEFT:  unitTransmission.SetUnit(--unitId); unitTransmission.Fidget(); break;
+							case SDLK_RIGHT: unitTransmission.SetUnit(++unitId); unitTransmission.Fidget(); break;
+							case SDLK_Q: unitTransmission.StartTalk(view::TalkWhat); break;
+							case SDLK_W: unitTransmission.StartTalk(view::TalkYes); break;
+							case SDLK_E: unitTransmission.StartTalk(view::TalkPissed); break;
+							case SDLK_P:
+								ShowClockReports();
+								break;
+						}
+						break;
 				}
 			};
 

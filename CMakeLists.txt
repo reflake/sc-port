@@ -4,9 +4,8 @@ project(Game)
 
 set(CMAKE_CXX_STANDARD 23)
 
-# SDL2 Libraries
-find_package(SDL2 REQUIRED)
-find_package(SDL2_mixer REQUIRED)
+# SDL3 Libraries
+find_package(SDL3 REQUIRED)
 
 add_executable(Engine src/engine/main.cpp)
 
@@ -157,7 +156,7 @@ target_link_libraries(Engine
   PRIVATE Renderer
   PRIVATE casc_static
   PRIVATE storm
-  PRIVATE SDL2::SDL2-static
+  PRIVATE SDL3::SDL3-static
   PRIVATE libpng
   PRIVATE libvpx
   PRIVATE libvorbis
@@ -168,7 +167,7 @@ target_link_libraries(Engine
 target_link_libraries(Renderer 
   PRIVATE casc_static
   PRIVATE storm
-  PRIVATE SDL2::SDL2-static
+  PRIVATE SDL3::SDL3-static
   PRIVATE vulkan-1)
 
 file(COPY static/pal_frag.spv static/pal_vert.spv static/tex_frag.spv static/tex_vert.spv

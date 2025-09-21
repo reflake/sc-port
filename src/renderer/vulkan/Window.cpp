@@ -1,10 +1,10 @@
 #include "Window.hpp"
 
-#include <SDL_error.h>
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_stdinc.h>
+#include <SDL3/SDL_vulkan.h>
 #include <cstdint>
 #include <stdexcept>
-#include <SDL_stdinc.h>
-#include <SDL_vulkan.h>
 
 using std::vector;
 using std::runtime_error;
@@ -19,8 +19,7 @@ namespace renderer::vulkan
 	tuple<uint32_t, uint32_t> Window::GetExtent() const
 	{
 		int w, h;
-
-		SDL_Vulkan_GetDrawableSize(_window, &w, &h);
+		SDL_GetWindowSizeInPixels(_window, &w, &h);
 
 		return { w, h };
 	}
@@ -33,21 +32,21 @@ namespace renderer::vulkan
 	void GetSdlRequiredExtensions(SDL_Window* window, std::vector<const char*>& outExtensions)
 	{
 		uint32_t count;
-
-		SDL_Vulkan_GetInstanceExtensions(window, &count, nullptr);
+		auto extensionsArray = SDL_Vulkan_GetInstanceExtensions(&count);
 
 		outExtensions.resize(count);
 
-		SDL_Vulkan_GetInstanceExtensions(window, &count, outExtensions.data());
+		for(int i = 0; i < count; i++)
+		{
+			outExtensions[i] = extensionsArray[i];
+		}
 	}
 
 	void CreateWindowSurface(SDL_Window* window, VkInstance instance, VkSurfaceKHR& surface)
 	{
-		if (SDL_Vulkan_CreateSurface(window, instance, &surface) == SDL_FALSE)
+		if (SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface) == false)
 		{
-			char errMsg[260];
-
-			SDL_GetErrorMsg(errMsg, 260);
+			const char* errMsg = SDL_GetError();
 
 			throw runtime_error(std::string("Failed to create window surface: ") + errMsg);
 		}

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "filesystem/Storage.hpp"
-#include <SDL_rwops.h>
+//#include <SDL_rwops.h>
 #include <cstdint>
 #include <memory>
 #include <stdexcept>
@@ -123,7 +123,7 @@ namespace data
 		bool IsEOF(AssetHandle) const;
 		void Close(AssetHandle);
 
-		void AssetToSdlReadIO(SDL_RWops*, AssetHandle);
+		//void AssetToSdlReadIO(SDL_RWops*, AssetHandle);
 
 	private:
 

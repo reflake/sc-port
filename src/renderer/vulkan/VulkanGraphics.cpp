@@ -60,7 +60,7 @@ namespace renderer::vulkan
 		if (enableValidationLayers)
 		{
 			if (!CheckValidationLayerSupported())
-				throw runtime_error("Validation layer is not supported");
+				throw runtime_error("Validation layer is not supported, check if Vulkan SDK is installed");
 
 			EnableValidationLayers(requiredLayers);
 		}

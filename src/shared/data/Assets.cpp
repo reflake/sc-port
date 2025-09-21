@@ -2,7 +2,7 @@
 #include "filesystem/Storage.hpp"
 #include "filesystem/StorageFile.hpp"
 
-#include <SDL_rwops.h>
+//#include <SDL_rwops.h>
 #include <boost/any.hpp>
 #include <filesystem>
 #include <fstream>
@@ -137,7 +137,7 @@ namespace data
 		delete file;
 	}
 
-	void Assets::AssetToSdlReadIO(SDL_RWops* ops, AssetHandle asset)
+	/*void Assets::AssetToSdlReadIO(SDL_RWops* ops, AssetHandle asset)
 	{
 		ops->hidden.unknown.data1 = asset;
 
@@ -181,5 +181,5 @@ namespace data
 			file->Close();
 			return 0;
 		};
-	}
+	}*/
 }
