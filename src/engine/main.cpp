@@ -10,10 +10,8 @@
 #include "view/UnitTransmission.hpp"
 #include "vulkan/Api.hpp"
 #include <stdexcept>
-#include <unistd.h>
 #include <cstdio>
 #include <cstring>
-#include <ctime>
 #include <iostream>
 #include <memory>
 
@@ -30,6 +28,8 @@
 #include <boost/format/format_fwd.hpp>
 
 #include <filesystem/Storage.hpp>
+
+#include <Loop.hpp>
 
 using boost::format;
 using std::runtime_error;
@@ -132,12 +132,6 @@ int main(int argc, char *argv[])
 		
 	SDL_Event event;
 
-	uint64_t lastCounter = SDL_GetPerformanceCounter();
-	double   deltaTime, realTime = 0.0;
-	double   nextFrameTime = -1.0;
-
-	bool running = true;
-
 	int unitId = 0;
 
 	app.audioManager = audio::AudioManager(&app.assets);
@@ -149,15 +143,18 @@ int main(int argc, char *argv[])
 		unitTransmission.SetUnit(unitId);
 		unitTransmission.Fidget();
 
-		while(running)
+		Loop loop("Main Loop");
+		loop.Start();
+
+		while(loop.IsRunning())
 		{
-			Clock clock("Loop");
+			Cycle cycle = loop.GetNewCycle();
 
 			while (SDL_PollEvent(&event)) {
 				switch (event.type) {
 
 					case SDL_EVENT_QUIT:
-						running = false;
+						loop.Stop();
 						break;
 
 					case SDL_EVENT_KEY_DOWN:
@@ -179,22 +176,14 @@ int main(int argc, char *argv[])
 			app.graphics->SetView({0, 0});
 			app.graphics->BeginRendering(); // to be in sync with LoadImage()
 
-			unitTransmission.Process(deltaTime);
-
-			unitTransmission.Draw({ 24, 24 });
+			unitTransmission.Process(loop.GetDeltaTime());
+			unitTransmission.Draw({ 24, 37 });
 
 			app.graphics->PresentToScreen();
 
 			app.audioManager.Process();
 
-			usleep(1000); // throttling
-
-			uint64_t currentCounter = SDL_GetPerformanceCounter();
-
-			deltaTime = static_cast<double>(currentCounter - lastCounter) / SDL_GetPerformanceFrequency();
-			realTime += deltaTime;
-
-			lastCounter = currentCounter;
+			loop.Complete(cycle);
 		}
 		
 		app.graphics->WaitIdle();

@@ -1,5 +1,4 @@
 #include "Clock.hpp"
-#include "clock.hpp"
 #include <algorithm>
 #include <boost/format.hpp>
 #include <boost/format/format_fwd.hpp>

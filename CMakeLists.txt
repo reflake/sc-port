@@ -55,6 +55,9 @@ target_sources(Engine
 
     src/shared/diagnostic/Clock.cpp
     src/shared/diagnostic/Image.cpp
+
+    src/shared/Cycle.cpp
+    src/shared/Loop.cpp
   )
 
 add_library(Renderer STATIC 
