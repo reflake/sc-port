@@ -4,8 +4,20 @@ project(Game)
 
 set(CMAKE_CXX_STANDARD 23)
 
-# SDL3 Libraries
+# Set policy to allow FindBoost module (suppress CMP0167 warning)
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 OLD)
+endif()
+
+# Find required packages
 find_package(SDL3 REQUIRED)
+find_package(Boost REQUIRED)
+find_package(PNG REQUIRED)
+find_package(Vulkan REQUIRED)
+find_package(glm REQUIRED)
+if (NOT VPX_LIBRARY_REQUIRED_FIND_REQUIRED)
+  message(FATAL_ERROR, "libvpx is required")
+endif()
 
 add_executable(Engine src/engine/main.cpp)
 
@@ -148,8 +160,6 @@ add_subdirectory(CascLib/)
 add_subdirectory(StormLib/)
 
 # Boost
-find_package(Boost REQUIRED)
-
 if(Boost_FOUND)
   include_directories(${Boost_INCLUDE_DIRS})
   target_link_libraries(Engine ${Boost_LIBRARIES})
@@ -162,7 +172,6 @@ target_link_libraries(Engine
   PRIVATE SDL3::SDL3-static
   PRIVATE libpng
   PRIVATE libvpx
-  PRIVATE libvorbis
   PRIVATE libwebm
   PRIVATE openal)
 
