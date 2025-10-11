@@ -1,35 +1,26 @@
 #define SDL_MAIN_HANDLED
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <ctime>
 
-#include "audio/Music.hpp"
-#include "A_Graphics.hpp"
-#include "data/TextStrings.hpp"
-#include "diagnostic/Clock.hpp"
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_keycode.h>
+#include <SDL3/SDL_video.h>
+
+#include <boost/format.hpp>
+
+#include "audio/AudioManager.hpp"
+#include "data/Assets.hpp"
 #include "meta/PortraitTable.hpp"
 #include "meta/SfxTable.hpp"
 #include "meta/UnitTable.hpp"
 #include "view/UnitTransmission.hpp"
-#include "vulkan/Api.hpp"
-#include <stdexcept>
-#include <cstdio>
-#include <cstring>
-#include <iostream>
-#include <memory>
-
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_keycode.h>
-#include <SDL3/SDL_timer.h>
-#include <SDL3/SDL_video.h>
-
-#include <audio/AudioManager.hpp>
-#include "data/Assets.hpp"
 #include "video/Video.hpp"
-
-#include <boost/foreach.hpp>
-#include <boost/format/format_fwd.hpp>
-
-#include <filesystem/Storage.hpp>
-
-#include <Loop.hpp>
+#include "filesystem/Storage.hpp"
+#include "Loop.hpp"
+#include "A_Graphics.hpp"
+#include <vulkan/Api.hpp>
 
 using boost::format;
 using std::runtime_error;
